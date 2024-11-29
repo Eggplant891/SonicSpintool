@@ -2,5 +2,4 @@
 /bin
 /intermediate
 /lib
-/external/SDL3
 *.vcxproj.*
