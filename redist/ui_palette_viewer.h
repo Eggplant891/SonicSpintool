@@ -14,8 +14,10 @@ namespace spintool
 	{
 	public:
 		EditorPaletteViewer(EditorUI& owning_ui);
-		static void RenderPalette(const UIPalette& palette, size_t palette_index = 0);
+		static void RenderPalette(UIPalette& palette, size_t palette_index = 0);
 		void Update(std::vector<UIPalette>& palettes);
+
+		bool visible = false;
 
 	private:
 		EditorUI& m_owning_ui;

@@ -9,6 +9,7 @@
 #include "ui_sprite_viewer.h"
 #include "ui_sprite_navigator.h"
 #include "ui_palette_viewer.h"
+#include "ui_sprite_importer.h"
 
 #include "imgui.h"
 #include <vector>
@@ -26,7 +27,7 @@ namespace spintool
 		void Shutdown();
 
 		SpinballROM& GetROM();
-		void OpenSpriteViewer(const SpinballSprite& sprite, const std::vector<UIPalette>& palettes);
+		void OpenSpriteViewer(const std::shared_ptr<SpinballSprite>& sprite, const std::vector<UIPalette>& palettes);
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
@@ -34,6 +35,7 @@ namespace spintool
 
 		std::vector<EditorSpriteViewer> m_sprite_viewer_windows;
 		EditorSpriteNavigator m_sprite_navigator;
-
+		EditorPaletteViewer m_palette_viewer;
+		EditorSpriteImporter m_sprite_importer;
 	};
 }

@@ -107,7 +107,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib\x64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>SDL3.lib</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_Image.lib;</AdditionalDependencies>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
   </ItemDefinitionGroup>
@@ -134,7 +134,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_Image.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib\x64</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
@@ -158,7 +158,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_Image.lib;</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib\x64</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
@@ -186,7 +186,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL3.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_Image.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>$(SolutionDir)\lib\x64</AdditionalLibraryDirectories>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
     </Link>
@@ -206,6 +206,7 @@
     <ClCompile Include="src\ui_palette.cpp" />
     <ClCompile Include="src\ui_palette_viewer.cpp" />
     <ClCompile Include="src\ui_sprite.cpp" />
+    <ClCompile Include="src\ui_sprite_importer.cpp" />
     <ClCompile Include="src\ui_sprite_navigator.cpp" />
     <ClCompile Include="src\ui_sprite_viewer.cpp" />
   </ItemGroup>
@@ -226,6 +227,7 @@
     <ClInclude Include="redist\ui_palette.h" />
     <ClInclude Include="redist\ui_palette_viewer.h" />
     <ClInclude Include="redist\ui_sprite.h" />
+    <ClInclude Include="redist\ui_sprite_importer.h" />
     <ClInclude Include="redist\ui_sprite_navigator.h" />
     <ClInclude Include="redist\ui_sprite_viewer.h" />
   </ItemGroup>

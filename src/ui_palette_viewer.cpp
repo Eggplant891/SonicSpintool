@@ -15,28 +15,41 @@ namespace spintool
 
 	}
 
-	void EditorPaletteViewer::RenderPalette(const UIPalette& palette, size_t palette_index)
+	void EditorPaletteViewer::RenderPalette(UIPalette& palette, size_t palette_index)
 	{
 		ImGui::Text("Palette %d (0x%2X)", palette_index, palette.palette.offset);
-		for (const VDPSwatch& swatch : palette.palette.palette_swatches)
+		for (VDPSwatch& swatch : palette.palette.palette_swatches)
 		{
 			char swatch_name[64];
 			sprintf_s(swatch_name, "0x%2X###swatch_%p", swatch.packed_value, &swatch);
 
-			float col[3] = { static_cast<float>(swatch.GetUnpacked().r / 255.0f), static_cast<float>(swatch.GetUnpacked().g / 255.0f), static_cast<float>(swatch.GetUnpacked().b / 255.0f) };
+			ImColor col = swatch.AsImColor();
 			ImGui::SameLine();
-			ImGui::ColorEdit3(swatch_name, col, ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs);
+			if (ImGui::ColorEdit3(swatch_name, &col.Value.x, ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs))
+			{
+				swatch.packed_value = VDPSwatch::Pack(col.Value.x, col.Value.y, col.Value.z);
+				palette = UIPalette(palette.palette);
+			}
 		}
 	}
 
 	void EditorPaletteViewer::Update(std::vector<UIPalette>& palettes)
 	{
-		size_t palette_index = 0;
-		for (const UIPalette& palette : palettes)
+		if (visible == false)
 		{
-			++palette_index;
-			RenderPalette(palette, palette_index);
+			return;
 		}
+
+		if (ImGui::Begin("Palettes", &visible))
+		{
+			size_t palette_index = 0;
+			for (UIPalette& palette : palettes)
+			{
+				RenderPalette(palette, palette_index);
+				++palette_index;
+			}
+		}
+		ImGui::End();
 	}
 
 }

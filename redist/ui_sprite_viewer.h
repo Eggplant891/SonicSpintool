@@ -11,7 +11,7 @@ namespace spintool
 	class EditorSpriteViewer
 	{
 	public:
-		EditorSpriteViewer(const SpinballSprite& sprite, const std::vector<UIPalette>& palettes);
+		EditorSpriteViewer(const std::shared_ptr<SpinballSprite>& sprite, const std::vector<UIPalette>& palettes);
 		void Update();
 
 		bool IsOpen() const { return m_is_open; }
