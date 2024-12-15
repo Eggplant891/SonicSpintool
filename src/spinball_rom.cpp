@@ -119,7 +119,7 @@ namespace spintool
 		return current_sprite.rom_offset + current_sprite.GetSizeOf();
 	}
 
-	std::shared_ptr<SpinballSprite> SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
+	std::shared_ptr<const SpinballSprite> SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
 	{
 		if (offset + 4 >= m_buffer.size())
 		{
@@ -221,7 +221,7 @@ namespace spintool
 		return std::move(new_sprite);
 	}
 
-	std::shared_ptr<spintool::SpinballSprite> SpinballROM::LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset)
+	std::shared_ptr<const spintool::SpinballSprite> SpinballROM::LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset)
 	{
 		if (offset >= data_source.size() || offset + 64 >= data_source.size())
 		{

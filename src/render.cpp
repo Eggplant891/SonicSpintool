@@ -62,7 +62,7 @@ namespace spintool
 		SDL_SetSurfacePalette(sprite_atlas_surface, palette.get());
 	}
 
-	SDLPaletteHandle Renderer::CreatePalette(const VDPPalette& palette)
+	SDLPaletteHandle Renderer::CreateSDLPalette(const VDPPalette& palette)
 	{
 		SDLPaletteHandle new_palette{ SDL_CreatePalette(16) };
 		for (size_t i = 0; i < 16; ++i)

@@ -1,10 +1,12 @@
 #include "ui_sprite_importer.h"
 
 #include "imgui.h"
-#include "SDL3/SDL_image.h"
-#include <algorithm>
 #include "spinball_rom.h"
 #include "ui_editor.h"
+#include "ui_palette_viewer.h"
+
+#include "SDL3/SDL_image.h"
+#include <algorithm>
 
 namespace spintool
 {
@@ -15,8 +17,6 @@ namespace spintool
 
 	void EditorSpriteImporter::InnerUpdate()
 	{
-		m_selected_palette = m_owning_ui.GetROM().LoadPalettes(8).at(2);
-
 		static char path_buffer[4096] = "E:\\Development\\_RETRODEV\\MegaDrive\\Spinball\\_ASSETS\\tails_spinball\\tails_idle.png";;
 		bool update_preview = false;
 
@@ -31,6 +31,12 @@ namespace spintool
 				m_detected_colours.clear();
 			}
 		}
+
+		if (DrawPaletteSelector(m_selected_palette_index, m_owning_ui))
+		{
+			m_detected_colours.clear();
+		}
+		m_selected_palette = m_owning_ui.GetPalettes().at(m_selected_palette_index);
 
 		if (m_imported_image == nullptr)
 		{
@@ -47,6 +53,11 @@ namespace spintool
 		ImGui::BeginGroup();
 		{
 			ImGui::Image((ImTextureID)m_rendered_imported_image.get(), { static_cast<float>(m_imported_image->w) * 2, static_cast<float>(m_imported_image->h) * 2 });
+
+			if (ImGui::Button("Force Update Preview"))
+			{
+				update_preview = true;
+			}
 
 			ImGui::Text("Detected Colours");
 			if (m_detected_colours.empty())
@@ -96,11 +107,6 @@ namespace spintool
 
 				update_preview = true;
 			}
-
-			if (ImGui::Button("Update Preview"))
-			{
-				update_preview = true;
-			}
 			int i = 0;
 			for (ColourPaletteMapping& colour_entry : m_detected_colours)
 			{
@@ -140,7 +146,7 @@ namespace spintool
 			if (update_preview)
 			{
 				m_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(m_imported_image->w, m_imported_image->h, SDL_PIXELFORMAT_INDEX8) };
-				m_preview_palette = Renderer::CreatePalette(m_selected_palette);
+				m_preview_palette = Renderer::CreateSDLPalette(m_selected_palette);
 				SDL_SetSurfacePalette(m_preview_image.get(), m_preview_palette.get());
 				const SDL_PixelFormatDetails* import_pixel_format_details = SDL_GetPixelFormatDetails(m_imported_image->format);
 				const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
@@ -202,7 +208,8 @@ namespace spintool
 			if (m_rendered_preview_image != nullptr)
 			{
 				ImGui::Image((ImTextureID)m_rendered_preview_image.get(), { static_cast<float>(m_preview_image->w) * 2, static_cast<float>(m_preview_image->h) * 2 });
-				if (ImGui::InputInt("Target Write Offset", &m_target_write_location))
+				ImGui::SetNextItemWidth(256);
+				if (ImGui::InputInt("Target Write Offset", &m_target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal))
 				{
 					if (m_result_sprite = m_owning_ui.GetROM().LoadSprite(m_target_write_location, true, false))
 					{

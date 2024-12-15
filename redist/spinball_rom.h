@@ -106,8 +106,8 @@ namespace spintool
 		void SaveROM();
 		bool LoadROMFromPath(const char* path);
 		size_t GetOffsetForNextSprite(const SpinballSprite& current_sprite) const;
-		std::shared_ptr<SpinballSprite> LoadSprite(const size_t offset, bool packed_data_mode, bool try_to_read_missed_data);
-		std::shared_ptr<SpinballSprite> LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset);
+		std::shared_ptr<const SpinballSprite> LoadSprite(const size_t offset, bool packed_data_mode, bool try_to_read_missed_data);
+		std::shared_ptr<const SpinballSprite> LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset);
 		std::vector<VDPPalette> LoadPalettes(size_t num_palettes);
 
 		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const;

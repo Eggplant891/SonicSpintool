@@ -41,9 +41,10 @@ namespace spintool
 		SDLTextureHandle m_export_preview_texture;
 
 		std::vector<ColourPaletteMapping> m_detected_colours;
+		int m_selected_palette_index = 0;
 		VDPPalette m_selected_palette;
 		SDLPaletteHandle m_preview_palette;
-		std::shared_ptr<SpinballSprite> m_result_sprite;
+		std::shared_ptr<const SpinballSprite> m_result_sprite;
 		std::string m_loaded_path;
 
 		int m_target_write_location = 0;

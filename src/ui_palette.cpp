@@ -3,7 +3,7 @@
 namespace spintool
 {
 	UIPalette::UIPalette(const VDPPalette& pal)
-		: sdl_palette(Renderer::CreatePalette(pal))
+		: sdl_palette(Renderer::CreateSDLPalette(pal))
 		, palette(pal)
 	{
 

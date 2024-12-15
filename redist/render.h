@@ -22,7 +22,7 @@ namespace spintool
 		static void NewFrame();
 		static void Render();
 
-		static SDLPaletteHandle CreatePalette(const VDPPalette& palette);
+		static SDLPaletteHandle CreateSDLPalette(const VDPPalette& palette);
 		static void SetPalette(const SDLPaletteHandle& palette);
 
 		static SDLTextureHandle RenderToTexture(const SpinballSprite& sprite);

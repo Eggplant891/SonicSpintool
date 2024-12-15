@@ -10,12 +10,30 @@ namespace spintool
 
 namespace spintool
 {
+	struct PaletteWidgetSettings
+	{
+		bool show_name = true;
+		bool show_palette_preview = true;
+		bool allow_editing_palette_swatches = false;
+	};
+
+	struct PaletteWidgetResults
+	{
+		std::optional<int> new_palette_selection;
+		std::optional<VDPPalette> modified_palette_swatches;
+	};
+
+	bool DrawPaletteSelectorWithPreview(int& palette_index, const EditorUI& owning_ui);
+	void DrawPaletteName(const VDPPalette& palette, int palette_index);
+	void DrawPalettePreview(VDPPalette& palette, int palette_index);
+	bool DrawPaletteSelector(int& chosen_palette, const EditorUI& owning_ui);
+
 	class EditorPaletteViewer
 	{
 	public:
 		EditorPaletteViewer(EditorUI& owning_ui);
-		static void RenderPalette(UIPalette& palette, size_t palette_index = 0);
-		void Update(std::vector<UIPalette>& palettes);
+
+		void Update(std::vector<VDPPalette>& palettes);
 
 		bool visible = false;
 

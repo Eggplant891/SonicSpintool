@@ -27,15 +27,20 @@ namespace spintool
 		void Shutdown();
 
 		SpinballROM& GetROM();
-		void OpenSpriteViewer(const std::shared_ptr<SpinballSprite>& sprite, const std::vector<UIPalette>& palettes);
+		const std::vector<VDPPalette>& GetPalettes() const;
+		void OpenSpriteViewer(std::shared_ptr<const SpinballSprite>& sprite);
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
+		char m_rom_path[4096] = "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/original/Sonic The Hedgehog Spinball (USA).md";
 		SpinballROM m_rom;
+		std::vector<VDPPalette> m_palettes;
 
-		std::vector<EditorSpriteViewer> m_sprite_viewer_windows;
+		std::vector<std::unique_ptr<EditorSpriteViewer>> m_sprite_viewer_windows;
 		EditorSpriteNavigator m_sprite_navigator;
 		EditorPaletteViewer m_palette_viewer;
 		EditorSpriteImporter m_sprite_importer;
+
+		bool m_change_path_popup_open = false;
 	};
 }

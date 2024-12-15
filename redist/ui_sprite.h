@@ -12,7 +12,7 @@ namespace spintool
 	struct UISpriteTileTexture
 	{
 		UISpriteTileTexture(const std::shared_ptr<SpriteTile>& sprite_tile);
-		const std::shared_ptr<SpriteTile> sprite_tile;
+		std::shared_ptr<const SpriteTile> sprite_tile;
 		mutable SDLTextureHandle texture;
 		ImVec2 dimensions;
 
@@ -21,20 +21,13 @@ namespace spintool
 
 	struct UISpriteTexture
 	{
-		UISpriteTexture(const std::shared_ptr<SpinballSprite>& spr);
-		const std::shared_ptr<SpinballSprite> sprite;
+		UISpriteTexture(std::shared_ptr<const SpinballSprite>& spr);
+		std::shared_ptr<const SpinballSprite> sprite;
 		SDLTextureHandle texture;
 		ImVec2 dimensions;
 
 		std::vector<UISpriteTileTexture> tile_textures;
 
 		SDLTextureHandle RenderTextureForPalette(const UIPalette& palette) const;
-	};
-
-	struct UISpriteTextureAllPalettes
-	{
-		UISpriteTextureAllPalettes(const std::shared_ptr<SpinballSprite>& spr, const std::vector<UIPalette>& palettes);
-		const std::shared_ptr<SpinballSprite>& sprite;
-		std::vector<UISpriteTexture> textures;
 	};
 }

@@ -7,6 +7,7 @@
 #include <optional>
 #include <algorithm>
 #include "SDL3/SDL_image.h"
+#include "ui_palette_viewer.h"
 
 namespace spintool
 {
@@ -18,32 +19,6 @@ namespace spintool
 
 	}
 
-	void EditorSpriteNavigator::InitialisePalettes(const size_t num_palettes)
-	{
-		constexpr size_t offset = 0xDFC;
-		unsigned char* current_byte = &m_owning_ui.GetROM().m_buffer[offset];
-		m_palettes.clear();
-
-		for (size_t p = 0; p < num_palettes; ++p)
-		{
-			VDPPalette palette;
-			palette.offset = current_byte - m_rom.m_buffer.data();
-
-			for (size_t i = 0; i < 16; ++i)
-			{
-				const Uint8 first_byte = *current_byte;
-				++current_byte;
-				const Uint8 second_byte = *current_byte;
-				++current_byte;
-				VDPSwatch swatch;
-				swatch.packed_value = static_cast<Uint16>((static_cast<Uint16>(first_byte) << 8) | second_byte);
-
-				palette.palette_swatches[i] = swatch;
-			}
-			m_palettes.emplace_back(palette);
-		}
-	}
-
 	void EditorSpriteNavigator::Update()
 	{
 		if (visible == false)
@@ -51,16 +26,9 @@ namespace spintool
 			return;
 		}
 
-		if (ImGui::Begin("Sprite Navigator", &visible))
+		if (ImGui::Begin("Sprite Discoverator", &visible))
 		{
 			static char path_buffer[4096];
-			if (ImGui::InputText("Path", path_buffer, sizeof(path_buffer), ImGuiInputTextFlags_EnterReturnsTrue))
-			{
-				m_rom.LoadROMFromPath(path_buffer);
-				m_sprites_found.clear();
-				m_palettes.clear();
-				SetPalettes(m_rom.LoadPalettes(48));
-			}
 
 			ImGui::Checkbox("Packed pixel data (2 per byte)", &m_use_packed_data_mode);
 			ImGui::Checkbox("Read data between sprites", &m_read_between_sprites);
@@ -120,13 +88,13 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						std::shared_ptr<SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites);
+						std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites);
 
 						if (new_sprite)
 						{
 							m_offset += new_sprite->GetSizeOf();
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_palettes.at(m_chosen_palette));
+							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 						}
 						else
 						{
@@ -134,9 +102,7 @@ namespace spintool
 							--a;
 						}
 					}
-
 				}
-
 			}
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(128);
@@ -156,10 +122,10 @@ namespace spintool
 				}
 				else
 				{
-					if (std::shared_ptr<SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
+					if (std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
 					{
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_palettes.at(m_chosen_palette));
+						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
 				}
 			}
@@ -169,14 +135,14 @@ namespace spintool
 				size_t offset = 0;
 				while (true)
 				{
-					std::shared_ptr<SpinballSprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, offset);
+					std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, offset);
 					if (new_sprite == nullptr)
 					{
 						break;
 					}
 					offset += new_sprite->real_size;
 					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_palettes.at(m_chosen_palette));
+					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
 			}
 
@@ -185,14 +151,14 @@ namespace spintool
 				size_t offset = 0;
 				while (true)
 				{
-					std::shared_ptr<SpinballSprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
+					std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
 					if (new_sprite == nullptr)
 					{
 						break;
 					}
 					offset += new_sprite->real_size;
 					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_palettes.front());
+					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
 				}
 			}
 
@@ -215,10 +181,10 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						if (std::shared_ptr<SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
+						if (std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
 						{
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_palettes.front());
+							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
 						}
 					}
 				}
@@ -245,7 +211,7 @@ namespace spintool
 						{
 							render_process_progress = working_offset / static_cast<float>(m_rom.m_buffer.size());
 
-							std::shared_ptr<SpinballSprite> new_sprite = m_rom.LoadSprite(working_offset, m_use_packed_data_mode, m_read_between_sprites);
+							std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(working_offset, m_use_packed_data_mode, m_read_between_sprites);
 							if (new_sprite == nullptr)
 							{
 								working_offset+=2;
@@ -276,7 +242,7 @@ namespace spintool
 								{
 									m_owning_ui.m_render_to_texture_mutex.lock();
 									std::shared_ptr<UISpriteTexture>& new_sprite = m_sprites_found.emplace_back(*current_sprite_it);
-									new_sprite->texture = new_sprite->RenderTextureForPalette(m_palettes.at(m_chosen_palette));
+									new_sprite->texture = new_sprite->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 									++progress;
 									m_owning_ui.m_render_to_texture_mutex.unlock();
 
@@ -305,26 +271,21 @@ namespace spintool
 				m_selected_sprite_rom_offset = 0;
 			}
 
-			ImGui::SetNextItemWidth(256);
-			if (ImGui::SliderInt("###Palette Index", &m_chosen_palette, 0, static_cast<int>(m_palettes.size()-1)))
-			{
-				for (std::shared_ptr<UISpriteTexture>& sprite : m_sprites_found)
-				{
-					sprite->texture = sprite->RenderTextureForPalette(m_palettes.at(m_chosen_palette));
-				}
-			}
-			ImGui::SameLine();
-			EditorPaletteViewer::RenderPalette(m_palettes.at(m_chosen_palette), m_chosen_palette);
+			DrawPaletteSelector(m_chosen_palette, m_owning_ui);
 
 			const ImVec2 previous_spacing = ImGui::GetStyle().ItemSpacing;
 
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{ 2, 0 });
 			ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2{ 2, 0 });
 
+			ImGui::SliderFloat("Zoom", &m_zoom, 1.0f, 8.0f, "%.1f");
+
 			if (ImGui::BeginChild("Image Results"))
 			{
-				const int max_width = static_cast<int>(ImGui::GetWindowWidth());
-				int current_width = 0;
+
+				const int cursor_start_x_pos = static_cast<int>(ImGui::GetCursorPosX());
+				const int padding_x = static_cast<int>(ImGui::GetStyle().ItemSpacing.x);
+				int current_width = cursor_start_x_pos;
 				m_owning_ui.m_render_to_texture_mutex.lock();
 				for (std::shared_ptr<UISpriteTexture>& tex : m_sprites_found)
 				{
@@ -334,12 +295,12 @@ namespace spintool
 						continue;
 					}
 
-					if (current_width + tex->dimensions.x > max_width)
+					if (ImGui::GetContentRegionAvail().x < current_width + padding_x + (tex->dimensions.x * m_zoom))
 					{
 						started_newline = true;
 						ImGui::NewLine();
-						current_width = 0;
 						ImGui::SameLine(); ImGui::Dummy(ImVec2(0, 0));
+						current_width = static_cast<int>(ImGui::GetCursorPosX());
 					}
 
 					if (started_newline == false)
@@ -347,12 +308,11 @@ namespace spintool
 						ImGui::SameLine();
 					}
 
-					constexpr float img_scale = 2.0f;
 					ImGui::Image((ImTextureID)tex->texture.get()
-						, ImVec2(static_cast<float>(tex->dimensions.x) * img_scale, static_cast<float>(tex->dimensions.y) * img_scale)
+						, ImVec2(static_cast<float>(tex->dimensions.x) * m_zoom, static_cast<float>(tex->dimensions.y) * m_zoom)
 						, { 0,0 }
 					, { static_cast<float>(tex->dimensions.x) / tex->texture->w, static_cast<float>((tex->dimensions.y) / tex->texture->h) });
-					current_width += static_cast<int>((tex->dimensions.x * img_scale) + ImGui::GetStyle().ItemSpacing.x);
+					current_width += static_cast<int>((tex->dimensions.x * m_zoom) + ImGui::GetStyle().ItemSpacing.x);
 
 					const bool hovered = ImGui::IsItemHovered();
 					const bool clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
@@ -365,8 +325,9 @@ namespace spintool
 						{
 							sprintf_s(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_offset));
 							
+							SDLPaletteHandle palette = Renderer::CreateSDLPalette(m_owning_ui.GetPalettes().at(2));
 							SDLSurfaceHandle out_surface{ SDL_CreateSurface(tex->sprite->GetBoundingBox().Width(), tex->sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8)};
-							SDL_SetSurfacePalette(out_surface.get(), m_palettes.at(2).sdl_palette.get());
+							SDL_SetSurfacePalette(out_surface.get(), palette.get());
 							tex->sprite->RenderToSurface(out_surface.get());
 							assert(IMG_SavePNG(out_surface.get(), path_buffer));
 						}
@@ -384,7 +345,7 @@ namespace spintool
 					if (clicked)
 					{
 						m_selected_sprite_rom_offset = tex->sprite->rom_offset;
-						m_owning_ui.OpenSpriteViewer(tex->sprite, m_palettes);
+						m_owning_ui.OpenSpriteViewer(tex->sprite);
 					}
 				}
 				m_owning_ui.m_render_to_texture_mutex.unlock();
@@ -394,19 +355,4 @@ namespace spintool
 		}
 		ImGui::End();
 	}
-
-	void EditorSpriteNavigator::SetPalettes(const std::vector<VDPPalette>& palettes)
-	{
-		m_palettes.reserve(palettes.size());
-		for (const VDPPalette& palette : palettes)
-		{
-			m_palettes.emplace_back(palette);
-		}
-	}
-
-	std::vector<UIPalette>& EditorSpriteNavigator::GetPalettes()
-	{
-		return m_palettes;
-	}
-
 }

@@ -18,9 +18,6 @@ namespace spintool
 		EditorSpriteNavigator(EditorUI& owning_ui);
 
 		void Update();
-		void SetPalettes(const std::vector<VDPPalette>& palettes);
-		std::vector<UIPalette>& GetPalettes();
-		void InitialisePalettes(const size_t num_palettes);
 
 		bool visible = false;
 
@@ -28,7 +25,6 @@ namespace spintool
 		EditorUI& m_owning_ui;
 		SpinballROM& m_rom;
 
-		std::vector<UIPalette> m_palettes;
 		std::vector<std::shared_ptr<UISpriteTexture>> m_sprites_found;
 		SDLTextureHandle m_random_texture;
 		int random_tex_width = 128;
@@ -38,6 +34,7 @@ namespace spintool
 		size_t m_selected_sprite_rom_offset = 0;
 		size_t m_offset = 0x14D2;
 		int m_chosen_palette = 0;
+		float m_zoom = 2.0f;
 		bool m_use_packed_data_mode = true;
 		bool m_read_between_sprites = false;
 	};

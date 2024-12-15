@@ -21,14 +21,14 @@ namespace spintool
 
 	void EditorUI::Initialise()
 	{
-		m_rom.LoadROM();
-		std::vector<VDPPalette> out_palettes = m_rom.LoadPalettes(48);
-		m_sprite_navigator.SetPalettes(out_palettes);
+		m_rom.LoadROMFromPath(m_rom_path);
+		m_palettes = m_rom.LoadPalettes(48);
 	}
 
 	void EditorUI::Update()
 	{
 		float menu_bar_height = 0;
+		bool open_rom_popup = false;
 
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -41,13 +41,42 @@ namespace spintool
 				{
 					m_rom.SaveROM();
 				}
-
 				ImGui::EndMenu();
 			}
+			ImGui::SameLine();
+			ImGui::BeginDisabled();
+			ImGui::Text(m_rom_path);
+			ImGui::EndDisabled();
+			ImGui::SameLine();
+			if (ImGui::Button("Change ROM Path"))
+			{
+				open_rom_popup = true;
+			}
+
 			menu_bar_height = ImGui::GetWindowHeight();
 			ImGui::EndMainMenuBar();
 		}
-			
+		static char temp_path[4096];
+
+		if (open_rom_popup)
+		{
+			ImGui::OpenPopup("Edit ROM Path", ImGuiPopupFlags_AnyPopupLevel);
+			sprintf_s(temp_path, "%s", m_rom_path);
+		}
+
+		if (ImGui::BeginPopup("Edit ROM Path"))
+		{
+			ImGui::SetNextItemWidth(1024);
+			ImGui::InputText("Path", temp_path, sizeof(temp_path));
+			if (ImGui::Button("Load ROM"))
+			{
+				sprintf_s(m_rom_path, "%s", temp_path);
+				m_rom.LoadROMFromPath(m_rom_path);
+				m_palettes = m_rom.LoadPalettes(48);
+			}
+			ImGui::EndPopup();
+		}
+
 		if (SDL_Texture* viewport = Renderer::GetViewportTexture())
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
@@ -76,17 +105,17 @@ namespace spintool
 		
 		m_sprite_importer.Update();
 		m_sprite_navigator.Update();
-		m_palette_viewer.Update(m_sprite_navigator.GetPalettes());
+		m_palette_viewer.Update(m_palettes);
 
-		for (EditorSpriteViewer& sprite_window : m_sprite_viewer_windows)
+		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)
 		{
-			sprite_window.Update();
+			sprite_window->Update();
 		}
 
 		auto new_end_it = std::remove_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
-			[](const EditorSpriteViewer& sprite_window)
+			[](const std::unique_ptr<EditorSpriteViewer>& sprite_window)
 			{
-				return sprite_window.IsOpen() == false;
+				return sprite_window->IsOpen() == false;
 			});
 
 		m_sprite_viewer_windows.erase(new_end_it, std::end(m_sprite_viewer_windows));
@@ -102,16 +131,22 @@ namespace spintool
 		return m_rom;
 	}
 
-	void EditorUI::OpenSpriteViewer(const std::shared_ptr<SpinballSprite>& sprite, const std::vector<UIPalette>& palettes)
+	const std::vector<VDPPalette>& EditorUI::GetPalettes() const
 	{
-		auto selected_sprite_window_it = std::find_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
-			[&sprite](const EditorSpriteViewer& sprite_viewer)
+		return m_palettes;
+	}
+
+	void EditorUI::OpenSpriteViewer(std::shared_ptr<const SpinballSprite>& sprite)
+	{
+		const auto selected_sprite_window_it = std::find_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
+			[&sprite](const std::unique_ptr<EditorSpriteViewer>& sprite_viewer)
 			{
-				return sprite_viewer.m_sprites->sprite->rom_offset == sprite->rom_offset;
+				return sprite_viewer->GetOffset() == sprite->rom_offset;
 			});
+
 		if (selected_sprite_window_it == std::end(m_sprite_viewer_windows))
 		{
-			m_sprite_viewer_windows.emplace_back(sprite, palettes);
+			m_sprite_viewer_windows.emplace_back(std::make_unique<EditorSpriteViewer>(*this, sprite));
 		}
 	}
 

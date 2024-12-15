@@ -2,7 +2,7 @@
 
 namespace spintool
 {
-	UISpriteTexture::UISpriteTexture(const std::shared_ptr<SpinballSprite>& spr)
+	UISpriteTexture::UISpriteTexture(std::shared_ptr<const SpinballSprite>& spr)
 		: sprite(spr)
 		, dimensions(static_cast<float>(sprite->GetBoundingBox().Width()), static_cast<float>(sprite->GetBoundingBox().Height()))
 	{
@@ -45,18 +45,5 @@ namespace spintool
 		Renderer::s_sdl_update_mutex.unlock();
 
 		return std::move(new_tex);
-	}
-
-	UISpriteTextureAllPalettes::UISpriteTextureAllPalettes(const std::shared_ptr<SpinballSprite>& spr, const std::vector<UIPalette>& palettes)
-		: sprite(spr)
-	{
-		Renderer::s_sdl_update_mutex.lock();
-		for (const UIPalette& palette : palettes)
-		{
-			UISpriteTexture& texture = textures.emplace_back(sprite);
-			texture.texture = texture.RenderTextureForPalette(palette);
-		}
-
-		Renderer::s_sdl_update_mutex.unlock();
 	}
 }
