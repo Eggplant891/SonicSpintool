@@ -104,10 +104,8 @@ namespace spintool
 		output.write(reinterpret_cast<const char*>(m_buffer.data()), m_buffer.size());
 	}
 
-	bool SpinballROM::LoadROMFromPath(const char* path)
+	bool SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
 	{
-		//std::ifstream input = std::ifstream{ "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/sbbuilt.bin", std::ios::binary };
-		//std::ifstream input = std::ifstream{ "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/prototype/Sonic the Hedgehog Spinball (Aug 1993 prototype).md", std::ios::binary };
 		std::ifstream input = std::ifstream{ path, std::ios::binary };
 		m_buffer = std::vector<unsigned char>{ std::istreambuf_iterator<char>(input), {} };
 

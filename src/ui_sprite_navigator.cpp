@@ -8,6 +8,7 @@
 #include <algorithm>
 #include "SDL3/SDL_image.h"
 #include "ui_palette_viewer.h"
+#include <filesystem>
 
 namespace spintool
 {
@@ -324,12 +325,12 @@ namespace spintool
 						if (ImGui::MenuItem(path_buffer))
 						{
 							sprintf_s(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_offset));
-							
+							std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 							SDLPaletteHandle palette = Renderer::CreateSDLPalette(m_owning_ui.GetPalettes().at(2));
 							SDLSurfaceHandle out_surface{ SDL_CreateSurface(tex->sprite->GetBoundingBox().Width(), tex->sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8)};
 							SDL_SetSurfacePalette(out_surface.get(), palette.get());
 							tex->sprite->RenderToSurface(out_surface.get());
-							assert(IMG_SavePNG(out_surface.get(), path_buffer));
+							assert(IMG_SavePNG(out_surface.get(), export_path.generic_u8string().c_str()));
 						}
 						ImGui::EndPopup();
 					}

@@ -14,6 +14,7 @@
 #include "imgui.h"
 #include <vector>
 #include <mutex>
+#include <filesystem>
 
 namespace spintool
 {
@@ -23,16 +24,25 @@ namespace spintool
 		EditorUI();
 
 		void Initialise();
+		bool AttemptLoadROM(const std::filesystem::path& rom_path);
 		void Update();
 		void Shutdown();
 
+		bool IsROMLoaded() const;
 		SpinballROM& GetROM();
+		std::filesystem::path GetROMLoadPath() const;
+		std::filesystem::path GetROMExportPath() const;
+		std::filesystem::path GetSpriteExportPath() const;
+
 		const std::vector<VDPPalette>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const SpinballSprite>& sprite);
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
-		char m_rom_path[4096] = "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/original/Sonic The Hedgehog Spinball (USA).md";
+		std::filesystem::path m_rom_path;
+		std::filesystem::path m_rom_load_path;
+		std::filesystem::path m_rom_export_path;
+		std::filesystem::path m_sprite_export_path;
 		SpinballROM m_rom;
 		std::vector<VDPPalette> m_palettes;
 

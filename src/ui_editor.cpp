@@ -6,6 +6,7 @@
 #include "imgui.h"
 #include <thread>
 #include <algorithm>
+#include "ui_file_selector.h"
 
 namespace spintool
 {
@@ -14,15 +15,40 @@ namespace spintool
 		, m_palette_viewer(*this)
 		, m_sprite_importer(*this)
 	{
-
+		m_rom_load_path = std::filesystem::current_path().append("roms");
+		if (std::filesystem::exists(m_rom_load_path) == false)
+		{
+			std::filesystem::create_directory(m_rom_load_path);
+		}
+		m_sprite_export_path = std::filesystem::current_path().append("sprite_export");
+		if (std::filesystem::exists(m_sprite_export_path) == false)
+		{
+			std::filesystem::create_directory(m_sprite_export_path);
+		}
+		m_rom_export_path = std::filesystem::current_path().append("rom_export");
+		if (std::filesystem::exists(m_rom_export_path) == false)
+		{
+			std::filesystem::create_directory(m_rom_export_path);
+		}
 	}
 
 	SDLTextureHandle tails;
 
+	bool EditorUI::AttemptLoadROM(const std::filesystem::path& rom_path)
+	{
+		if (m_rom.LoadROMFromPath(rom_path))
+		{
+			m_rom_path = rom_path;
+			m_palettes = m_rom.LoadPalettes(48);
+			return true;
+		}
+
+		return false;
+	}
+
 	void EditorUI::Initialise()
 	{
-		m_rom.LoadROMFromPath(m_rom_path);
-		m_palettes = m_rom.LoadPalettes(48);
+		AttemptLoadROM(m_rom_path);
 	}
 
 	void EditorUI::Update()
@@ -32,23 +58,27 @@ namespace spintool
 
 		if (ImGui::BeginMainMenuBar())
 		{
-			if (ImGui::BeginMenu("Tools"))
+			if (IsROMLoaded())
 			{
-				ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.visible);
-				ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.visible);
-				ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.visible);
-				if (ImGui::MenuItem("Save ROM"))
+				if (ImGui::BeginMenu("Tools"))
 				{
-					m_rom.SaveROM();
+					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.visible);
+					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.visible);
+					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.visible);
+					if (ImGui::MenuItem("Save ROM"))
+					{
+						m_rom.SaveROM();
+					}
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
+
+				ImGui::SameLine();
 			}
-			ImGui::SameLine();
 			ImGui::BeginDisabled();
-			ImGui::Text(m_rom_path);
+			ImGui::Text(m_rom_path.filename().generic_u8string().c_str());
 			ImGui::EndDisabled();
 			ImGui::SameLine();
-			if (ImGui::Button("Change ROM Path"))
+			if (ImGui::Button("Change ROM Filename"))
 			{
 				open_rom_popup = true;
 			}
@@ -56,25 +86,19 @@ namespace spintool
 			menu_bar_height = ImGui::GetWindowHeight();
 			ImGui::EndMainMenuBar();
 		}
-		static char temp_path[4096];
 
-		if (open_rom_popup)
-		{
-			ImGui::OpenPopup("Edit ROM Path", ImGuiPopupFlags_AnyPopupLevel);
-			sprintf_s(temp_path, "%s", m_rom_path);
-		}
+		static FileSelectorSettings settings;
+		settings.open_popup = open_rom_popup;
+		settings.object_typename = "ROM";
+		settings.target_directory = GetROMLoadPath();
+		settings.file_extension_filter = { ".bin", ".md" };
 
-		if (ImGui::BeginPopup("Edit ROM Path"))
+		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, m_rom_path);
+
+		settings.close_popup = false;
+		if (selected_path && AttemptLoadROM(selected_path.value()))
 		{
-			ImGui::SetNextItemWidth(1024);
-			ImGui::InputText("Path", temp_path, sizeof(temp_path));
-			if (ImGui::Button("Load ROM"))
-			{
-				sprintf_s(m_rom_path, "%s", temp_path);
-				m_rom.LoadROMFromPath(m_rom_path);
-				m_palettes = m_rom.LoadPalettes(48);
-			}
-			ImGui::EndPopup();
+			settings.close_popup = true;
 		}
 
 		if (SDL_Texture* viewport = Renderer::GetViewportTexture())
@@ -126,9 +150,29 @@ namespace spintool
 
 	}
 
+	bool EditorUI::IsROMLoaded() const
+	{
+		return m_rom.m_buffer.empty() == false;
+	}
+
 	SpinballROM& EditorUI::GetROM()
 	{
 		return m_rom;
+	}
+
+	std::filesystem::path EditorUI::GetROMLoadPath() const
+	{
+		return m_rom_load_path;
+	}
+	
+	std::filesystem::path EditorUI::GetROMExportPath() const
+	{
+		return m_rom_export_path;
+	}
+
+	std::filesystem::path EditorUI::GetSpriteExportPath() const
+	{
+		return m_sprite_export_path;
 	}
 
 	const std::vector<VDPPalette>& EditorUI::GetPalettes() const
