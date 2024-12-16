@@ -34,8 +34,10 @@ namespace spintool
 
 		if (DrawPaletteSelector(m_selected_palette_index, m_owning_ui))
 		{
-			m_detected_colours.clear();
+			update_preview = true;
 		}
+		ImGui::SameLine();
+		DrawPaletteSwatchPreview(m_owning_ui.GetPalettes().at(m_selected_palette_index), m_selected_palette_index);
 		m_selected_palette = m_owning_ui.GetPalettes().at(m_selected_palette_index);
 
 		if (m_imported_image == nullptr)
@@ -54,12 +56,20 @@ namespace spintool
 		{
 			ImGui::Image((ImTextureID)m_rendered_imported_image.get(), { static_cast<float>(m_imported_image->w) * 2, static_cast<float>(m_imported_image->h) * 2 });
 
+			if (ImGui::Button("Attempt to match colours"))
+			{
+				m_detected_colours.clear();
+			}
+
 			if (ImGui::Button("Force Update Preview"))
 			{
 				update_preview = true;
 			}
 
-			ImGui::Text("Detected Colours");
+			ImGui::Text("Palette colour mapping");
+			ImGui::BeginDisabled();
+			ImGui::Text("Original Colour -> Palette Colour Index");
+			ImGui::EndDisabled();
 			if (m_detected_colours.empty())
 			{
 				const SDL_PixelFormatDetails* pixel_format_details = SDL_GetPixelFormatDetails(m_imported_image->format);
@@ -123,10 +133,10 @@ namespace spintool
 				sprintf_s(id_buffer, "###pal_sel_%d", i);
 				int out_val = colour_entry.palette_index;
 				ImGui::SameLine();
-				ImGui::SetNextItemWidth(128);
+				ImGui::SetNextItemWidth(64);
 				if (ImGui::InputInt(id_buffer, &out_val))
 				{
-					colour_entry.palette_index = static_cast<Uint8>(out_val);
+					colour_entry.palette_index = static_cast<Uint8>(out_val) % 16;
 					update_preview = true;
 				}
 				if (colour_entry.colour.Value.w == 0)

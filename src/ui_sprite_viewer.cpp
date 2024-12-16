@@ -50,7 +50,7 @@ namespace spintool
 					tile_tex.texture.reset();
 				}
 			}
-
+			DrawPaletteSwatchPreview(m_selected_palette, m_chosen_palette_index);
 
 			size_t total_pixels = 0;
 			char name_buffer[128];
@@ -62,10 +62,25 @@ namespace spintool
 				m_rendered_sprite_texture.texture = m_rendered_sprite_texture.RenderTextureForPalette(m_selected_palette);
 			}
 
+
 			ImGui::Image((ImTextureID)m_rendered_sprite_texture.texture.get()
 				, ImVec2(static_cast<float>(m_rendered_sprite_texture.dimensions.x) * m_zoom, static_cast<float>(m_rendered_sprite_texture.dimensions.y) * m_zoom)
 				, { 0,0 }, { static_cast<float>(m_rendered_sprite_texture.dimensions.x) / m_rendered_sprite_texture.texture->w
 				, static_cast<float>((m_rendered_sprite_texture.dimensions.y) / m_rendered_sprite_texture.texture->h) });
+
+			const BoundingBox image_preview_pos = { static_cast<int>(ImGui::GetItemRectMin().x), static_cast<int>(ImGui::GetItemRectMin().y), static_cast<int>(ImGui::GetItemRectMax().x), static_cast<int>(ImGui::GetItemRectMax().y) };
+
+			const Point origin_point = m_sprite->GetOriginOffsetFromMinBounds();
+			ImGui::GetWindowDrawList()->AddRect({ image_preview_pos.min.x + ((origin_point.x - 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y - 1) * m_zoom) }, { image_preview_pos.min.x + ((origin_point.x + 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y + 1) * m_zoom) }, ImGui::GetColorU32(ImVec4{64, 64, 64, 255}));
+
+			for (const std::shared_ptr<SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+			{
+				Point tile_offset{ sprite_tile->x_offset + origin_point.x, sprite_tile->y_offset + origin_point.y };
+				ImGui::GetWindowDrawList()->AddRect(
+					{ image_preview_pos.min.x + (tile_offset.x * m_zoom), image_preview_pos.min.y + (tile_offset.y * m_zoom) },
+					{ image_preview_pos.min.x + (tile_offset.x * m_zoom) + (sprite_tile->x_size * m_zoom), image_preview_pos.min.y + (tile_offset.y * m_zoom) + (sprite_tile->y_size * m_zoom) }
+				, ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 0.0f, 0, 1);
+			}
 			
 
 			for (const std::shared_ptr<SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
@@ -103,6 +118,7 @@ namespace spintool
 							, ImVec2(static_cast<float>(tile_tex->dimensions.x) * m_zoom, static_cast<float>(tile_tex->dimensions.y) * m_zoom)
 							, { 0,0 }
 						, { static_cast<float>(tile_tex->dimensions.x) / tile_tex->texture->w, static_cast<float>((tile_tex->dimensions.y) / tile_tex->texture->h) });
+
 					}
 					else
 					{

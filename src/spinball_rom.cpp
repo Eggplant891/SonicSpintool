@@ -35,6 +35,12 @@ namespace spintool
 		return bounds;
 	}
 
+	Point SpinballSprite::GetOriginOffsetFromMinBounds() const
+	{
+		BoundingBox bounds = GetBoundingBox();
+		return { -bounds.min.x, -bounds.min.y };
+	}
+
 	void SpinballROM::LoadTileData(size_t rom_offset)
 	{
 		m_toxic_caves_bg_data.rom_offset = rom_offset;
@@ -313,7 +319,7 @@ namespace spintool
 		int y_off = (y_offset - bounds.min.y);
 		int x_max = x_off + x_size;
 		int y_max = y_off + y_size;
-			;
+
 		size_t target_pixel_index = (y_off * surface->pitch) + x_off;
 
 		for (size_t i = 0; i < pixels_data.size() && i < surface->pitch * surface->h && i / x_max < y_max; ++i, target_pixel_index += 1)

@@ -15,7 +15,7 @@ namespace spintool
 		DrawPaletteName(palette, palette_index);
 		ImGui::SameLine();
 		ImGui::Dummy(ImVec2{ 0,0 });
-		DrawPalettePreview(const_cast<VDPPalette&>(palette), palette_index);
+		DrawPaletteSwatchPreview(palette, palette_index);
 
 		return selection_changed;
 	}
@@ -25,7 +25,7 @@ namespace spintool
 		ImGui::Text("Palette %02X (0x%04X)", palette_index, palette.offset);
 	}
 
-	void DrawPalettePreview(VDPPalette& palette, int palette_index)
+	void DrawPaletteSwatchEditor(VDPPalette& palette, int palette_index)
 	{
 		ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, 0);
 		for (VDPSwatch& swatch : palette.palette_swatches)
@@ -39,6 +39,22 @@ namespace spintool
 			{
 				swatch.packed_value = VDPSwatch::Pack(col.Value.x, col.Value.y, col.Value.z);
 			}
+		}
+		ImGui::PopStyleVar();
+	}
+
+	void DrawPaletteSwatchPreview(const VDPPalette& palette, int palette_index)
+	{
+		ImGui::NewLine();
+		ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, 0);
+		for (const VDPSwatch& swatch : palette.palette_swatches)
+		{
+			char swatch_name[64];
+			sprintf_s(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
+
+			ImColor col = swatch.AsImColor();
+			ImGui::SameLine();
+			ImGui::ColorButton(swatch_name, col.Value);
 		}
 		ImGui::PopStyleVar();
 	}
@@ -72,7 +88,7 @@ namespace spintool
 				DrawPaletteName(palette, palette_index);
 				ImGui::SameLine();
 				ImGui::Dummy(ImVec2{ 0,0 });
-				DrawPalettePreview(palette, palette_index);
+				DrawPaletteSwatchEditor(palette, palette_index);
 				++palette_index;
 			}
 		}

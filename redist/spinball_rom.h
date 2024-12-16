@@ -77,6 +77,7 @@ namespace spintool
 		void RenderToSurface(SDL_Surface* surface) const;
 
 		BoundingBox GetBoundingBox() const;
+		Point GetOriginOffsetFromMinBounds() const;
 		size_t GetSizeOf() const; // Size in bytes on ROM
 	};
 
