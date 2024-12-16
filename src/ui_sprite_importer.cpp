@@ -143,6 +143,8 @@ namespace spintool
 
 		ImGui::BeginGroup();
 		{
+			constexpr float img_scale = 2.0f;
+
 			if (update_preview)
 			{
 				m_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(m_imported_image->w, m_imported_image->h, SDL_PIXELFORMAT_INDEX8) };
@@ -194,6 +196,7 @@ namespace spintool
 				}
 
 				m_rendered_preview_image = Renderer::RenderToTexture(m_preview_image.get());
+				m_force_update_write_location = true;
 			}
 			else
 			{
@@ -207,14 +210,16 @@ namespace spintool
 
 			if (m_rendered_preview_image != nullptr)
 			{
-				ImGui::Image((ImTextureID)m_rendered_preview_image.get(), { static_cast<float>(m_preview_image->w) * 2, static_cast<float>(m_preview_image->h) * 2 });
+				ImGui::Image((ImTextureID)m_rendered_preview_image.get(), { static_cast<float>(m_preview_image->w) * img_scale, static_cast<float>(m_preview_image->h) * img_scale });
 				ImGui::SetNextItemWidth(256);
-				if (ImGui::InputInt("Target Write Offset", &m_target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal))
+				if (ImGui::InputInt("Target Write Offset", &m_target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal) || m_force_update_write_location)
 				{
+					m_force_update_write_location = false;
 					if (m_result_sprite = m_owning_ui.GetROM().LoadSprite(m_target_write_location, true, false))
 					{
 						m_export_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(m_result_sprite->GetBoundingBox().Width(), m_result_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
 						SDL_SetSurfacePalette(m_export_preview_image.get(), m_preview_palette.get());
+						Renderer::SetPalette(m_preview_palette);
 						m_result_sprite->RenderToSurface(m_export_preview_image.get());
 						m_export_preview_texture = Renderer::RenderToTexture(m_export_preview_image.get());
 					}
@@ -222,9 +227,8 @@ namespace spintool
 
 				if (m_result_sprite != nullptr)
 				{
-					constexpr float img_scale = 2.0f;
 					ImGui::Image((ImTextureID)m_export_preview_texture.get()
-						, ImVec2(static_cast<float>(m_result_sprite->GetBoundingBox().Width()), static_cast<float>(m_result_sprite->GetBoundingBox().Height())));
+						, ImVec2(static_cast<float>(m_result_sprite->GetBoundingBox().Width()) * img_scale, static_cast<float>(m_result_sprite->GetBoundingBox().Height()) * img_scale));
 
 					if (ImGui::Button("/!\\ OVERWRITE SPRITE IN ROM DATA /!\\"))
 					{
@@ -274,4 +278,11 @@ namespace spintool
 		}
 		ImGui::End();
 	}
+
+	void EditorSpriteImporter::ChangeTargetWriteLocation(size_t rom_offset)
+	{
+		m_target_write_location = static_cast<int>(rom_offset);
+		m_force_update_write_location = true;
+	}
+
 }

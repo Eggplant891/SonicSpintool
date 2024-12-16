@@ -203,4 +203,10 @@ namespace spintool
 		}
 	}
 
+	void EditorUI::OpenSpriteImporter(int rom_offset)
+	{
+		m_sprite_importer.visible = true;
+		m_sprite_importer.ChangeTargetWriteLocation(rom_offset);
+	}
+
 }

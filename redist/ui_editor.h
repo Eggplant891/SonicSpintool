@@ -36,6 +36,7 @@ namespace spintool
 
 		const std::vector<VDPPalette>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const SpinballSprite>& sprite);
+		void OpenSpriteImporter(int rom_offset);
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:

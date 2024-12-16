@@ -272,7 +272,13 @@ namespace spintool
 				m_selected_sprite_rom_offset = 0;
 			}
 
-			DrawPaletteSelector(m_chosen_palette, m_owning_ui);
+			if (DrawPaletteSelectorWithPreview(m_chosen_palette, m_owning_ui))
+			{
+				for (std::shared_ptr<UISpriteTexture>& tex : m_sprites_found)
+				{
+					tex->texture.reset();
+				}
+			}
 
 			const ImVec2 previous_spacing = ImGui::GetStyle().ItemSpacing;
 
@@ -283,7 +289,6 @@ namespace spintool
 
 			if (ImGui::BeginChild("Image Results"))
 			{
-
 				const int cursor_start_x_pos = static_cast<int>(ImGui::GetCursorPosX());
 				const int padding_x = static_cast<int>(ImGui::GetStyle().ItemSpacing.x);
 				int current_width = cursor_start_x_pos;
@@ -291,7 +296,13 @@ namespace spintool
 				for (std::shared_ptr<UISpriteTexture>& tex : m_sprites_found)
 				{
 					bool started_newline = false;
-					if (tex->texture == nullptr || tex->dimensions.x == 0 || tex->dimensions.y == 0)
+
+					if (tex->texture == nullptr)
+					{
+						tex->texture = tex->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
+					}
+
+					if (tex->dimensions.x == 0 || tex->dimensions.y == 0)
 					{
 						continue;
 					}
@@ -321,6 +332,11 @@ namespace spintool
 					sprintf_s(path_buffer, "popup_%X02",static_cast<unsigned int>(tex->sprite->rom_offset));
 					if (ImGui::BeginPopupContextItem(path_buffer, ImGuiPopupFlags_MouseButtonRight))
 					{
+						if (ImGui::MenuItem("Import image to this location"))
+						{
+							m_owning_ui.OpenSpriteImporter(static_cast<int>(tex->sprite->rom_offset));
+						}
+
 						sprintf_s(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_offset));
 						if (ImGui::MenuItem(path_buffer))
 						{

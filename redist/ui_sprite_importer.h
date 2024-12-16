@@ -25,6 +25,7 @@ namespace spintool
 		EditorSpriteImporter(EditorUI& owning_ui);
 
 		void Update();
+		void ChangeTargetWriteLocation(size_t rom_offset);
 
 		bool visible = false;
 
@@ -42,11 +43,13 @@ namespace spintool
 
 		std::vector<ColourPaletteMapping> m_detected_colours;
 		int m_selected_palette_index = 0;
+		int m_target_write_location = 0;
 		VDPPalette m_selected_palette;
 		SDLPaletteHandle m_preview_palette;
 		std::shared_ptr<const SpinballSprite> m_result_sprite;
 		std::string m_loaded_path;
 
-		int m_target_write_location = 0;
+		bool m_force_update_write_location = false;
+
 	};
 }
