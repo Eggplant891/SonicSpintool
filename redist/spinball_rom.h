@@ -103,18 +103,19 @@ namespace spintool
 	{
 	public:
 		void LoadTileData(size_t rom_offset);
-		bool LoadROM();
-		void SaveROM();
 		bool LoadROMFromPath(const std::filesystem::path& path);
 		size_t GetOffsetForNextSprite(const SpinballSprite& current_sprite) const;
 		std::shared_ptr<const SpinballSprite> LoadSprite(const size_t offset, bool packed_data_mode, bool try_to_read_missed_data);
 		std::shared_ptr<const SpinballSprite> LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset);
 		std::vector<VDPPalette> LoadPalettes(size_t num_palettes);
 
+		void SaveROM();
+
 		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const;
 		void BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 
 		std::vector<unsigned char> m_buffer;
 		SpinballLevelTileData m_toxic_caves_bg_data;
+		std::filesystem::path m_filepath;
 	};
 }

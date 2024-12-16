@@ -110,10 +110,11 @@ namespace spintool
 						ImGui::Text("Failed to render texture");
 						ImGui::EndDisabled();
 					}
-					ImGui::Text("Offset: X: %d (%02X) Y: %d (%02X)", sprite_tile->x_offset, sprite_tile->x_offset, sprite_tile->y_offset, sprite_tile->y_offset);
+					ImGui::Text("Offset X: %d (%02X)", sprite_tile->x_offset, sprite_tile->x_offset);
+					ImGui::Text("Offset Y: %d (%02X)",  sprite_tile->y_offset, sprite_tile->y_offset);
 
-					ImGui::Text("X Size: %d", sprite_tile->x_size);
-					ImGui::Text("Y Size: %d", sprite_tile->y_size);
+					ImGui::Text("Dimensions X: %d", sprite_tile->x_size);
+					ImGui::Text("Dimensions Y: %d", sprite_tile->y_size);
 					int working_val[2] = { sprite_tile->x_size, sprite_tile->y_size };
 					ImGui::Text("Pixels: %d (%d)", sprite_tile->pixel_data.size(), sprite_tile->x_size * sprite_tile->y_size);
 
@@ -121,10 +122,10 @@ namespace spintool
 				}
 				total_pixels += sprite_tile->pixel_data.size();
 			}
-			ImGui::Text("Total X Size: %d", selected_sprite.GetBoundingBox().Width());
-			ImGui::Text("Total Y Size: %d", selected_sprite.GetBoundingBox().Height());
+			ImGui::Text("Dimensions X: %d", selected_sprite.GetBoundingBox().Width());
+			ImGui::Text("Dimensions Y: %d", selected_sprite.GetBoundingBox().Height());
 			ImGui::Text("Total Pixels: %d", static_cast<int>(total_pixels));
-			ImGui::Text("Bytes: %04X", selected_sprite.real_size);
+			ImGui::Text("Size in ROM: %04X", selected_sprite.real_size);
 		}
 		ImGui::End();
 	}

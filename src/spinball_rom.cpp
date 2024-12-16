@@ -86,30 +86,18 @@ namespace spintool
 		}
 	}
 
-	bool SpinballROM::LoadROM()
+	bool SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
 	{
-		std::ifstream input = std::ifstream{ "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/original/Sonic The Hedgehog Spinball (USA).md", std::ios::binary };
-		//std::ifstream input = std::ifstream{ "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/prototype/Sonic the Hedgehog Spinball (Aug 1993 prototype).md", std::ios::binary };
-		//std::ifstream input = std::ifstream{ "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/prototype/Spinball _ 19-10.bin", std::ios::binary };
+		std::ifstream input = std::ifstream{ path, std::ios::binary };
+		m_filepath = path;
 		m_buffer = std::vector<unsigned char>{ std::istreambuf_iterator<char>(input), {} };
-
-		LoadTileData(0x394aa);
-
 		return m_buffer.empty() == false;
 	}
 
 	void SpinballROM::SaveROM()
 	{
-		std::ofstream output = std::ofstream{ "E:/Development/_RETRODEV/MegaDrive/Spinball/SpinballDisassembly/bin/tails_spinball_modified.bin", std::ios::binary };
+		std::ofstream output = std::ofstream{ m_filepath, std::ios::binary };
 		output.write(reinterpret_cast<const char*>(m_buffer.data()), m_buffer.size());
-	}
-
-	bool SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
-	{
-		std::ifstream input = std::ifstream{ path, std::ios::binary };
-		m_buffer = std::vector<unsigned char>{ std::istreambuf_iterator<char>(input), {} };
-
-		return m_buffer.empty() == false;
 	}
 
 	size_t SpinballROM::GetOffsetForNextSprite(const SpinballSprite& current_sprite) const
@@ -119,7 +107,7 @@ namespace spintool
 
 	std::shared_ptr<const SpinballSprite> SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
 	{
-		if (offset + 4 >= m_buffer.size())
+		if (offset + 4 < offset) // overflow detection
 		{
 			return nullptr;
 		}

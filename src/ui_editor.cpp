@@ -60,15 +60,24 @@ namespace spintool
 		{
 			if (IsROMLoaded())
 			{
+				if (ImGui::BeginMenu("File"))
+				{
+					if (ImGui::MenuItem("Save ROM"))
+					{
+						m_rom.SaveROM();
+					}
+
+					if (ImGui::MenuItem("Reload ROM"))
+					{
+						AttemptLoadROM(m_rom_path);
+					}
+					ImGui::EndMenu();
+				}
 				if (ImGui::BeginMenu("Tools"))
 				{
 					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.visible);
 					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.visible);
 					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.visible);
-					if (ImGui::MenuItem("Save ROM"))
-					{
-						m_rom.SaveROM();
-					}
 					ImGui::EndMenu();
 				}
 
