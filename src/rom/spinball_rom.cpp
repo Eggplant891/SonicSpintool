@@ -84,7 +84,7 @@ namespace spintool
 
 	size_t rom::SpinballROM::GetOffsetForNextSprite(const rom::Sprite& current_sprite) const
 	{
-		return current_sprite.rom_offset + current_sprite.GetSizeOf();
+		return current_sprite.rom_data.rom_offset + current_sprite.GetSizeOf();
 	}
 
 	std::shared_ptr<const rom::Sprite> rom::SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
@@ -94,92 +94,10 @@ namespace spintool
 			return nullptr;
 		}
 
-		unsigned char* current_byte = &m_buffer[offset];
-		//unsigned char* current_byte = &buffer[0x1CE0];
+		const Uint8* current_byte = &m_buffer[offset];
 
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
-
-		new_sprite->rom_offset = current_byte - m_buffer.data();
-
-		new_sprite->num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
-		current_byte += 2;
-
-		if (new_sprite->num_tiles > 0x20)
-		{
-			return nullptr;
-		}
-
-		new_sprite->num_vdp_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
-		current_byte += 2;
-
-		new_sprite->sprite_tiles.resize(new_sprite->num_tiles);
-
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
-		{
-			sprite_tile = std::make_shared<rom::SpriteTile>();
-
-			sprite_tile->x_offset = ((static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1)));
-			current_byte += 2;
-
-			sprite_tile->y_offset = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
-			current_byte += 2;
-
-			sprite_tile->y_size = *current_byte;
-			++current_byte;
-
-			sprite_tile->x_size = *current_byte * 2;
-			++current_byte;
-		}
-
-		if (new_sprite->GetBoundingBox().Width() > 512 || new_sprite->GetBoundingBox().Height() > 512)
-		{
-			return nullptr;
-		}
-
-		constexpr int max_tiles = 64;
-
-		if (new_sprite->num_vdp_tiles > max_tiles)
-		{
-			return nullptr;
-		}
-
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
-		{
-			const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-			if (total_pixels != 0)
-			{
-				sprite_tile->rom_offset = current_byte - m_buffer.data();
-				if (sprite_tile->rom_offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) > m_buffer.size())
-				{
-					continue;
-				}
-
-				sprite_tile->pixel_data.reserve(total_pixels);
-				for (size_t i = 0; i < total_pixels && sprite_tile->rom_offset + i < m_buffer.size(); i+=2)
-				{
-					if (packed_data_mode)
-					{
-						const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
-						const Uint32 right_byte = 0x0F & *current_byte;
-
-						sprite_tile->pixel_data.emplace_back(left_byte);
-						sprite_tile->pixel_data.emplace_back(right_byte);
-
-						++current_byte;
-					}
-					else
-					{
-						sprite_tile->pixel_data.emplace_back(*current_byte);
-						++current_byte;
-					}
-				}
-
-				sprite_tile->rom_offset_end = current_byte - m_buffer.data();
-
-			}
-		}
-
-		new_sprite->real_size = current_byte - &m_buffer[offset];
+		current_byte = new_sprite->LoadFromROM(current_byte, current_byte - m_buffer.data());
 
 		if (new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0)
 		{
@@ -196,11 +114,11 @@ namespace spintool
 			return nullptr;
 		}
 
-		const unsigned char* current_byte = &data_source[offset];
+		const Uint8* current_byte = &data_source[offset];
 
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 
-		new_sprite->rom_offset = m_toxic_caves_bg_data.rom_offset;
+		new_sprite->rom_data.rom_offset = m_toxic_caves_bg_data.rom_offset;
 		constexpr int num_tiles_to_wrangle = 1;
 		new_sprite->num_tiles = num_tiles_to_wrangle;
 
@@ -224,8 +142,7 @@ namespace spintool
 				sprite_tile->x_offset = 8;
 			}
 			size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-
-			for (size_t i = 0; i < total_pixels && sprite_tile->rom_offset + i < data_source.size(); i += 2)
+			for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < data_source.size(); i += 2)
 			{
 				const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
 				const Uint32 right_byte = 0x0F & *current_byte;
@@ -236,17 +153,15 @@ namespace spintool
 				++current_byte;
 			}
 		}
+		new_sprite->rom_data.SetROMData(&data_source[offset], current_byte, offset);
 
-		new_sprite->rom_offset = m_toxic_caves_bg_data.rom_offset;
-		new_sprite->real_size = current_byte - &data_source[offset];
-		new_sprite->rom_offset_end = m_toxic_caves_bg_data.rom_offset + new_sprite->real_size;
 		return new_sprite;
 	}
 
 	std::vector<spintool::rom::Palette> rom::SpinballROM::LoadPalettes(size_t num_palettes)
 	{
 		constexpr size_t offset = 0xDFC;
-		unsigned char* current_byte = &m_buffer[offset];
+		Uint8* current_byte = &m_buffer[offset];
 		std::vector<spintool::rom::Palette> results;
 
 		for (size_t p = 0; p < num_palettes; ++p)
@@ -280,7 +195,7 @@ namespace spintool
 
 		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
 
-		const unsigned char* current_byte = &m_buffer[offset];
+		const Uint8* current_byte = &m_buffer[offset];
 		std::vector<Uint32> pixels_data;
 		for (int i = 0; i < dimensions.x * dimensions.y * 2; ++i)
 		{

@@ -43,4 +43,48 @@ namespace spintool::rom
 		}
 	}
 
+	const Uint8* SpriteTileHeader::LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset)
+	{
+		const Uint8* current_byte = rom_data_start;
+
+		x_offset = ((static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1)));
+		current_byte += 2;
+
+		y_offset = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		current_byte += 2;
+
+		y_size = *current_byte;
+		++current_byte;
+
+		x_size = *current_byte * 2;
+		++current_byte;
+
+		header_rom_data.SetROMData(rom_data_start, current_byte, rom_data_offset);
+
+		return current_byte;
+	}
+
+	const Uint8* SpriteTileData::LoadFromROM(const SpriteTileHeader& header, const Uint8* rom_data_start, const size_t rom_data_offset)
+	{
+		const Uint8* current_byte = rom_data_start;
+		const size_t total_pixels = header.x_size * header.y_size;
+
+
+		pixel_data.reserve(total_pixels);
+		for (size_t i = 0; i < total_pixels /*&& sprite_tile->rom_offset + i < m_buffer.size()*/; i += 2)
+		{
+			const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
+			const Uint32 right_byte = 0x0F & *current_byte;
+
+			pixel_data.emplace_back(left_byte);
+			pixel_data.emplace_back(right_byte);
+
+			++current_byte;
+		}
+
+		tile_rom_data.SetROMData(rom_data_start, current_byte, rom_data_offset);
+
+		return current_byte;
+	}
+
 }

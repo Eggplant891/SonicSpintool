@@ -194,7 +194,7 @@ namespace spintool
 		const auto selected_sprite_window_it = std::find_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
 			[&sprite](const std::unique_ptr<EditorSpriteViewer>& sprite_viewer)
 			{
-				return sprite_viewer->GetOffset() == sprite->rom_offset;
+				return sprite_viewer->GetOffset() == sprite->rom_data.rom_offset;
 			});
 
 		if (selected_sprite_window_it == std::end(m_sprite_viewer_windows))

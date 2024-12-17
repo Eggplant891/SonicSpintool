@@ -71,7 +71,7 @@ namespace spintool
 				const auto current_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 					{
-						return sprite_tex->sprite->rom_offset == m_offset;
+						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
 					});
 				const UISpriteTexture* next_sprite = nullptr;
 				if (current_sprite != std::end(m_sprites_found))
@@ -84,7 +84,7 @@ namespace spintool
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 						{
-							return sprite_tex->sprite->rom_offset == m_offset;
+							return sprite_tex->sprite->rom_data.rom_offset == m_offset;
 						});
 
 					if (found_sprite == std::end(m_sprites_found))
@@ -93,7 +93,7 @@ namespace spintool
 
 						if (new_sprite)
 						{
-							m_offset += new_sprite->GetSizeOf();
+							m_offset = new_sprite->rom_data.rom_offset_end;
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 						}
@@ -114,12 +114,12 @@ namespace spintool
 				const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 					{
-						return sprite_tex->sprite->rom_offset == m_offset;
+						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
 					});
 
 				if (found_sprite != std::end(m_sprites_found))
 				{
-					m_selected_sprite_rom_offset = (*found_sprite)->sprite->rom_offset;
+					m_selected_sprite_rom_offset = (*found_sprite)->sprite->rom_data.rom_offset;
 				}
 				else
 				{
@@ -141,7 +141,7 @@ namespace spintool
 					{
 						break;
 					}
-					offset += new_sprite->real_size;
+					offset += new_sprite->rom_data.real_size;
 					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
@@ -157,7 +157,7 @@ namespace spintool
 					{
 						break;
 					}
-					offset += new_sprite->real_size;
+					offset += new_sprite->rom_data.real_size;
 					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
 				}
@@ -168,7 +168,7 @@ namespace spintool
 				const auto current_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 					{
-						return sprite_tex->sprite->rom_offset == m_offset;
+						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
 					});
 
 				if (current_sprite != std::end(m_sprites_found))
@@ -177,7 +177,7 @@ namespace spintool
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 						{
-							return sprite_tex->sprite->rom_offset == m_offset;
+							return sprite_tex->sprite->rom_data.rom_offset == m_offset;
 						});
 
 					if (found_sprite == std::end(m_sprites_found))
@@ -237,7 +237,7 @@ namespace spintool
 								auto current_sprite_it = std::find_if(std::begin(results), std::end(results),
 									[&sprite](const std::shared_ptr<UISpriteTexture>& spr)
 									{
-										return spr->sprite->rom_offset == sprite->sprite->rom_offset;
+										return spr->sprite->rom_data.rom_offset == sprite->sprite->rom_data.rom_offset;
 									});
 								if (current_sprite_it != std::end(results))
 								{
@@ -329,18 +329,18 @@ namespace spintool
 					const bool hovered = ImGui::IsItemHovered();
 					const bool clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
-					sprintf_s(path_buffer, "popup_%X02",static_cast<unsigned int>(tex->sprite->rom_offset));
+					sprintf_s(path_buffer, "popup_%X02",static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 					if (ImGui::BeginPopupContextItem(path_buffer, ImGuiPopupFlags_MouseButtonRight))
 					{
 						if (ImGui::MenuItem("Import image to this location"))
 						{
-							m_owning_ui.OpenSpriteImporter(static_cast<int>(tex->sprite->rom_offset));
+							m_owning_ui.OpenSpriteImporter(static_cast<int>(tex->sprite->rom_data.rom_offset));
 						}
 
-						sprintf_s(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_offset));
+						sprintf_s(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 						if (ImGui::MenuItem(path_buffer))
 						{
-							sprintf_s(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_offset));
+							sprintf_s(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 							std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 							SDLPaletteHandle palette = Renderer::CreateSDLPalette(m_owning_ui.GetPalettes().at(2));
 							SDLSurfaceHandle out_surface{ SDL_CreateSurface(tex->sprite->GetBoundingBox().Width(), tex->sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8)};
@@ -351,7 +351,7 @@ namespace spintool
 						ImGui::EndPopup();
 					}
 
-					if (m_selected_sprite_rom_offset == tex->sprite->rom_offset)
+					if (m_selected_sprite_rom_offset == tex->sprite->rom_data.rom_offset)
 					{
 						ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 					}
@@ -361,7 +361,7 @@ namespace spintool
 					}
 					if (clicked)
 					{
-						m_selected_sprite_rom_offset = tex->sprite->rom_offset;
+						m_selected_sprite_rom_offset = tex->sprite->rom_data.rom_offset;
 						m_owning_ui.OpenSpriteViewer(tex->sprite);
 					}
 				}

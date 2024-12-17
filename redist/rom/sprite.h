@@ -2,6 +2,7 @@
 
 #include "types/bounding_box.h"
 #include "rom/sprite_tile.h"
+#include "rom/rom_data.h"
 
 #include "SDL3/SDL_stdinc.h"
 
@@ -14,15 +15,14 @@ namespace spintool::rom
 {
 	struct Sprite
 	{
-		size_t rom_offset = 0;
-		size_t rom_offset_end = 0;
-		size_t real_size = 0;
-		size_t unrealised_size = 0;
-
 		Uint16 num_tiles = 0;
 		Uint16 num_vdp_tiles = 0;
 
 		std::vector<std::shared_ptr<rom::SpriteTile>> sprite_tiles;
+
+		ROMData rom_data;
+
+		const Uint8* LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset);
 
 		void RenderToSurface(SDL_Surface* surface) const;
 

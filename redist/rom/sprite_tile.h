@@ -1,5 +1,7 @@
 #pragma once
 
+#include "rom/rom_data.h"
+
 #include "SDL3/SDL_stdinc.h"
 #include <vector>
 
@@ -11,7 +13,7 @@ namespace spintool
 
 namespace spintool::rom
 {
-	struct SpriteTile
+	struct SpriteTileHeader
 	{
 		Sint16 x_offset = 0;
 		Sint16 y_offset = 0;
@@ -21,10 +23,24 @@ namespace spintool::rom
 		Uint8 padding_0 = 0; // For padding, not real data
 		Uint8 padding_1 = 0; // For padding, not real data
 
-		size_t rom_offset = 0;
-		size_t rom_offset_end = 0;
+		ROMData header_rom_data;
+
+		const Uint8* LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset);
+	};
+
+	struct SpriteTileData
+	{
 		std::vector<Uint32> pixel_data;
 
+		ROMData tile_rom_data;
+
+		const Uint8* LoadFromROM(const SpriteTileHeader& header, const Uint8* rom_data_start, const size_t rom_data_offset);
+	};
+
+	struct SpriteTile
+		: public SpriteTileHeader
+		, public SpriteTileData
+	{
 		void RenderToSurface(SDL_Surface* surface) const;
 		void BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 	};

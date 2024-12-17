@@ -19,7 +19,7 @@ namespace spintool
 		: m_owning_ui(owning_ui)
 		, m_sprite(spr)
 		, m_rendered_sprite_texture(spr)
-		, m_offset(spr->rom_offset)
+		, m_offset(spr->rom_data.rom_offset)
 	{
 	}
 
@@ -31,12 +31,12 @@ namespace spintool
 		}
 
 		char name[64];
-		sprintf_s(name, "Sprite Viewer(%02X)", static_cast<unsigned int>(m_sprite->rom_offset));
+		sprintf_s(name, "Sprite Viewer (0x%06X)", static_cast<unsigned int>(m_sprite->rom_data.rom_offset));
 		ImGui::SetNextWindowSize(ImVec2(320, 640), ImGuiCond_Appearing);
 		if (ImGui::Begin(name, &m_is_open, ImGuiWindowFlags_NoSavedSettings))
 		{
 			ImGui::SliderFloat("Zoom", &m_zoom, 1.0f, 8.0f, "%.1f");
-			ImGui::Text("0x%2X", m_sprite->rom_offset);
+			ImGui::Text("0x%06X -> 0x%06X ", m_sprite->rom_data.rom_offset, m_sprite->rom_data.rom_offset_end - 1);
 
 			const rom::Sprite& selected_sprite = *m_sprite;
 
@@ -110,7 +110,7 @@ namespace spintool
 					tile_tex->texture = tile_tex->RenderTextureForPalette(m_selected_palette);
 				}
 
-				sprintf_s(name_buffer, "Tile %d (%02X -> %02X )", i, static_cast<unsigned int>(sprite_tile->rom_offset), static_cast<unsigned int>(sprite_tile->rom_offset_end));
+				sprintf_s(name_buffer, "Tile %d", i);
 				if (ImGui::TreeNode(name_buffer))
 				{
 					if (tile_tex->texture != nullptr)
@@ -127,22 +127,25 @@ namespace spintool
 						ImGui::Text("Failed to render texture");
 						ImGui::EndDisabled();
 					}
-					ImGui::Text("Offset X: %d (%02X)", sprite_tile->x_offset, sprite_tile->x_offset);
-					ImGui::Text("Offset Y: %d (%02X)",  sprite_tile->y_offset, sprite_tile->y_offset);
+					ImGui::Text("Header address range: 0x%06X -> 0x%06X", sprite_tile->header_rom_data.rom_offset, sprite_tile->header_rom_data.rom_offset_end - 1);
+					ImGui::Text("Data address range: 0x%06X -> 0x%06X", sprite_tile->tile_rom_data.rom_offset, sprite_tile->tile_rom_data.rom_offset_end - 1);
 
-					ImGui::Text("Dimensions X: %d", sprite_tile->x_size);
-					ImGui::Text("Dimensions Y: %d", sprite_tile->y_size);
+					ImGui::Text("Offset X: %d (0x%04X)", sprite_tile->x_offset, sprite_tile->x_offset);
+					ImGui::Text("Offset Y: %d (0x%04X)",  sprite_tile->y_offset, sprite_tile->y_offset);
+
+					ImGui::Text("Dimensions X: %d (0x%02X)", sprite_tile->x_size, sprite_tile->x_size);
+					ImGui::Text("Dimensions Y: %d (0x%02X)", sprite_tile->y_size, sprite_tile->y_size);
 					int working_val[2] = { sprite_tile->x_size, sprite_tile->y_size };
-					ImGui::Text("Pixels: %d (%d)", sprite_tile->pixel_data.size(), sprite_tile->x_size * sprite_tile->y_size);
+					ImGui::Text("Pixels: %d (0x%04X)", sprite_tile->pixel_data.size(), sprite_tile->pixel_data.size());
 
 					ImGui::TreePop();
 				}
 				total_pixels += sprite_tile->pixel_data.size();
 			}
-			ImGui::Text("Dimensions X: %d", selected_sprite.GetBoundingBox().Width());
-			ImGui::Text("Dimensions Y: %d", selected_sprite.GetBoundingBox().Height());
-			ImGui::Text("Total Pixels: %d", static_cast<int>(total_pixels));
-			ImGui::Text("Size in ROM: %04X", selected_sprite.real_size);
+			ImGui::Text("Dimensions X: %d (0x%02X)", selected_sprite.GetBoundingBox().Width(), selected_sprite.GetBoundingBox().Width());
+			ImGui::Text("Dimensions Y: %d (0x%02X)", selected_sprite.GetBoundingBox().Height(), selected_sprite.GetBoundingBox().Height());
+			ImGui::Text("Total Pixels: %d (0x%04X)", static_cast<unsigned int>(total_pixels), static_cast<unsigned int>(total_pixels));
+			ImGui::Text("Size in ROM: %d (0x%04X)", selected_sprite.rom_data.real_size, selected_sprite.rom_data.real_size);
 		}
 		ImGui::End();
 	}

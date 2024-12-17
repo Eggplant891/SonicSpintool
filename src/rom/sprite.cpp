@@ -21,6 +21,60 @@ namespace spintool::rom
 		return bounds;
 	}
 
+	const Uint8* Sprite::LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset)
+	{
+		const Uint8* current_byte = rom_data_start;
+
+		num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		current_byte += 2;
+
+		if (num_tiles > 0x20)
+		{
+			return nullptr;
+		}
+
+		num_vdp_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		current_byte += 2;
+
+		sprite_tiles.resize(num_tiles);
+
+
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
+		{
+			sprite_tile = std::make_shared<rom::SpriteTile>();
+
+			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, (current_byte - rom_data_start) + rom_data_offset);
+		}
+
+		if (GetBoundingBox().Width() > 512 || GetBoundingBox().Height() > 512)
+		{
+			return nullptr;
+		}
+
+		constexpr int max_tiles = 64;
+
+		if (num_vdp_tiles > max_tiles)
+		{
+			return nullptr;
+		}
+
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
+		{
+			const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
+			if (total_pixels != 0)
+			{
+				//if (sprite_tile->rom_offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < m_buffer.size())
+				{
+					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), current_byte, (current_byte - rom_data_start) + rom_data_offset);
+				}
+			}
+		}
+
+		rom_data.SetROMData(rom_data_start, current_byte, rom_data_offset);
+
+		return current_byte;
+	}
+
 	void rom::Sprite::RenderToSurface(SDL_Surface* surface) const
 	{
 		Renderer::s_sdl_update_mutex.lock();
@@ -44,22 +98,6 @@ namespace spintool::rom
 
 	size_t rom::Sprite::GetSizeOf() const
 	{
-		constexpr size_t static_size = sizeof(decltype(num_tiles))
-			+ sizeof(decltype(num_vdp_tiles));
-
-		constexpr size_t tile_size = (sizeof(decltype(rom::SpriteTile::x_offset))
-			+ sizeof(decltype(rom::SpriteTile::y_offset))
-			+ sizeof(decltype(rom::SpriteTile::x_size))
-			+ sizeof(decltype(rom::SpriteTile::y_size))
-			);
-
-		size_t tile_data_size = 0;
-		for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
-		{
-			tile_data_size += tile_size;
-			tile_data_size += (sprite_tile->x_size / 2) * (sprite_tile->y_size);
-		}
-
-		return static_size + tile_data_size;
+		return rom_data.real_size;
 	}
 }

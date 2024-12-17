@@ -85,7 +85,7 @@ namespace spintool
 			if (ImGui::Button("Save Changes"))
 			{
 				rom::SpinballROM& rom = m_owning_ui.GetROM();
-				unsigned char* current_byte = &rom.m_buffer[palettes.front().offset];
+				Uint8* current_byte = &rom.m_buffer[palettes.front().offset];
 				for (rom::Palette& palette : palettes)
 				{
 					for (rom::Swatch& swatch : palette.palette_swatches)

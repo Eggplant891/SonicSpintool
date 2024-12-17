@@ -203,6 +203,7 @@
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\rom\colour.cpp" />
     <ClCompile Include="src\rom\palette.cpp" />
+    <ClCompile Include="src\rom\rom_data.cpp" />
     <ClCompile Include="src\rom\spinball_animation_timeline.cpp" />
     <ClCompile Include="src\rom\spinball_rom.cpp" />
     <ClCompile Include="src\rom\sprite.cpp" />
@@ -232,6 +233,7 @@
     <ClInclude Include="redist\rom\bounding_box.h" />
     <ClInclude Include="redist\rom\colour.h" />
     <ClInclude Include="redist\rom\palette.h" />
+    <ClInclude Include="redist\rom\rom_data.h" />
     <ClInclude Include="redist\rom\spinball_animation_timeline.h" />
     <ClInclude Include="redist\rom\spinball_rom.h" />
     <ClInclude Include="redist\rom\sprite.h" />

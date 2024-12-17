@@ -247,7 +247,7 @@ namespace spintool
 
 						const BoundingBox bounds = m_result_sprite->GetBoundingBox();
 						rom::SpinballROM& rom = m_owning_ui.GetROM();
-						unsigned char* current_byte = &rom.m_buffer[m_target_write_location];
+						Uint8* current_byte = &rom.m_buffer[m_target_write_location];
 						current_byte += 2; // tiles
 						current_byte += 2; // vdp tiles
 
