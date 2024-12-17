@@ -11,8 +11,8 @@
 #include "backends/imgui_impl_sdl3.h"
 
 #include "render.h"
-#include "spinball_rom.h"
-#include "ui_editor.h"
+#include "rom/spinball_rom.h"
+#include "ui/ui_editor.h"
 
 namespace spintool
 {

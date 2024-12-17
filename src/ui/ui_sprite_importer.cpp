@@ -1,9 +1,9 @@
-#include "ui_sprite_importer.h"
+#include "ui/ui_sprite_importer.h"
 
 #include "imgui.h"
-#include "spinball_rom.h"
-#include "ui_editor.h"
-#include "ui_palette_viewer.h"
+#include "rom/spinball_rom.h"
+#include "ui/ui_editor.h"
+#include "ui/ui_palette_viewer.h"
 
 #include "SDL3/SDL_image.h"
 #include <algorithm>

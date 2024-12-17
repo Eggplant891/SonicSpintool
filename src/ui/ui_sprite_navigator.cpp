@@ -1,13 +1,13 @@
-#include "ui_sprite_navigator.h"
+#include "ui/ui_sprite_navigator.h"
 
-#include "spinball_rom.h"
-#include "ui_editor.h"
+#include "rom/spinball_rom.h"
+#include "ui/ui_editor.h"
 
 #include "imgui.h"
 #include <optional>
 #include <algorithm>
 #include "SDL3/SDL_image.h"
-#include "ui_palette_viewer.h"
+#include "ui/ui_palette_viewer.h"
 #include <filesystem>
 
 namespace spintool

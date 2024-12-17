@@ -2,14 +2,14 @@
 
 #include "render.h"
 #include "sdl_handle_defs.h"
-#include "spinball_rom.h"
-#include "ui_sprite.h"
-#include "ui_palette.h"
+#include "rom/spinball_rom.h"
+#include "ui/ui_sprite.h"
+#include "ui/ui_palette.h"
 
-#include "ui_sprite_viewer.h"
-#include "ui_sprite_navigator.h"
-#include "ui_palette_viewer.h"
-#include "ui_sprite_importer.h"
+#include "ui/ui_sprite_viewer.h"
+#include "ui/ui_sprite_navigator.h"
+#include "ui/ui_palette_viewer.h"
+#include "ui/ui_sprite_importer.h"
 
 #include "imgui.h"
 #include <vector>

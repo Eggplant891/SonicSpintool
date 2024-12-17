@@ -1,9 +1,9 @@
 #pragma once
 
 #include "sdl_handle_defs.h"
-#include "spinball_rom.h"
+#include "rom/spinball_rom.h"
 #include "imgui.h"
-#include "ui_palette.h"
+#include "ui/ui_palette.h"
 
 #include <vector>
 

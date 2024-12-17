@@ -1,4 +1,4 @@
-#include "ui_sprite.h"
+#include "ui/ui_sprite.h"
 
 namespace spintool
 {

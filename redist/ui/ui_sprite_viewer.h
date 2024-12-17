@@ -1,7 +1,7 @@
 #pragma once
-#include "spinball_rom.h"
+#include "rom/spinball_rom.h"
 
-#include "ui_sprite.h"
+#include "ui/ui_sprite.h"
 
 #include <memory>
 #include <vector>

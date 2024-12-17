@@ -1,7 +1,7 @@
-#include "ui_palette_viewer.h"
+#include "ui/ui_palette_viewer.h"
 
 #include "SDL3/SDL_stdinc.h"
-#include "ui_editor.h"
+#include "ui/ui_editor.h"
 #include "render.h"
 
 

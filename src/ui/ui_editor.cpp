@@ -1,12 +1,12 @@
-#include "ui_editor.h"
+#include "ui/ui_editor.h"
 
-#include "spinball_rom.h"
+#include "rom/spinball_rom.h"
 #include "render.h"
 #include "SDL3/SDL_image.h"
 #include "imgui.h"
 #include <thread>
 #include <algorithm>
-#include "ui_file_selector.h"
+#include "ui/ui_file_selector.h"
 
 namespace spintool
 {

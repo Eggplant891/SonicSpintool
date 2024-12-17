@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "ui_palette.h"
+#include "ui/ui_palette.h"
 
 namespace spintool
 {

@@ -199,17 +199,18 @@
     <ClCompile Include="external\imgui\imgui_draw.cpp" />
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="src\ui_editor.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\render.cpp" />
-    <ClCompile Include="src\spinball_rom.cpp" />
-    <ClCompile Include="src\ui_file_selector.cpp" />
-    <ClCompile Include="src\ui_palette.cpp" />
-    <ClCompile Include="src\ui_palette_viewer.cpp" />
-    <ClCompile Include="src\ui_sprite.cpp" />
-    <ClCompile Include="src\ui_sprite_importer.cpp" />
-    <ClCompile Include="src\ui_sprite_navigator.cpp" />
-    <ClCompile Include="src\ui_sprite_viewer.cpp" />
+    <ClCompile Include="src\rom\spinball_animation_timeline.cpp" />
+    <ClCompile Include="src\rom\spinball_rom.cpp" />
+    <ClCompile Include="src\ui\ui_editor.cpp" />
+    <ClCompile Include="src\ui\ui_file_selector.cpp" />
+    <ClCompile Include="src\ui\ui_palette.cpp" />
+    <ClCompile Include="src\ui\ui_palette_viewer.cpp" />
+    <ClCompile Include="src\ui\ui_sprite.cpp" />
+    <ClCompile Include="src\ui\ui_sprite_importer.cpp" />
+    <ClCompile Include="src\ui\ui_sprite_navigator.cpp" />
+    <ClCompile Include="src\ui\ui_sprite_viewer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\backends\imgui_impl_sdl3.h" />
@@ -221,17 +222,17 @@
     <ClInclude Include="external\imgui\imstb_textedit.h" />
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="redist\render.h" />
+    <ClInclude Include="redist\rom\spinball_animation_timeline.h" />
+    <ClInclude Include="redist\rom\spinball_rom.h" />
     <ClInclude Include="redist\sdl_handle_defs.h" />
-    <ClInclude Include="redist\spinball_animation_timeline.h" />
-    <ClInclude Include="redist\spinball_rom.h" />
-    <ClInclude Include="redist\ui_editor.h" />
-    <ClInclude Include="redist\ui_file_selector.h" />
-    <ClInclude Include="redist\ui_palette.h" />
-    <ClInclude Include="redist\ui_palette_viewer.h" />
-    <ClInclude Include="redist\ui_sprite.h" />
-    <ClInclude Include="redist\ui_sprite_importer.h" />
-    <ClInclude Include="redist\ui_sprite_navigator.h" />
-    <ClInclude Include="redist\ui_sprite_viewer.h" />
+    <ClInclude Include="redist\ui\ui_editor.h" />
+    <ClInclude Include="redist\ui\ui_file_selector.h" />
+    <ClInclude Include="redist\ui\ui_palette.h" />
+    <ClInclude Include="redist\ui\ui_palette_viewer.h" />
+    <ClInclude Include="redist\ui\ui_sprite.h" />
+    <ClInclude Include="redist\ui\ui_sprite_importer.h" />
+    <ClInclude Include="redist\ui\ui_sprite_navigator.h" />
+    <ClInclude Include="redist\ui\ui_sprite_viewer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

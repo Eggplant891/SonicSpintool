@@ -1,7 +1,7 @@
-#include "ui_file_selector.h"
+#include "ui/ui_file_selector.h"
 
 #include "imgui.h"
-#include "ui_editor.h"
+#include "ui/ui_editor.h"
 
 namespace spintool
 {

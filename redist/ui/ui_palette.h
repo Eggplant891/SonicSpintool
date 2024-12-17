@@ -2,7 +2,7 @@
 
 #include "render.h"
 #include "sdl_handle_defs.h"
-#include "spinball_rom.h"
+#include "rom/spinball_rom.h"
 
 namespace spintool
 {

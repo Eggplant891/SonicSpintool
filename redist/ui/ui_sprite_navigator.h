@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ui_sprite.h"
-#include "ui_palette_viewer.h"
+#include "ui/ui_sprite.h"
+#include "ui/ui_palette_viewer.h"
 
 #include <vector>
 
