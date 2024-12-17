@@ -34,15 +34,38 @@ namespace spintool
 
 	SDL_Palette* palette;
 
+	static Uint8 colour_levels[17] =
+	{
+		  0,
+		 29,
+		 52,
+		 70,
+		 87,
+		101,
+		116,
+		130,
+		144,
+		158,
+		172,
+		187,
+		206,
+		228,
+		255
+	};
+
 	VDPColour VDPSwatch::GetUnpacked() const
 	{
-		return VDPColour{ 0, static_cast<Uint8>(((0x0F00 & packed_value) >> 8) / 15.0f * 255), static_cast<Uint8>(((0x00F0 & packed_value) >> 4) / 15.0f * 255), static_cast<Uint8>(((0x000F & packed_value)) / 15.0f * 255) };
+		return VDPColour{ 0, colour_levels[(0x0F00 & packed_value) >> 8], colour_levels[(0x00F0 & packed_value) >> 4], colour_levels[(0x000F & packed_value)] };
 	}
 
 
 	Uint16 VDPSwatch::Pack(float r, float g, float b)
 	{
-		return static_cast<Uint16>(0x0F00 & ((Uint8)(b * 15) << 8)) | static_cast<Uint16>(0x00F0 & ((Uint8)(g * 15) << 4)) | static_cast<Uint16>(0x000F & ((Uint8)(r * 15)));
+		Uint8 red = static_cast<Uint8>(b * 15) << 8;
+		Uint8 green = static_cast<Uint8>(b * 15) << 8;
+		Uint8 blue = static_cast<Uint8>(b * 15) << 8;
+
+		return static_cast<Uint16>(0x0F00 & colour_levels[blue]) | static_cast<Uint16>(0x00F0 & colour_levels[green]) | static_cast<Uint16>(0x000F & colour_levels[red]);
 	}
 
 	SDL_Texture* Renderer::GetTexture()
