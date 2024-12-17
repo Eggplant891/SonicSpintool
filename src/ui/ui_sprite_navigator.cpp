@@ -36,7 +36,7 @@ namespace spintool
 			int working_offset = static_cast<int>(m_offset);
 			if (ImGui::InputInt("ROM Offset", &working_offset, 1, 0x10, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
 			{
-				m_offset = working_offset;
+				m_offset = *reinterpret_cast<unsigned int*>(&working_offset);
 			}
 
 			if (m_random_texture != nullptr)
@@ -133,15 +133,15 @@ namespace spintool
 
 			if (ImGui::Button("Show Tiles"))
 			{
-				size_t offset = 0;
+				size_t next_offset = 0;
 				while (true)
 				{
-					std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, offset);
+					std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, next_offset);
 					if (new_sprite == nullptr)
 					{
 						break;
 					}
-					offset += new_sprite->rom_data.real_size;
+					next_offset = new_sprite->rom_data.rom_offset_end;
 					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
