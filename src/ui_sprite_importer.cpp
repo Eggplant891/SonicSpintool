@@ -242,30 +242,71 @@ namespace spintool
 
 					if (ImGui::Button("/!\\ OVERWRITE SPRITE IN ROM DATA /!\\"))
 					{
-						assert(m_result_sprite->sprite_tiles.at(0)->x_size == m_preview_image->w && m_result_sprite->sprite_tiles.at(0)->y_size == m_preview_image->h);
+						//assert(m_result_sprite->sprite_tiles.at(0)->x_size == m_preview_image->w && m_result_sprite->sprite_tiles.at(0)->y_size == m_preview_image->h);
+
+						const BoundingBox bounds = m_result_sprite->GetBoundingBox();
 						SpinballROM& rom = m_owning_ui.GetROM();
 						unsigned char* current_byte = &rom.m_buffer[m_target_write_location];
 						current_byte += 2; // tiles
 						current_byte += 2; // vdp tiles
 
-						current_byte += 2; // xoffset
-						current_byte += 2; // yoffset
-
-						current_byte += 2; // ysize, xsize
-
-						const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
-						const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);
-						size_t preview_pitch_offset = 0;
-
-						for (size_t i = 0; i < m_preview_image->w * m_preview_image->h; i += 2)
+						for (const std::shared_ptr<SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
 						{
-							if (i != 0 && i % m_preview_image->w == 0)
-							{
-								preview_pitch_offset += preview_pitch_offset_per_line;
-							}
+							current_byte += 2; // xoffset
+							current_byte += 2; // yoffset
 
-							*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[i] & 0x0F) << 4) | (static_cast<Uint8*>(m_preview_image->pixels)[i + 1] & 0x0F);
-							++current_byte;
+							current_byte += 2; // ysize, xsize
+						}
+
+						for (const std::shared_ptr<SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
+						{
+							const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
+							const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);
+							size_t preview_pitch_offset = 0;
+
+
+							const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
+							if (total_pixels != 0)
+							{
+								int x_off = (sprite_tile->x_offset - bounds.min.x);
+								int y_off = (sprite_tile->y_offset - bounds.min.y);
+								int x_max = x_off + sprite_tile->x_size;
+								int y_max = y_off + sprite_tile->y_size;
+
+								size_t pixels_written = 0;
+								size_t pixel_source_idx = (y_off * m_preview_image->pitch) + x_off;
+								while (pixels_written < total_pixels && pixel_source_idx < m_preview_image->pitch * m_preview_image->h)
+								{
+									if (pixels_written != 0 && (pixels_written % sprite_tile->x_size) == 0)
+									{
+										pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / sprite_tile->x_size)) + x_off;
+									}
+									*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F) << 4);
+									++pixel_source_idx;
+									++pixels_written;
+
+									if (pixels_written != 0 && (pixels_written % sprite_tile->x_size) == 0)
+									{
+										pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / sprite_tile->x_size)) + x_off;
+									}
+									*current_byte = *current_byte | static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F;
+									++pixel_source_idx;
+									++pixels_written;
+
+									++current_byte;
+								}
+
+								//for (size_t i = 0; i < m_preview_image->w * m_preview_image->h; i += 2)
+								//{
+								//	if (i != 0 && i % m_preview_image->w == 0)
+								//	{
+								//		preview_pitch_offset += preview_pitch_offset_per_line;
+								//	}
+								//
+								//	*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[i] & 0x0F) << 4) | (static_cast<Uint8*>(m_preview_image->pixels)[i + 1] & 0x0F);
+								//	++current_byte;
+								//}
+							}
 						}
 					}
 				}
