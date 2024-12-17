@@ -63,11 +63,7 @@ namespace spintool
 				m_rendered_sprite_texture.texture = m_rendered_sprite_texture.RenderTextureForPalette(m_selected_palette);
 			}
 
-
-			ImGui::Image((ImTextureID)m_rendered_sprite_texture.texture.get()
-				, ImVec2(static_cast<float>(m_rendered_sprite_texture.dimensions.x) * m_zoom, static_cast<float>(m_rendered_sprite_texture.dimensions.y) * m_zoom)
-				, { 0,0 }, { static_cast<float>(m_rendered_sprite_texture.dimensions.x) / m_rendered_sprite_texture.texture->w
-				, static_cast<float>((m_rendered_sprite_texture.dimensions.y) / m_rendered_sprite_texture.texture->h) });
+			m_rendered_sprite_texture.DrawForImGui(m_zoom);
 
 			const BoundingBox image_preview_pos = { static_cast<int>(ImGui::GetItemRectMin().x), static_cast<int>(ImGui::GetItemRectMin().y), static_cast<int>(ImGui::GetItemRectMax().x), static_cast<int>(ImGui::GetItemRectMax().y) };
 
@@ -115,10 +111,7 @@ namespace spintool
 				{
 					if (tile_tex->texture != nullptr)
 					{
-						ImGui::Image((ImTextureID)tile_tex->texture.get()
-							, ImVec2(static_cast<float>(tile_tex->dimensions.x) * m_zoom, static_cast<float>(tile_tex->dimensions.y) * m_zoom)
-							, { 0,0 }
-						, { static_cast<float>(tile_tex->dimensions.x) / tile_tex->texture->w, static_cast<float>((tile_tex->dimensions.y) / tile_tex->texture->h) });
+						tile_tex->DrawForImGui(m_zoom);
 
 					}
 					else

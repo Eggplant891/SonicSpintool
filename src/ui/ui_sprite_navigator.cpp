@@ -320,10 +320,7 @@ namespace spintool
 						ImGui::SameLine();
 					}
 
-					ImGui::Image((ImTextureID)tex->texture.get()
-						, ImVec2(static_cast<float>(tex->dimensions.x) * m_zoom, static_cast<float>(tex->dimensions.y) * m_zoom)
-						, { 0,0 }
-					, { static_cast<float>(tex->dimensions.x) / tex->texture->w, static_cast<float>((tex->dimensions.y) / tex->texture->h) });
+					tex->DrawForImGui(m_zoom);
 					current_width += static_cast<int>((tex->dimensions.x * m_zoom) + ImGui::GetStyle().ItemSpacing.x);
 
 					const bool hovered = ImGui::IsItemHovered();

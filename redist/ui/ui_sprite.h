@@ -16,6 +16,7 @@ namespace spintool
 		mutable SDLTextureHandle texture;
 		ImVec2 dimensions;
 
+		void DrawForImGui(const float zoom = 1.0f) const;
 		SDLTextureHandle RenderTextureForPalette(const UIPalette& palette) const;
 	};
 
@@ -28,6 +29,7 @@ namespace spintool
 
 		std::vector<UISpriteTileTexture> tile_textures;
 
+		void DrawForImGui(const float zoom = 1.0f) const;
 		SDLTextureHandle RenderTextureForPalette(const UIPalette& palette) const;
 	};
 }
