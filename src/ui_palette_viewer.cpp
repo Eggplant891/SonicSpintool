@@ -82,15 +82,35 @@ namespace spintool
 
 		if (ImGui::Begin("Palettes", &visible))
 		{
-			int palette_index = 0;
-			for (VDPPalette& palette : palettes)
+			if (ImGui::Button("Save Changes"))
 			{
-				DrawPaletteName(palette, palette_index);
-				ImGui::SameLine();
-				ImGui::Dummy(ImVec2{ 0,0 });
-				DrawPaletteSwatchEditor(palette, palette_index);
-				++palette_index;
+				SpinballROM& rom = m_owning_ui.GetROM();
+				unsigned char* current_byte = &rom.m_buffer[palettes.front().offset];
+				for (VDPPalette& palette : palettes)
+				{
+					for (VDPSwatch& swatch : palette.palette_swatches)
+					{
+						*current_byte = (swatch.packed_value & 0xFF00) >> 8;
+						++current_byte;
+						*current_byte = (swatch.packed_value & 0x00FF);
+						++current_byte;
+					}
+				}
 			}
+			ImGui::Separator();
+			if (ImGui::BeginChild("swatch_list"))
+			{
+				int palette_index = 0;
+				for (VDPPalette& palette : palettes)
+				{
+					DrawPaletteName(palette, palette_index);
+					ImGui::SameLine();
+					ImGui::Dummy(ImVec2{ 0,0 });
+					DrawPaletteSwatchEditor(palette, palette_index);
+					++palette_index;
+				}
+			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 	}
