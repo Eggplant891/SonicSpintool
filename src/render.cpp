@@ -61,11 +61,11 @@ namespace spintool
 
 	Uint16 VDPSwatch::Pack(float r, float g, float b)
 	{
-		Uint8 red = static_cast<Uint8>(b * 15) << 8;
-		Uint8 green = static_cast<Uint8>(b * 15) << 8;
-		Uint8 blue = static_cast<Uint8>(b * 15) << 8;
+		Uint8 red = static_cast<Uint8>(r * 15);
+		Uint8 green = static_cast<Uint8>(g * 15);
+		Uint8 blue = static_cast<Uint8>(b * 15);
 
-		return static_cast<Uint16>(0x0F00 & colour_levels[blue]) | static_cast<Uint16>(0x00F0 & colour_levels[green]) | static_cast<Uint16>(0x000F & colour_levels[red]);
+		return static_cast<Uint16>((0x0F00 & colour_levels[blue]) << 8) | static_cast<Uint16>((0x00F0 & colour_levels[green]) << 4) | static_cast<Uint16>(0x000F & colour_levels[red]);
 	}
 
 	SDL_Texture* Renderer::GetTexture()
