@@ -3,12 +3,6 @@
 #include <memory>
 #include "SDL3/SDL_render.h"
 
-struct Point
-{
-	int x = 0;
-	int y = 0;
-};
-
 struct SDLTextureDeleter
 {
 	void operator()(SDL_Texture* tex) const

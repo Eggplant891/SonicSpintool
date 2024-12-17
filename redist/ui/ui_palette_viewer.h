@@ -20,13 +20,13 @@ namespace spintool
 	struct PaletteWidgetResults
 	{
 		std::optional<int> new_palette_selection;
-		std::optional<VDPPalette> modified_palette_swatches;
+		std::optional<rom::Palette> modified_palette_swatches;
 	};
 
 	bool DrawPaletteSelectorWithPreview(int& palette_index, const EditorUI& owning_ui);
-	void DrawPaletteName(const VDPPalette& palette, int palette_index);
-	void DrawPaletteSwatchEditor(VDPPalette& palette, int palette_index);
-	void DrawPaletteSwatchPreview(const VDPPalette& palette, int palette_index);
+	void DrawPaletteName(const rom::Palette& palette, int palette_index);
+	void DrawPaletteSwatchEditor(rom::Palette& palette, int palette_index);
+	void DrawPaletteSwatchPreview(const rom::Palette& palette, int palette_index);
 	bool DrawPaletteSelector(int& chosen_palette, const EditorUI& owning_ui);
 
 	class EditorPaletteViewer
@@ -34,7 +34,7 @@ namespace spintool
 	public:
 		EditorPaletteViewer(EditorUI& owning_ui);
 
-		void Update(std::vector<VDPPalette>& palettes);
+		void Update(std::vector<rom::Palette>& palettes);
 
 		bool visible = false;
 

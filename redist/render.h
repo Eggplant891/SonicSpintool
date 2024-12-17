@@ -1,15 +1,17 @@
 #pragma once
 
 #include "SDL3/SDL_pixels.h"
-#include "sdl_handle_defs.h"
+#include "types/sdl_handle_defs.h"
+#include "types/bounding_box.h"
 #include <mutex>
 
-namespace spintool
+namespace spintool::rom
 {
-	struct VDPPalette;
-	struct SpinballSprite;
-	struct SpriteTile;
 	class SpinballROM;
+
+	struct Sprite;
+	struct Palette;
+	struct SpriteTile;
 }
 
 namespace spintool
@@ -22,13 +24,13 @@ namespace spintool
 		static void NewFrame();
 		static void Render();
 
-		static SDLPaletteHandle CreateSDLPalette(const VDPPalette& palette);
+		static SDLPaletteHandle CreateSDLPalette(const rom::Palette& palette);
 		static void SetPalette(const SDLPaletteHandle& palette);
 
-		static SDLTextureHandle RenderToTexture(const SpinballSprite& sprite);
-		static SDLTextureHandle RenderToTexture(const SpriteTile& sprite_tile);
+		static SDLTextureHandle RenderToTexture(const rom::Sprite& sprite);
+		static SDLTextureHandle RenderToTexture(const rom::SpriteTile& sprite_tile);
 		static SDLTextureHandle RenderToTexture(SDL_Surface* surface);
-		static SDLTextureHandle RenderArbitaryOffsetToTexture(const SpinballROM& rom, size_t offset, Point dimensions);
+		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions);
 		static SDL_Texture* GetTexture();
 		static SDL_Texture* GetViewportTexture();
 

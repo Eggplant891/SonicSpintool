@@ -89,7 +89,7 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites);
+						std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites);
 
 						if (new_sprite)
 						{
@@ -123,7 +123,7 @@ namespace spintool
 				}
 				else
 				{
-					if (std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
+					if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
 					{
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
@@ -136,7 +136,7 @@ namespace spintool
 				size_t offset = 0;
 				while (true)
 				{
-					std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, offset);
+					std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, offset);
 					if (new_sprite == nullptr)
 					{
 						break;
@@ -152,7 +152,7 @@ namespace spintool
 				size_t offset = 0;
 				while (true)
 				{
-					std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
+					std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
 					if (new_sprite == nullptr)
 					{
 						break;
@@ -182,7 +182,7 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						if (std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
+						if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
 						{
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
@@ -212,7 +212,7 @@ namespace spintool
 						{
 							render_process_progress = working_offset / static_cast<float>(m_rom.m_buffer.size());
 
-							std::shared_ptr<const SpinballSprite> new_sprite = m_rom.LoadSprite(working_offset, m_use_packed_data_mode, m_read_between_sprites);
+							std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(working_offset, m_use_packed_data_mode, m_read_between_sprites);
 							if (new_sprite == nullptr)
 							{
 								working_offset+=2;

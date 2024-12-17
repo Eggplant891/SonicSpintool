@@ -13,7 +13,7 @@ namespace spintool
 	class EditorSpriteViewer
 	{
 	public:
-		EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const SpinballSprite> sprite);
+		EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const rom::Sprite> sprite);
 		void Update();
 		bool IsOpen() const;
 		size_t GetOffset() const;
@@ -21,10 +21,10 @@ namespace spintool
 	private:
 		size_t m_offset;
 		EditorUI& m_owning_ui;
-		std::shared_ptr<const SpinballSprite> m_sprite;
+		std::shared_ptr<const rom::Sprite> m_sprite;
 		UISpriteTexture m_rendered_sprite_texture;
 		std::vector<UISpriteTileTexture> m_rendered_sprite_tile_textures;
-		VDPPalette m_selected_palette;
+		rom::Palette m_selected_palette;
 		int m_chosen_palette_index = 0;
 		float m_zoom = 4.0f;;
 		bool m_is_open = true;

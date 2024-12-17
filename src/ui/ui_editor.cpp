@@ -164,7 +164,7 @@ namespace spintool
 		return m_rom.m_buffer.empty() == false;
 	}
 
-	SpinballROM& EditorUI::GetROM()
+	rom::SpinballROM& EditorUI::GetROM()
 	{
 		return m_rom;
 	}
@@ -184,12 +184,12 @@ namespace spintool
 		return m_sprite_export_path;
 	}
 
-	const std::vector<VDPPalette>& EditorUI::GetPalettes() const
+	const std::vector<rom::Palette>& EditorUI::GetPalettes() const
 	{
 		return m_palettes;
 	}
 
-	void EditorUI::OpenSpriteViewer(std::shared_ptr<const SpinballSprite>& sprite)
+	void EditorUI::OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite)
 	{
 		const auto selected_sprite_window_it = std::find_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
 			[&sprite](const std::unique_ptr<EditorSpriteViewer>& sprite_viewer)

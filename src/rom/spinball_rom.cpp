@@ -1,47 +1,23 @@
 #include "rom/spinball_rom.h"
 
 #include "render.h"
-#include "sdl_handle_defs.h"
+#include "types/sdl_handle_defs.h"
+#include "rom/sprite.h"
 
 #include <fstream>
 #include "SDL3/SDL_stdinc.h"
 #include "SDL3/SDL_surface.h"
+#include "rom/palette.h"
 
 namespace spintool
 {
-	int BoundingBox::Width() const
-	{
-		return max.x - min.x;
-	}
-
-	int BoundingBox::Height() const
-	{
-		return max.y - min.y;
-	}
-
-	BoundingBox SpinballSprite::GetBoundingBox() const
-	{
-		BoundingBox bounds{ std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), std::numeric_limits<int>::min() };
-
-		for (const std::shared_ptr<SpriteTile>& sprite_tile : sprite_tiles)
-		{
-			bounds.min.x = std::min<int>(sprite_tile->x_offset, bounds.min.x);
-			bounds.max.x = std::max<int>(sprite_tile->x_offset + sprite_tile->x_size, bounds.max.x);
-
-			bounds.min.y = std::min<int>(sprite_tile->y_offset, bounds.min.y);
-			bounds.max.y = std::max<int>(sprite_tile->y_offset + sprite_tile->y_size, bounds.max.y);
-		}
-
-		return bounds;
-	}
-
-	Point SpinballSprite::GetOriginOffsetFromMinBounds() const
+	Point rom::Sprite::GetOriginOffsetFromMinBounds() const
 	{
 		BoundingBox bounds = GetBoundingBox();
 		return { -bounds.min.x, -bounds.min.y };
 	}
 
-	void SpinballROM::LoadTileData(size_t rom_offset)
+	void rom::SpinballROM::LoadTileData(size_t rom_offset)
 	{
 		m_toxic_caves_bg_data.rom_offset = rom_offset;
 		unsigned char* rom_data_root = &m_buffer[rom_offset];
@@ -92,7 +68,7 @@ namespace spintool
 		}
 	}
 
-	bool SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
+	bool rom::SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
 	{
 		std::ifstream input = std::ifstream{ path, std::ios::binary };
 		m_filepath = path;
@@ -100,18 +76,18 @@ namespace spintool
 		return m_buffer.empty() == false;
 	}
 
-	void SpinballROM::SaveROM()
+	void rom::SpinballROM::SaveROM()
 	{
 		std::ofstream output = std::ofstream{ m_filepath, std::ios::binary };
 		output.write(reinterpret_cast<const char*>(m_buffer.data()), m_buffer.size());
 	}
 
-	size_t SpinballROM::GetOffsetForNextSprite(const SpinballSprite& current_sprite) const
+	size_t rom::SpinballROM::GetOffsetForNextSprite(const rom::Sprite& current_sprite) const
 	{
 		return current_sprite.rom_offset + current_sprite.GetSizeOf();
 	}
 
-	std::shared_ptr<const SpinballSprite> SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
+	std::shared_ptr<const rom::Sprite> rom::SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
 	{
 		if (offset + 4 < offset) // overflow detection
 		{
@@ -121,7 +97,7 @@ namespace spintool
 		unsigned char* current_byte = &m_buffer[offset];
 		//unsigned char* current_byte = &buffer[0x1CE0];
 
-		std::shared_ptr<SpinballSprite> new_sprite = std::make_shared<SpinballSprite>();
+		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 
 		new_sprite->rom_offset = current_byte - m_buffer.data();
 
@@ -138,9 +114,9 @@ namespace spintool
 
 		new_sprite->sprite_tiles.resize(new_sprite->num_tiles);
 
-		for (std::shared_ptr<SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
 		{
-			sprite_tile = std::make_shared<SpriteTile>();
+			sprite_tile = std::make_shared<rom::SpriteTile>();
 
 			sprite_tile->x_offset = ((static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1)));
 			current_byte += 2;
@@ -167,7 +143,7 @@ namespace spintool
 			return nullptr;
 		}
 
-		for (std::shared_ptr<SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
 		{
 			const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
 			if (total_pixels != 0)
@@ -213,7 +189,7 @@ namespace spintool
 		return std::move(new_sprite);
 	}
 
-	std::shared_ptr<const spintool::SpinballSprite> SpinballROM::LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset)
+	std::shared_ptr<const spintool::rom::Sprite> rom::SpinballROM::LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset)
 	{
 		if (offset >= data_source.size() || offset + 64 >= data_source.size())
 		{
@@ -222,7 +198,7 @@ namespace spintool
 
 		const unsigned char* current_byte = &data_source[offset];
 
-		std::shared_ptr<SpinballSprite> new_sprite = std::make_shared<SpinballSprite>();
+		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 
 		new_sprite->rom_offset = m_toxic_caves_bg_data.rom_offset;
 		constexpr int num_tiles_to_wrangle = 1;
@@ -230,7 +206,7 @@ namespace spintool
 
 		for (int i = 0; i < num_tiles_to_wrangle; ++i)
 		{
-			std::shared_ptr<SpriteTile> sprite_tile = new_sprite->sprite_tiles.emplace_back(std::make_shared<SpriteTile>());
+			std::shared_ptr<rom::SpriteTile> sprite_tile = new_sprite->sprite_tiles.emplace_back(std::make_shared<rom::SpriteTile>());
 			sprite_tile->x_size = 8;
 			sprite_tile->y_size = 8;
 
@@ -267,15 +243,15 @@ namespace spintool
 		return new_sprite;
 	}
 
-	std::vector<spintool::VDPPalette> SpinballROM::LoadPalettes(size_t num_palettes)
+	std::vector<spintool::rom::Palette> rom::SpinballROM::LoadPalettes(size_t num_palettes)
 	{
 		constexpr size_t offset = 0xDFC;
 		unsigned char* current_byte = &m_buffer[offset];
-		std::vector<spintool::VDPPalette> results;
+		std::vector<spintool::rom::Palette> results;
 
 		for (size_t p = 0; p < num_palettes; ++p)
 		{
-			VDPPalette palette;
+			rom::Palette palette;
 			palette.offset = current_byte - m_buffer.data();
 
 			for (size_t i = 0; i < 16; ++i)
@@ -284,7 +260,7 @@ namespace spintool
 				++current_byte;
 				const Uint8 second_byte = *current_byte;
 				++current_byte;
-				VDPSwatch swatch;
+				rom::Swatch swatch;
 				swatch.packed_value = static_cast<Uint16>((static_cast<Uint16>(first_byte) << 8) | second_byte);
 
 				palette.palette_swatches[i] = swatch;
@@ -295,46 +271,7 @@ namespace spintool
 		return results;
 	}
 
-	void SpriteTile::RenderToSurface(SDL_Surface* surface) const
-	{
-		Renderer::s_sdl_update_mutex.lock();
-		SDL_LockSurface(surface);
-
-		SDL_ClearSurface(surface, 0, 0, 0, 0);
-
-		const BoundingBox& bounds{ x_offset, y_offset, x_offset + x_size, y_offset + y_size };
-
-		if (bounds.Width() > 0 && bounds.Height() > 0)
-		{
-			BlitPixelDataToSurface(surface, bounds, pixel_data);
-		}
-
-		SDL_UnlockSurface(surface);
-		Renderer::s_sdl_update_mutex.unlock();
-	}
-
-	void SpriteTile::BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const
-	{
-		int x_off = (x_offset - bounds.min.x);
-		int y_off = (y_offset - bounds.min.y);
-		int x_max = x_off + x_size;
-		int y_max = y_off + y_size;
-
-		size_t target_pixel_index = (y_off * surface->pitch) + x_off;
-
-		for (size_t i = 0; i < pixels_data.size() && i < surface->pitch * surface->h && i / x_max < y_max; ++i, target_pixel_index += 1)
-		{
-			if ((i % x_size) == 0)
-			{
-				target_pixel_index = (y_off * surface->pitch) + (surface->pitch * (i / x_size)) + x_off;
-			}
-
-			//*(Uint32*)(&((Uint8*)surface->pixels)[target_pixel_index]) = SDL_MapRGB(Renderer::s_pixel_format_details, NULL, static_cast<Uint8>((pixel_data[i] / 16.0f) * 255), 0, 0);
-			((Uint8*)surface->pixels)[target_pixel_index] = pixels_data[i];
-		}
-	}
-
-	void SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const
+	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const
 	{
 		Renderer::s_sdl_update_mutex.lock();
 		SDL_LockSurface(surface);
@@ -358,7 +295,7 @@ namespace spintool
 		Renderer::s_sdl_update_mutex.unlock();
 	}
 
-	void SpinballROM::BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const
+	void rom::SpinballROM::BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const
 	{
 		int x_off = 0;
 		int y_off = 0;
@@ -373,58 +310,9 @@ namespace spintool
 			{
 				target_pixel_index = (y_off * surface->pitch) + (surface->pitch * (i / bounds.Width())) + x_off;
 			}
-			VDPSwatch pixel_as_swatch = { static_cast<Uint16>(pixels_data[i]) };
+			rom::Swatch pixel_as_swatch = { static_cast<Uint16>(pixels_data[i]) };
 			//((Uint32*)surface->pixels)[target_pixel_index] = SDL_MapRGB(SDL_GetPixelFormatDetails(surface->format), NULL, static_cast<Uint8>(pixel_as_swatch.GetUnpacked().r / 15.0f) * 255, static_cast<Uint8>(pixel_as_swatch.GetUnpacked().g / 15.0f) * 255, static_cast<Uint8>(pixel_as_swatch.GetUnpacked().b / 15.0f) * 255);
 			((Uint8*)surface->pixels)[target_pixel_index] = pixels_data[i];
 		}
 	}
-
-	void SpinballSprite::RenderToSurface(SDL_Surface* surface) const
-	{
-		Renderer::s_sdl_update_mutex.lock();
-		SDL_LockSurface(surface);
-
-		SDL_ClearSurface(surface, 0, 0, 0, 255);
-
-		const BoundingBox& bounds = GetBoundingBox();
-
-		if (bounds.Width() > 0 && bounds.Height() > 0)
-		{
-			for (const std::shared_ptr<SpriteTile>& sprite_tile : sprite_tiles)
-			{
-				sprite_tile->BlitPixelDataToSurface(surface, bounds, sprite_tile->pixel_data);
-			}
-		}
-
-		SDL_UnlockSurface(surface);
-		Renderer::s_sdl_update_mutex.unlock();
-	}
-
-	size_t SpinballSprite::GetSizeOf() const
-	{
-		constexpr size_t static_size = sizeof(decltype(num_tiles))
-			+ sizeof(decltype(num_vdp_tiles));
-
-		constexpr size_t tile_size = (sizeof(decltype(SpriteTile::x_offset))
-				+ sizeof(decltype(SpriteTile::y_offset))
-				+ sizeof(decltype(SpriteTile::x_size))
-				+ sizeof(decltype(SpriteTile::y_size))
-				);
-
-		size_t tile_data_size = 0;
-		for (const std::shared_ptr<SpriteTile>& sprite_tile : sprite_tiles)
-		{
-			tile_data_size += tile_size;
-			tile_data_size += (sprite_tile->x_size / 2) * (sprite_tile->y_size);
-		}
-
-		return static_size + tile_data_size;
-	}
-
-	ImColor VDPSwatch::AsImColor() const
-	{
-		float col[3] = { static_cast<float>(GetUnpacked().r / 255.0f), static_cast<float>(GetUnpacked().g / 255.0f), static_cast<float>(GetUnpacked().b / 255.0f) };
-		return ImColor{ col[0], col[1], col[2], 1.0f };
-	}
-
 }

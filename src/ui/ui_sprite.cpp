@@ -2,11 +2,11 @@
 
 namespace spintool
 {
-	UISpriteTexture::UISpriteTexture(std::shared_ptr<const SpinballSprite>& spr)
+	UISpriteTexture::UISpriteTexture(std::shared_ptr<const rom::Sprite>& spr)
 		: sprite(spr)
 		, dimensions(static_cast<float>(sprite->GetBoundingBox().Width()), static_cast<float>(sprite->GetBoundingBox().Height()))
 	{
-		for (const std::shared_ptr<SpriteTile>& sprite_tile : sprite->sprite_tiles)
+		for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite->sprite_tiles)
 		{
 			tile_textures.emplace_back(sprite_tile);
 		}
@@ -29,7 +29,7 @@ namespace spintool
 		return std::move(new_tex);
 	}
 
-	UISpriteTileTexture::UISpriteTileTexture(const std::shared_ptr<SpriteTile>& spr)
+	UISpriteTileTexture::UISpriteTileTexture(const std::shared_ptr<rom::SpriteTile>& spr)
 		: sprite_tile(spr)
 		, dimensions(static_cast<float>(spr->x_size), static_cast<float>(spr->y_size))
 	{

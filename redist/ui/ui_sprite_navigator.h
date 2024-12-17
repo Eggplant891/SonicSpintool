@@ -23,7 +23,7 @@ namespace spintool
 
 	private:
 		EditorUI& m_owning_ui;
-		SpinballROM& m_rom;
+		rom::SpinballROM& m_rom;
 
 		std::vector<std::shared_ptr<UISpriteTexture>> m_sprites_found;
 		SDLTextureHandle m_random_texture;

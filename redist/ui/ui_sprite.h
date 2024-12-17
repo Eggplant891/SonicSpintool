@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdl_handle_defs.h"
+#include "types/sdl_handle_defs.h"
 #include "rom/spinball_rom.h"
 #include "imgui.h"
 #include "ui/ui_palette.h"
@@ -11,8 +11,8 @@ namespace spintool
 {
 	struct UISpriteTileTexture
 	{
-		UISpriteTileTexture(const std::shared_ptr<SpriteTile>& sprite_tile);
-		std::shared_ptr<const SpriteTile> sprite_tile;
+		UISpriteTileTexture(const std::shared_ptr<rom::SpriteTile>& sprite_tile);
+		std::shared_ptr<const rom::SpriteTile> sprite_tile;
 		mutable SDLTextureHandle texture;
 		ImVec2 dimensions;
 
@@ -21,8 +21,8 @@ namespace spintool
 
 	struct UISpriteTexture
 	{
-		UISpriteTexture(std::shared_ptr<const SpinballSprite>& spr);
-		std::shared_ptr<const SpinballSprite> sprite;
+		UISpriteTexture(std::shared_ptr<const rom::Sprite>& spr);
+		std::shared_ptr<const rom::Sprite> sprite;
 		SDLTextureHandle texture;
 		ImVec2 dimensions;
 

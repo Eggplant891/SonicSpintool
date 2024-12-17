@@ -1,6 +1,7 @@
 #include "ui/ui_sprite_viewer.h"
 #include "ui/ui_palette_viewer.h"
 #include "ui/ui_editor.h"
+#include <memory>
 
 namespace spintool
 {
@@ -14,7 +15,7 @@ namespace spintool
 		return m_offset;
 	}
 
-	EditorSpriteViewer::EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const SpinballSprite> spr)
+	EditorSpriteViewer::EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const rom::Sprite> spr)
 		: m_owning_ui(owning_ui)
 		, m_sprite(spr)
 		, m_rendered_sprite_texture(spr)
@@ -37,7 +38,7 @@ namespace spintool
 			ImGui::SliderFloat("Zoom", &m_zoom, 1.0f, 8.0f, "%.1f");
 			ImGui::Text("0x%2X", m_sprite->rom_offset);
 
-			const SpinballSprite& selected_sprite = *m_sprite;
+			const rom::Sprite& selected_sprite = *m_sprite;
 
 			ImGui::Text("Num Tiles: %d (%02X)", selected_sprite.num_tiles, selected_sprite.num_tiles);
 			ImGui::Text("Num VDP Tiles (8x8): %d (%02X)", selected_sprite.num_vdp_tiles, selected_sprite.num_vdp_tiles);
@@ -73,7 +74,7 @@ namespace spintool
 			const Point origin_point = m_sprite->GetOriginOffsetFromMinBounds();
 			ImGui::GetWindowDrawList()->AddRect({ image_preview_pos.min.x + ((origin_point.x - 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y - 1) * m_zoom) }, { image_preview_pos.min.x + ((origin_point.x + 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y + 1) * m_zoom) }, ImGui::GetColorU32(ImVec4{64, 64, 64, 255}));
 
-			for (const std::shared_ptr<SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+			for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
 			{
 				Point tile_offset{ sprite_tile->x_offset + origin_point.x, sprite_tile->y_offset + origin_point.y };
 				ImGui::GetWindowDrawList()->AddRect(
@@ -83,7 +84,7 @@ namespace spintool
 			}
 			
 
-			for (const std::shared_ptr<SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+			for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
 			{
 				++i;
 

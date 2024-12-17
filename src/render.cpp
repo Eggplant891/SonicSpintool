@@ -1,14 +1,18 @@
 #include "render.h"
 
-#define SDL_ENABLE_OLD_NAMES
 
+#include "rom/spinball_rom.h"
+#include "rom/sprite.h"
+#include "rom/palette.h"
+
+#define SDL_ENABLE_OLD_NAMES
 #include "SDL3/SDL.h"
+#include "SDL3/SDL_image.h"
+#include "SDL3/SDL_oldnames.h"
+
 #include "imgui.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 #include "backends/imgui_impl_sdl3.h"
-#include "SDL3/SDL_oldnames.h"
-#include "rom/spinball_rom.h"
-#include "SDL3/SDL_image.h"
 
 namespace spintool
 {
@@ -34,40 +38,6 @@ namespace spintool
 
 	SDL_Palette* palette;
 
-	static Uint8 colour_levels[17] =
-	{
-		  0,
-		 29,
-		 52,
-		 70,
-		 87,
-		101,
-		116,
-		130,
-		144,
-		158,
-		172,
-		187,
-		206,
-		228,
-		255
-	};
-
-	VDPColour VDPSwatch::GetUnpacked() const
-	{
-		return VDPColour{ 0, colour_levels[(0x0F00 & packed_value) >> 8], colour_levels[(0x00F0 & packed_value) >> 4], colour_levels[(0x000F & packed_value)] };
-	}
-
-
-	Uint16 VDPSwatch::Pack(float r, float g, float b)
-	{
-		Uint8 red = static_cast<Uint8>(r * 15);
-		Uint8 green = static_cast<Uint8>(g * 15);
-		Uint8 blue = static_cast<Uint8>(b * 15);
-
-		return static_cast<Uint16>((0x0F00 & colour_levels[blue]) << 8) | static_cast<Uint16>((0x00F0 & colour_levels[green]) << 4) | static_cast<Uint16>(0x000F & colour_levels[red]);
-	}
-
 	SDL_Texture* Renderer::GetTexture()
 	{
 		current_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(renderer, sprite_atlas_surface) };
@@ -85,12 +55,12 @@ namespace spintool
 		SDL_SetSurfacePalette(sprite_atlas_surface, palette.get());
 	}
 
-	SDLPaletteHandle Renderer::CreateSDLPalette(const VDPPalette& palette)
+	SDLPaletteHandle Renderer::CreateSDLPalette(const rom::Palette& palette)
 	{
 		SDLPaletteHandle new_palette{ SDL_CreatePalette(16) };
 		for (size_t i = 0; i < 16; ++i)
 		{
-			VDPColour colour= palette.palette_swatches[i].GetUnpacked();
+			rom::Colour colour= palette.palette_swatches[i].GetUnpacked();
 			new_palette->colors[i] = { colour.r, colour.g, colour.b, 255 };
 		}
 		return new_palette;
@@ -150,19 +120,19 @@ namespace spintool
 		SDL_RenderPresent(renderer);
 	}
 
-	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const SpinballROM& rom, size_t offset, Point dimensions)
+	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions)
 	{
 		rom.RenderToSurface(bitmap_sprite_surface, offset, dimensions);
 		return RenderToTexture(bitmap_sprite_surface);
 	}
 
-	SDLTextureHandle Renderer::RenderToTexture(const SpinballSprite& sprite)
+	SDLTextureHandle Renderer::RenderToTexture(const rom::Sprite& sprite)
 	{
 		sprite.RenderToSurface(sprite_atlas_surface);
 		return RenderToTexture(sprite_atlas_surface);
 	}
 
-	SDLTextureHandle Renderer::RenderToTexture(const SpriteTile& sprite_tile)
+	SDLTextureHandle Renderer::RenderToTexture(const rom::SpriteTile& sprite_tile)
 	{
 		sprite_tile.RenderToSurface(sprite_atlas_surface);
 		return RenderToTexture(sprite_atlas_surface);

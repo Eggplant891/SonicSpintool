@@ -1,6 +1,6 @@
 #pragma once
 
-#include "sdl_handle_defs.h"
+#include "types/sdl_handle_defs.h"
 #include "ui/ui_palette.h"
 #include "rom/spinball_rom.h"
 #include <string>
@@ -44,9 +44,9 @@ namespace spintool
 		std::vector<ColourPaletteMapping> m_detected_colours;
 		int m_selected_palette_index = 0;
 		int m_target_write_location = 0;
-		VDPPalette m_selected_palette;
+		rom::Palette m_selected_palette;
 		SDLPaletteHandle m_preview_palette;
-		std::shared_ptr<const SpinballSprite> m_result_sprite;
+		std::shared_ptr<const rom::Sprite> m_result_sprite;
 		std::string m_loaded_path;
 
 		bool m_force_update_write_location = false;

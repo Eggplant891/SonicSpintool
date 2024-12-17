@@ -1,7 +1,7 @@
 #pragma once
 
 #include "render.h"
-#include "sdl_handle_defs.h"
+#include "types/sdl_handle_defs.h"
 #include "rom/spinball_rom.h"
 #include "ui/ui_sprite.h"
 #include "ui/ui_palette.h"
@@ -29,13 +29,13 @@ namespace spintool
 		void Shutdown();
 
 		bool IsROMLoaded() const;
-		SpinballROM& GetROM();
+		rom::SpinballROM& GetROM();
 		std::filesystem::path GetROMLoadPath() const;
 		std::filesystem::path GetROMExportPath() const;
 		std::filesystem::path GetSpriteExportPath() const;
 
-		const std::vector<VDPPalette>& GetPalettes() const;
-		void OpenSpriteViewer(std::shared_ptr<const SpinballSprite>& sprite);
+		const std::vector<rom::Palette>& GetPalettes() const;
+		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
 		void OpenSpriteImporter(int rom_offset);
 		std::recursive_mutex m_render_to_texture_mutex;
 
@@ -44,8 +44,8 @@ namespace spintool
 		std::filesystem::path m_rom_load_path;
 		std::filesystem::path m_rom_export_path;
 		std::filesystem::path m_sprite_export_path;
-		SpinballROM m_rom;
-		std::vector<VDPPalette> m_palettes;
+		rom::SpinballROM m_rom;
+		std::vector<rom::Palette> m_palettes;
 
 		std::vector<std::unique_ptr<EditorSpriteViewer>> m_sprite_viewer_windows;
 		EditorSpriteNavigator m_sprite_navigator;

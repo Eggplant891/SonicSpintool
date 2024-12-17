@@ -4,6 +4,7 @@
 #include "rom/spinball_rom.h"
 #include "ui/ui_editor.h"
 #include "ui/ui_palette_viewer.h"
+#include "rom/sprite.h"
 
 #include "SDL3/SDL_image.h"
 #include <algorithm>
@@ -99,7 +100,7 @@ namespace spintool
 					{
 						const auto& swatches = m_selected_palette.palette_swatches;
 						const auto matched_colour = std::find_if(std::begin(swatches), std::end(swatches),
-							[&pixel](const VDPSwatch& swatch)
+							[&pixel](const rom::Swatch& swatch)
 							{
 								return swatch.AsImColor() == pixel;
 							});
@@ -126,7 +127,7 @@ namespace spintool
 				ImGui::SameLine();
 				ImGui::Text("->");
 				ImGui::SameLine();
-				const VDPSwatch& swatch = m_selected_palette.palette_swatches[colour_entry.palette_index];
+				const rom::Swatch& swatch = m_selected_palette.palette_swatches[colour_entry.palette_index];
 				ImColor col = swatch.AsImColor();
 				ImGui::ColorButton(id_buffer, col.Value);
 
@@ -245,12 +246,12 @@ namespace spintool
 						//assert(m_result_sprite->sprite_tiles.at(0)->x_size == m_preview_image->w && m_result_sprite->sprite_tiles.at(0)->y_size == m_preview_image->h);
 
 						const BoundingBox bounds = m_result_sprite->GetBoundingBox();
-						SpinballROM& rom = m_owning_ui.GetROM();
+						rom::SpinballROM& rom = m_owning_ui.GetROM();
 						unsigned char* current_byte = &rom.m_buffer[m_target_write_location];
 						current_byte += 2; // tiles
 						current_byte += 2; // vdp tiles
 
-						for (const std::shared_ptr<SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
+						for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
 						{
 							current_byte += 2; // xoffset
 							current_byte += 2; // yoffset
@@ -258,7 +259,7 @@ namespace spintool
 							current_byte += 2; // ysize, xsize
 						}
 
-						for (const std::shared_ptr<SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
+						for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
 						{
 							const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
 							const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);

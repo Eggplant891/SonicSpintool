@@ -11,7 +11,7 @@ namespace spintool
 	{
 		const bool selection_changed = DrawPaletteSelector(palette_index, owning_ui);
 		ImGui::SameLine();
-		const VDPPalette& palette = owning_ui.GetPalettes().at(palette_index);
+		const rom::Palette& palette = owning_ui.GetPalettes().at(palette_index);
 		DrawPaletteName(palette, palette_index);
 		ImGui::SameLine();
 		ImGui::Dummy(ImVec2{ 0,0 });
@@ -20,15 +20,15 @@ namespace spintool
 		return selection_changed;
 	}
 
-	void DrawPaletteName(const VDPPalette& palette, int palette_index)
+	void DrawPaletteName(const rom::Palette& palette, int palette_index)
 	{
 		ImGui::Text("Palette %02X (0x%04X)", palette_index, palette.offset);
 	}
 
-	void DrawPaletteSwatchEditor(VDPPalette& palette, int palette_index)
+	void DrawPaletteSwatchEditor(rom::Palette& palette, int palette_index)
 	{
 		ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, 0);
-		for (VDPSwatch& swatch : palette.palette_swatches)
+		for (rom::Swatch& swatch : palette.palette_swatches)
 		{
 			char swatch_name[64];
 			sprintf_s(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
@@ -37,17 +37,17 @@ namespace spintool
 			ImGui::SameLine();
 			if (ImGui::ColorEdit3(swatch_name, &col.Value.x, ImGuiColorEditFlags_Uint8 | ImGuiColorEditFlags_NoLabel | ImGuiColorEditFlags_NoSidePreview | ImGuiColorEditFlags_NoInputs))
 			{
-				swatch.packed_value = VDPSwatch::Pack(col.Value.x, col.Value.y, col.Value.z);
+				swatch.packed_value = rom::Swatch::Pack(col.Value.x, col.Value.y, col.Value.z);
 			}
 		}
 		ImGui::PopStyleVar();
 	}
 
-	void DrawPaletteSwatchPreview(const VDPPalette& palette, int palette_index)
+	void DrawPaletteSwatchPreview(const rom::Palette& palette, int palette_index)
 	{
 		ImGui::NewLine();
 		ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, 0);
-		for (const VDPSwatch& swatch : palette.palette_swatches)
+		for (const rom::Swatch& swatch : palette.palette_swatches)
 		{
 			char swatch_name[64];
 			sprintf_s(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
@@ -63,7 +63,7 @@ namespace spintool
 	{
 		ImGui::SetNextItemWidth(256);
 		const bool selection_changed = ImGui::SliderInt("###Palette Index", &chosen_palette, 0, static_cast<int>(owning_ui.GetPalettes().size() - 1));
-		VDPPalette& palette = const_cast<VDPPalette&>(owning_ui.GetPalettes().at(chosen_palette));
+		rom::Palette& palette = const_cast<rom::Palette&>(owning_ui.GetPalettes().at(chosen_palette));
 		return selection_changed;
 	}
 
@@ -73,7 +73,7 @@ namespace spintool
 
 	}
 
-	void EditorPaletteViewer::Update(std::vector<VDPPalette>& palettes)
+	void EditorPaletteViewer::Update(std::vector<rom::Palette>& palettes)
 	{
 		if (visible == false)
 		{
@@ -84,11 +84,11 @@ namespace spintool
 		{
 			if (ImGui::Button("Save Changes"))
 			{
-				SpinballROM& rom = m_owning_ui.GetROM();
+				rom::SpinballROM& rom = m_owning_ui.GetROM();
 				unsigned char* current_byte = &rom.m_buffer[palettes.front().offset];
-				for (VDPPalette& palette : palettes)
+				for (rom::Palette& palette : palettes)
 				{
-					for (VDPSwatch& swatch : palette.palette_swatches)
+					for (rom::Swatch& swatch : palette.palette_swatches)
 					{
 						*current_byte = (swatch.packed_value & 0xFF00) >> 8;
 						++current_byte;
@@ -101,7 +101,7 @@ namespace spintool
 			if (ImGui::BeginChild("swatch_list"))
 			{
 				int palette_index = 0;
-				for (VDPPalette& palette : palettes)
+				for (rom::Palette& palette : palettes)
 				{
 					DrawPaletteName(palette, palette_index);
 					ImGui::SameLine();
