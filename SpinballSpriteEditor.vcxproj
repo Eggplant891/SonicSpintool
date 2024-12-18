@@ -219,6 +219,7 @@
     <ClCompile Include="src\ui\ui_sprite_importer.cpp" />
     <ClCompile Include="src\ui\ui_sprite_navigator.cpp" />
     <ClCompile Include="src\ui\ui_sprite_viewer.cpp" />
+    <ClCompile Include="src\ui\ui_tileset_navigator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\backends\imgui_impl_sdl3.h" />
@@ -249,6 +250,7 @@
     <ClInclude Include="redist\ui\ui_sprite_importer.h" />
     <ClInclude Include="redist\ui\ui_sprite_navigator.h" />
     <ClInclude Include="redist\ui\ui_sprite_viewer.h" />
+    <ClInclude Include="redist\ui\ui_tileset_navigator.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

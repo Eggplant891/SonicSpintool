@@ -17,17 +17,18 @@ namespace spintool
 		return { -bounds.min.x, -bounds.min.y };
 	}
 
-	void rom::SpinballROM::LoadTileData(size_t rom_offset)
+	std::shared_ptr<const rom::TileSet> rom::SpinballROM::LoadTileData(size_t rom_offset)
 	{
-		m_toxic_caves_bg_data.rom_offset = rom_offset;
+		auto new_tileset = std::make_shared<rom::TileSet>();
 		unsigned char* rom_data_root = &m_buffer[rom_offset];
 		unsigned char* compressed_data_root = &m_buffer[rom_offset+2];
 
-		m_toxic_caves_bg_data.num_tiles = (static_cast<Sint16>(*(rom_data_root)) << 8) | static_cast<Sint16>(*(rom_data_root + 1));
+		new_tileset->num_tiles = (static_cast<Sint16>(*(rom_data_root)) << 8) | static_cast<Sint16>(*(rom_data_root + 1));
 
-		std::vector<unsigned char> working_data; working_data.resize( m_toxic_caves_bg_data.num_tiles * 64 );
-
-		while (true)
+		std::vector<unsigned char> working_data; working_data.resize(new_tileset->num_tiles * 64 );
+		new_tileset->data.clear();
+		bool end_reached = false;
+		while (end_reached == false)
 		{
 			unsigned char fragment_header = *compressed_data_root;
 			compressed_data_root = compressed_data_root + 1;
@@ -45,27 +46,32 @@ namespace spintool
 					Uint16 tile_index_offset = (static_cast<Uint16>((*next_byte) & 0xF0) << 4) | static_cast<Uint16>(*compressed_data_root);
 					if (tile_index_offset == 0)
 					{
-						return;
+						end_reached = true;
+						break;
 					}
 
 					for (int num_copies = (*next_byte & 0xF) + 1; num_copies >= 0; --num_copies)
 					{
 						unsigned char value_to_write = working_data.at(tile_index_offset);
-						m_toxic_caves_bg_data.data.emplace_back(value_to_write);
-						working_data[m_toxic_caves_bg_data.data.size() & 0xFFF] = value_to_write;
+						new_tileset->data.emplace_back(value_to_write);
+						working_data[new_tileset->data.size() & 0xFFF] = value_to_write;
 						tile_index_offset = (tile_index_offset + 1) & 0xFFF;
 					}
 				}
 				else
 				{
-					m_toxic_caves_bg_data.data.emplace_back(*compressed_data_root);
-					working_data[m_toxic_caves_bg_data.data.size() & 0xFFF] = *compressed_data_root;
+					new_tileset->data.emplace_back(*compressed_data_root);
+					working_data[new_tileset->data.size() & 0xFFF] = *compressed_data_root;
 					next_byte = compressed_data_root;
 				}
 				compressed_data_root = next_byte + 1;
 				--fragments_remaining;
 			}
 		}
+
+		new_tileset->rom_data.SetROMData(rom_data_root, compressed_data_root, rom_offset);
+
+		return new_tileset;
 	}
 
 	bool rom::SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
@@ -73,6 +79,10 @@ namespace spintool
 		std::ifstream input = std::ifstream{ path, std::ios::binary };
 		m_filepath = path;
 		m_buffer = std::vector<unsigned char>{ std::istreambuf_iterator<char>(input), {} };
+		if (m_buffer.empty() == false)
+		{
+			LoadTileData(0x9bcd0);
+		}
 		return m_buffer.empty() == false;
 	}
 
@@ -107,18 +117,18 @@ namespace spintool
 		return std::move(new_sprite);
 	}
 
-	std::shared_ptr<const spintool::rom::Sprite> rom::SpinballROM::LoadLevelTile(const std::vector<unsigned char>& data_source, const size_t offset)
+	std::shared_ptr<const spintool::rom::Sprite> rom::SpinballROM::LoadLevelTile(const rom::TileSet& tileset, const size_t offset)
 	{
-		if (offset >= data_source.size() || offset + 64 >= data_source.size())
+		if (offset >= tileset.data.size() || offset + 64 >= tileset.data.size())
 		{
 			return nullptr;
 		}
 
-		const Uint8* current_byte = &data_source[offset];
+		const Uint8* current_byte = &tileset.data[offset];
 
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 
-		new_sprite->rom_data.rom_offset = m_toxic_caves_bg_data.rom_offset;
+		new_sprite->rom_data.rom_offset = tileset.rom_data.rom_offset;
 		constexpr int num_tiles_to_wrangle = 1;
 		new_sprite->num_tiles = num_tiles_to_wrangle;
 
@@ -142,7 +152,7 @@ namespace spintool
 				sprite_tile->x_offset = 8;
 			}
 			size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-			for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < data_source.size(); i += 2)
+			for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < tileset.data.size(); i += 2)
 			{
 				const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
 				const Uint32 right_byte = 0x0F & *current_byte;
@@ -153,7 +163,7 @@ namespace spintool
 				++current_byte;
 			}
 		}
-		new_sprite->rom_data.SetROMData(&data_source[offset], current_byte, offset);
+		new_sprite->rom_data.SetROMData(&tileset.data[offset], current_byte, offset);
 
 		return new_sprite;
 	}

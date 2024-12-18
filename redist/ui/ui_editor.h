@@ -8,6 +8,7 @@
 
 #include "ui/ui_sprite_viewer.h"
 #include "ui/ui_sprite_navigator.h"
+#include "ui/ui_tileset_navigator.h"
 #include "ui/ui_palette_viewer.h"
 #include "ui/ui_sprite_importer.h"
 
@@ -34,6 +35,7 @@ namespace spintool
 		std::filesystem::path GetROMExportPath() const;
 		std::filesystem::path GetSpriteExportPath() const;
 
+		const std::vector<std::shared_ptr<const rom::TileSet>>& GetTilesets() const;
 		const std::vector<rom::Palette>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
 		void OpenSpriteImporter(int rom_offset);
@@ -49,6 +51,7 @@ namespace spintool
 
 		std::vector<std::unique_ptr<EditorSpriteViewer>> m_sprite_viewer_windows;
 		EditorSpriteNavigator m_sprite_navigator;
+		EditorTilesetNavigator m_tileset_navigator;
 		EditorPaletteViewer m_palette_viewer;
 		EditorSpriteImporter m_sprite_importer;
 

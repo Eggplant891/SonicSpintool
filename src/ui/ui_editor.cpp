@@ -12,6 +12,7 @@ namespace spintool
 {
 	EditorUI::EditorUI()
 		: m_sprite_navigator(*this)
+		, m_tileset_navigator(*this)
 		, m_palette_viewer(*this)
 		, m_sprite_importer(*this)
 	{
@@ -76,11 +77,12 @@ namespace spintool
 				if (ImGui::BeginMenu("Tools"))
 				{
 					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.visible);
-					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.visible);
+					ImGui::MenuItem("Tileset Navigator", nullptr, &m_tileset_navigator.visible);
 					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.visible);
+					ImGui::Separator();
+					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.visible);
 					ImGui::EndMenu();
 				}
-
 				ImGui::SameLine();
 			}
 			ImGui::BeginDisabled();
@@ -138,6 +140,7 @@ namespace spintool
 		
 		m_sprite_importer.Update();
 		m_sprite_navigator.Update();
+		m_tileset_navigator.Update();
 		m_palette_viewer.Update(m_palettes);
 
 		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)
@@ -182,6 +185,11 @@ namespace spintool
 	std::filesystem::path EditorUI::GetSpriteExportPath() const
 	{
 		return m_sprite_export_path;
+	}
+
+	const std::vector<std::shared_ptr<const rom::TileSet>>& EditorUI::GetTilesets() const
+	{
+		return m_tileset_navigator.m_tilesets;
 	}
 
 	const std::vector<rom::Palette>& EditorUI::GetPalettes() const

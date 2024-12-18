@@ -131,37 +131,41 @@ namespace spintool
 				}
 			}
 
-			if (ImGui::Button("Show Tiles"))
+			if (ImGui::Button("Show Loaded Tilesets"))
 			{
-				size_t next_offset = 0;
-				while (true)
+				for (const std::shared_ptr<const rom::TileSet>& tileset : m_owning_ui.GetTilesets())
 				{
-					std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_toxic_caves_bg_data.data, next_offset);
-					if (new_sprite == nullptr)
+					ImGui::SeparatorText("Tileset");
+					size_t offset = 0;
+					while (true)
 					{
-						break;
+						std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(*tileset, offset);
+						if (new_sprite == nullptr)
+						{
+							break;
+						}
+						offset += new_sprite->sprite_tiles.at(0)->pixel_data.size();
+						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
+						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
-					next_offset = new_sprite->rom_data.rom_offset_end;
-					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
 			}
 
-			if (ImGui::Button("Show Tiles using binary"))
-			{
-				size_t offset = 0;
-				while (true)
-				{
-					std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
-					if (new_sprite == nullptr)
-					{
-						break;
-					}
-					offset += new_sprite->rom_data.real_size;
-					m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-					m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
-				}
-			}
+			//if (ImGui::Button("Show Tiles using binary"))
+			//{
+			//	size_t offset = 0;
+			//	while (true)
+			//	{
+			//		std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
+			//		if (new_sprite == nullptr)
+			//		{
+			//			break;
+			//		}
+			//		offset += new_sprite->rom_data.real_size;
+			//		m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
+			//		m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
+			//	}
+			//}
 
 			if (ImGui::Button("Goto next sprite"))
 			{
