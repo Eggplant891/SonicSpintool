@@ -35,7 +35,8 @@ namespace spintool
 		size_t m_offset = 0x14D2;
 		int m_chosen_palette = 0;
 		float m_zoom = 2.0f;
-		bool m_use_packed_data_mode = true;
-		bool m_read_between_sprites = false;
+
+		bool m_render_arbitrary_with_palette = true;
+		bool m_attempt_render_of_arbitrary_data = false;
 	};
 }

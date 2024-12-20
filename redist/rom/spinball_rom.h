@@ -21,7 +21,7 @@ namespace spintool::rom
 	public:
 		bool LoadROMFromPath(const std::filesystem::path& path);
 		size_t GetOffsetForNextSprite(const rom::Sprite& current_sprite) const;
-		std::shared_ptr<const rom::Sprite> LoadSprite(const size_t offset, bool packed_data_mode, bool try_to_read_missed_data);
+		std::shared_ptr<const rom::Sprite> LoadSprite(const size_t offset);
 		std::shared_ptr<const rom::Sprite> LoadLevelTile(const rom::TileSet& tileset, const size_t offset);
 		std::shared_ptr<const rom::TileSet> LoadTileData(size_t rom_offset);
 		std::vector<rom::Palette> LoadPalettes(size_t num_palettes);
@@ -29,6 +29,7 @@ namespace spintool::rom
 		void SaveROM();
 
 		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const;
+		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const;
 		void BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 
 		std::vector<unsigned char> m_buffer;

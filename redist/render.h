@@ -31,6 +31,7 @@ namespace spintool
 		static SDLTextureHandle RenderToTexture(const rom::SpriteTile& sprite_tile);
 		static SDLTextureHandle RenderToTexture(SDL_Surface* surface);
 		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions);
+		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions, const rom::Palette& palette);
 		static SDL_Texture* GetTexture();
 		static SDL_Texture* GetViewportTexture();
 

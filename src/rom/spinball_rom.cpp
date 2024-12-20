@@ -8,6 +8,7 @@
 #include "SDL3/SDL_stdinc.h"
 #include "SDL3/SDL_surface.h"
 #include "rom/palette.h"
+#include "rom/ssc_decompressor.h"
 
 namespace spintool
 {
@@ -20,56 +21,12 @@ namespace spintool
 	std::shared_ptr<const rom::TileSet> rom::SpinballROM::LoadTileData(size_t rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
-		unsigned char* rom_data_root = &m_buffer[rom_offset];
-		unsigned char* compressed_data_root = &m_buffer[rom_offset+2];
+		
+		new_tileset->num_tiles = (static_cast<Sint16>(*(&m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&m_buffer[rom_offset+1]));
+		new_tileset->raw_data.clear();
+		new_tileset->raw_data = rom::SSCDecompressor::DecompressData(&m_buffer[rom_offset+2], new_tileset->num_tiles * 64);
 
-		new_tileset->num_tiles = (static_cast<Sint16>(*(rom_data_root)) << 8) | static_cast<Sint16>(*(rom_data_root + 1));
-
-		std::vector<unsigned char> working_data; working_data.resize(new_tileset->num_tiles * 64 );
-		new_tileset->data.clear();
-		bool end_reached = false;
-		while (end_reached == false)
-		{
-			unsigned char fragment_header = *compressed_data_root;
-			compressed_data_root = compressed_data_root + 1;
-			unsigned char* next_byte = nullptr;
-
-			int fragments_remaining = 7;
-			while (fragments_remaining >= 0)
-			{
-				const bool is_raw_data = (fragment_header & 1) == 1;
-				fragment_header = fragment_header >> 1;
-				if (is_raw_data == false)
-				{
-					next_byte = compressed_data_root + 1;
-
-					Uint16 tile_index_offset = (static_cast<Uint16>((*next_byte) & 0xF0) << 4) | static_cast<Uint16>(*compressed_data_root);
-					if (tile_index_offset == 0)
-					{
-						end_reached = true;
-						break;
-					}
-
-					for (int num_copies = (*next_byte & 0xF) + 1; num_copies >= 0; --num_copies)
-					{
-						unsigned char value_to_write = working_data.at(tile_index_offset);
-						new_tileset->data.emplace_back(value_to_write);
-						working_data[new_tileset->data.size() & 0xFFF] = value_to_write;
-						tile_index_offset = (tile_index_offset + 1) & 0xFFF;
-					}
-				}
-				else
-				{
-					new_tileset->data.emplace_back(*compressed_data_root);
-					working_data[new_tileset->data.size() & 0xFFF] = *compressed_data_root;
-					next_byte = compressed_data_root;
-				}
-				compressed_data_root = next_byte + 1;
-				--fragments_remaining;
-			}
-		}
-
-		new_tileset->rom_data.SetROMData(rom_data_root, compressed_data_root, rom_offset);
+		new_tileset->rom_data.SetROMData(&m_buffer[rom_offset+2], &m_buffer[rom_offset+2] + new_tileset->raw_data.size(), rom_offset);
 
 		return new_tileset;
 	}
@@ -97,7 +54,7 @@ namespace spintool
 		return current_sprite.rom_data.rom_offset + current_sprite.GetSizeOf();
 	}
 
-	std::shared_ptr<const rom::Sprite> rom::SpinballROM::LoadSprite(size_t offset, bool packed_data_mode, bool try_to_read_missed_data)
+	std::shared_ptr<const rom::Sprite> rom::SpinballROM::LoadSprite(size_t offset)
 	{
 		if (offset + 4 < offset) // overflow detection
 		{
@@ -109,7 +66,7 @@ namespace spintool
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 		current_byte = new_sprite->LoadFromROM(current_byte, current_byte - m_buffer.data());
 
-		if (new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0)
+		if (current_byte == nullptr || new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0)
 		{
 			return nullptr;
 		}
@@ -119,12 +76,12 @@ namespace spintool
 
 	std::shared_ptr<const spintool::rom::Sprite> rom::SpinballROM::LoadLevelTile(const rom::TileSet& tileset, const size_t offset)
 	{
-		if (offset >= tileset.data.size() || offset + 64 >= tileset.data.size())
+		if (offset >= tileset.raw_data.size() || offset + 64 >= tileset.raw_data.size())
 		{
 			return nullptr;
 		}
 
-		const Uint8* current_byte = &tileset.data[offset];
+		const Uint8* current_byte = &tileset.raw_data[offset];
 
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 
@@ -152,7 +109,7 @@ namespace spintool
 				sprite_tile->x_offset = 8;
 			}
 			size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-			for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < tileset.data.size(); i += 2)
+			for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < tileset.raw_data.size(); i += 2)
 			{
 				const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
 				const Uint32 right_byte = 0x0F & *current_byte;
@@ -163,7 +120,7 @@ namespace spintool
 				++current_byte;
 			}
 		}
-		new_sprite->rom_data.SetROMData(&tileset.data[offset], current_byte, offset);
+		new_sprite->rom_data.SetROMData(&tileset.raw_data[offset], current_byte, offset);
 
 		return new_sprite;
 	}
@@ -196,7 +153,7 @@ namespace spintool
 		return results;
 	}
 
-	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const
+	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const
 	{
 		Renderer::s_sdl_update_mutex.lock();
 		SDL_LockSurface(surface);
@@ -205,12 +162,54 @@ namespace spintool
 
 		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
 
+		if (offset >= m_buffer.size())
+		{
+			return;
+		}
+
+		const SDL_PixelFormatDetails* pixel_format = SDL_GetPixelFormatDetails(surface->format);
+
 		const Uint8* current_byte = &m_buffer[offset];
 		std::vector<Uint32> pixels_data;
-		for (int i = 0; i < dimensions.x * dimensions.y * 2; ++i)
+		for (int i = 0; i < dimensions.x * dimensions.y; i += 2)
+		{
+			const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
+			const Uint32 right_byte = 0x0F & *current_byte;
+
+			const Colour left_byte_col = palette.palette_swatches.at(left_byte).GetUnpacked();
+			const Colour right_byte_col = palette.palette_swatches.at(right_byte).GetUnpacked();
+
+			pixels_data.emplace_back(SDL_MapRGB(pixel_format, nullptr, left_byte_col.r, left_byte_col.g, left_byte_col.b));
+			pixels_data.emplace_back(SDL_MapRGB(pixel_format, nullptr, right_byte_col.r, right_byte_col.g, right_byte_col.b));
+
+			++current_byte;
+		}
+
+		BlitRawPixelDataToSurface(surface, bounds, pixels_data);
+
+		SDL_UnlockSurface(surface);
+		Renderer::s_sdl_update_mutex.unlock();
+
+		
+	}
+
+	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const
+	{
+		Renderer::s_sdl_update_mutex.lock();
+		SDL_LockSurface(surface);
+
+		SDL_ClearSurface(surface, 0, 0, 0, 255);
+
+		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
+		const SDL_PixelFormatDetails* pixel_format = SDL_GetPixelFormatDetails(surface->format);
+
+		const Uint8* current_byte = &m_buffer[offset];
+		std::vector<Uint32> pixels_data;
+		for (int i = 0; i < dimensions.x * dimensions.y; ++i)
 		{
 			Uint16 colour_data = (static_cast<Uint16>(*(current_byte)) << 8) | static_cast<Uint16>(*(current_byte + 1));
-			pixels_data.emplace_back(colour_data);
+			rom::Colour found_colour{ 0, Colour::levels_lookup[(0x0F00 & colour_data) >> 8], Colour::levels_lookup[(0x00F0 & colour_data) >> 4], Colour::levels_lookup[(0x000F & colour_data)] };
+			pixels_data.emplace_back(SDL_MapRGB(pixel_format, nullptr, found_colour.r, found_colour.g, found_colour.b));
 			current_byte += 2;
 		}
 
@@ -226,18 +225,20 @@ namespace spintool
 		int y_off = 0;
 		int x_max = bounds.Width();
 		int y_max = bounds.Height();
-		;
-		size_t target_pixel_index = (y_off * surface->pitch) + x_off;
+		
+		const SDL_PixelFormatDetails* format_details = SDL_GetPixelFormatDetails(surface->format);
 
-		for (size_t i = 0; i < pixels_data.size() && i < surface->pitch * surface->h && i / x_max < y_max; ++i, target_pixel_index += 1)
+		const size_t pixel_count_pitch = surface->pitch / format_details->bytes_per_pixel;
+		size_t target_pixel_index = (y_off * pixel_count_pitch) + x_off;
+		for (size_t i = 0; i < pixels_data.size() && i < pixel_count_pitch * surface->h && i / x_max < y_max; ++i, target_pixel_index += 1)
 		{
 			if ((i % bounds.Width()) == 0)
 			{
-				target_pixel_index = (y_off * surface->pitch) + (surface->pitch * (i / bounds.Width())) + x_off;
+				target_pixel_index = (y_off * pixel_count_pitch) + (pixel_count_pitch * (i / bounds.Width())) + x_off;
 			}
 			rom::Swatch pixel_as_swatch = { static_cast<Uint16>(pixels_data[i]) };
 			//((Uint32*)surface->pixels)[target_pixel_index] = SDL_MapRGB(SDL_GetPixelFormatDetails(surface->format), NULL, static_cast<Uint8>(pixel_as_swatch.GetUnpacked().r / 15.0f) * 255, static_cast<Uint8>(pixel_as_swatch.GetUnpacked().g / 15.0f) * 255, static_cast<Uint8>(pixel_as_swatch.GetUnpacked().b / 15.0f) * 255);
-			((Uint8*)surface->pixels)[target_pixel_index] = pixels_data[i];
+			((Uint32*)surface->pixels)[target_pixel_index] = pixels_data[i];
 		}
 	}
 }

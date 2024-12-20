@@ -14,14 +14,15 @@ namespace spintool
 
 	size_t s_tile_offsets[] =
 	{
-		0x0003DBB2,
+		0x0003DBB2, // Toxic Caves
 		0x000394AA,
-		0x00067672,
+		0x00067672, // Lava powerhouse
 		0x00064BB6,
-		0x00081EB6,
+		0x00081EB6, // The Machine
 		0x0007F29C,
-		0x00053214,
+		0x00053214, // Showdown
 		0x0004FEE4,
+		0x000BDD2E, // Options
 	};
 
 	void EditorTilesetNavigator::Update()

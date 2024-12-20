@@ -27,40 +27,54 @@ namespace spintool
 			return;
 		}
 
+		if (m_random_texture != nullptr)
+		{
+			ImGui::SetNextWindowSize(ImVec2{ -1,-1 });
+			if (ImGui::Begin("Arbitrary texture preview"))
+			{
+				ImGui::Image((ImTextureID)m_random_texture.get(), { random_tex_width * m_zoom, random_tex_height * m_zoom });
+			}
+			ImGui::End();
+		}
 		if (ImGui::Begin("Sprite Discoverator", &visible))
 		{
 			static char path_buffer[4096];
 
-			ImGui::Checkbox("Packed pixel data (2 per byte)", &m_use_packed_data_mode);
-			ImGui::Checkbox("Read data between sprites", &m_read_between_sprites);
 			int working_offset = static_cast<int>(m_offset);
 			if (ImGui::InputInt("ROM Offset", &working_offset, 1, 0x10, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
 			{
 				m_offset = *reinterpret_cast<unsigned int*>(&working_offset);
+				m_attempt_render_of_arbitrary_data = true;
 			}
 
-			if (m_random_texture != nullptr)
+			bool changed = false;
+			if (ImGui::RadioButton("Render 16-bit Colour", m_render_arbitrary_with_palette == false))
 			{
-				ImGui::Image((ImTextureID)m_random_texture.get(), { 128,128 });
+				m_render_arbitrary_with_palette = false;
+				m_attempt_render_of_arbitrary_data = true;
 			}
-
-			if (ImGui::Button("Render Arbitrary Data"))
+			ImGui::SameLine();
+			if (ImGui::RadioButton("Render Palette Colour", m_render_arbitrary_with_palette == true))
 			{
-				m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height });
+				m_render_arbitrary_with_palette = true;
+				m_attempt_render_of_arbitrary_data = true;
 			}
-
-			if (m_random_texture != nullptr)
+			ImGui::SetNextItemWidth(128);
+			m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Width", &random_tex_width, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::SameLine();
+			ImGui::SetNextItemWidth(128);
+			m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Height", &random_tex_height, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+			if (m_attempt_render_of_arbitrary_data)
 			{
-				bool changed = false;
-				ImGui::SameLine();
-				changed |= ImGui::InputInt("Width", &random_tex_width, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
-				ImGui::SameLine();
-				changed |= ImGui::InputInt("Height", &random_tex_height, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
-
-				if (changed)
+				if (m_render_arbitrary_with_palette)
+				{
+					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height }, m_owning_ui.GetPalettes().at(m_chosen_palette));
+				}
+				else
 				{
 					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height });
 				}
+				m_attempt_render_of_arbitrary_data = false;
 			}
 
 			static int num_searches = 16;
@@ -79,6 +93,7 @@ namespace spintool
 					next_sprite = (*current_sprite).get();
 					m_offset += next_sprite->sprite->GetSizeOf();
 				}
+
 				for (size_t a = 0; a < num_searches && m_offset < m_rom.m_buffer.size(); ++a)
 				{
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
@@ -89,7 +104,7 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites);
+						std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset);
 
 						if (new_sprite)
 						{
@@ -123,7 +138,7 @@ namespace spintool
 				}
 				else
 				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
+					if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset))
 					{
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
@@ -186,7 +201,7 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset, m_use_packed_data_mode, m_read_between_sprites))
+						if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset))
 						{
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
@@ -216,7 +231,7 @@ namespace spintool
 						{
 							render_process_progress = working_offset / static_cast<float>(m_rom.m_buffer.size());
 
-							std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(working_offset, m_use_packed_data_mode, m_read_between_sprites);
+							std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(working_offset);
 							if (new_sprite == nullptr)
 							{
 								working_offset+=2;
@@ -282,6 +297,7 @@ namespace spintool
 				{
 					tex->texture.reset();
 				}
+				m_attempt_render_of_arbitrary_data = true;
 			}
 
 			const ImVec2 previous_spacing = ImGui::GetStyle().ItemSpacing;

@@ -20,4 +20,10 @@ namespace spintool::rom
 		228,
 		255
 	};
+
+	Uint32 Colour::GetPackedU32() const
+	{
+		return (r << 24) | (g << 16) | (b << 8) | x;
+	}
+
 }

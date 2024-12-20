@@ -13,6 +13,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 #include "backends/imgui_impl_sdl3.h"
+#include "ui/ui_palette.h"
 
 namespace spintool
 {
@@ -122,8 +123,18 @@ namespace spintool
 
 	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions)
 	{
-		rom.RenderToSurface(bitmap_sprite_surface, offset, dimensions);
-		return RenderToTexture(bitmap_sprite_surface);
+		SDLSurfaceHandle new_surface{ SDL_CreateSurface(dimensions.x, dimensions.y, SDL_PIXELFORMAT_RGBA32) };
+		rom.RenderToSurface(new_surface.get(), offset, dimensions);
+		return RenderToTexture(new_surface.get());
+	}
+
+	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions, const rom::Palette& palette)
+	{
+		SDLSurfaceHandle new_surface{ SDL_CreateSurface(dimensions.x, dimensions.y, SDL_PIXELFORMAT_RGBA32) };
+		//UIPalette ui_palette{palette};
+		//SDL_SetSurfacePalette(new_surface.get(), ui_palette.sdl_palette.get());
+		rom.RenderToSurface(new_surface.get(), offset, dimensions, palette);
+		return RenderToTexture(new_surface.get());
 	}
 
 	SDLTextureHandle Renderer::RenderToTexture(const rom::Sprite& sprite)

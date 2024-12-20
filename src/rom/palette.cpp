@@ -6,7 +6,7 @@ namespace spintool::rom
 {
 	rom::Colour Swatch::GetUnpacked() const
 	{
-		return rom::Colour{ 0, Colour::levels_lookup[(0x0F00 & packed_value) >> 8], Colour::levels_lookup[(0x00F0 & packed_value) >> 4], Colour::levels_lookup[(0x000F & packed_value)] };
+		return rom::Colour{ 0xFF, Colour::levels_lookup[(0x0F00 & packed_value) >> 8], Colour::levels_lookup[(0x00F0 & packed_value) >> 4], Colour::levels_lookup[(0x000F & packed_value)] };
 	}
 
 	Uint16 Swatch::Pack(float r, float g, float b)

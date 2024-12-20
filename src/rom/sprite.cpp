@@ -28,7 +28,7 @@ namespace spintool::rom
 		num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
 		current_byte += 2;
 
-		if (num_tiles > 0x20)
+		if (num_tiles == 0 || num_tiles > 0x80)
 		{
 			return nullptr;
 		}
@@ -46,7 +46,7 @@ namespace spintool::rom
 			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, (current_byte - rom_data_start) + rom_data_offset);
 		}
 
-		if (GetBoundingBox().Width() > 512 || GetBoundingBox().Height() > 512)
+		if (GetBoundingBox().Width() <= 1 || GetBoundingBox().Height() <= 1 || GetBoundingBox().Width() > 512 || GetBoundingBox().Height() > 512)
 		{
 			return nullptr;
 		}

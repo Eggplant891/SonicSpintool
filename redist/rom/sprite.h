@@ -21,7 +21,7 @@ namespace spintool::rom
 		std::vector<std::shared_ptr<rom::SpriteTile>> sprite_tiles;
 
 		ROMData rom_data;
-
+		bool is_valid = false;
 		const Uint8* LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset);
 
 		void RenderToSurface(SDL_Surface* surface) const;

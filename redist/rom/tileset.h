@@ -12,7 +12,7 @@ namespace spintool::rom
 		size_t uncompressed_size = 0;
 
 		Uint16 num_tiles;
-		std::vector<unsigned char> data;
+		std::vector<Uint8> raw_data;
 
 		ROMData rom_data;
 	};

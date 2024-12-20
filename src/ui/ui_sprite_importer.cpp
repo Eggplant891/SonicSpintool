@@ -226,7 +226,7 @@ namespace spintool
 				if (ImGui::InputInt("Target Write Offset", &m_target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal) || m_force_update_write_location)
 				{
 					m_force_update_write_location = false;
-					if (m_result_sprite = m_owning_ui.GetROM().LoadSprite(m_target_write_location, true, false))
+					if (m_result_sprite = m_owning_ui.GetROM().LoadSprite(m_target_write_location))
 					{
 						m_export_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(m_result_sprite->GetBoundingBox().Width(), m_result_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
 						SDL_SetSurfacePalette(m_export_preview_image.get(), m_preview_palette.get());
