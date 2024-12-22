@@ -1,6 +1,7 @@
 #include "rom/sprite_tile.h"
 
 #include "render.h"
+#include "rom/spinball_rom.h"
 
 namespace spintool::rom
 {
@@ -64,14 +65,15 @@ namespace spintool::rom
 		return current_byte;
 	}
 
-	const Uint8* SpriteTileData::LoadFromROM(const SpriteTileHeader& header, const Uint8* rom_data_start, const size_t rom_data_offset)
+	const Uint8* SpriteTileData::LoadFromROM(const SpriteTileHeader& header, const size_t rom_data_offset, const SpinballROM& src_rom)
 	{
+		const Uint8* rom_data_start = &src_rom.m_buffer[rom_data_offset];
 		const Uint8* current_byte = rom_data_start;
 		const size_t total_pixels = header.x_size * header.y_size;
 
 
 		pixel_data.reserve(total_pixels);
-		for (size_t i = 0; i < total_pixels /*&& sprite_tile->rom_offset + i < m_buffer.size()*/; i += 2)
+		for (size_t i = 0; i < total_pixels && rom_data_offset + i < src_rom.m_buffer.size(); i += 2)
 		{
 			const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
 			const Uint32 right_byte = 0x0F & *current_byte;

@@ -13,6 +13,10 @@ struct SDL_Surface;
 
 namespace spintool::rom
 {
+	class SpinballROM;
+}
+namespace spintool::rom
+{
 	struct Sprite
 	{
 		Uint16 num_tiles = 0;
@@ -22,7 +26,7 @@ namespace spintool::rom
 
 		ROMData rom_data;
 		bool is_valid = false;
-		const Uint8* LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset);
+		const size_t LoadFromROM(const size_t rom_data_offset, const SpinballROM& src_rom);
 
 		void RenderToSurface(SDL_Surface* surface) const;
 

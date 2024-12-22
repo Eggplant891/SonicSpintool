@@ -63,12 +63,12 @@ namespace spintool
 			return nullptr;
 		}
 
-		const Uint8* current_byte = &m_buffer[offset];
+		size_t next_byte_offset = offset;
 
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
-		current_byte = new_sprite->LoadFromROM(current_byte, current_byte - m_buffer.data());
+		next_byte_offset = new_sprite->LoadFromROM(next_byte_offset, *this);
 
-		if (current_byte == nullptr || new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0)
+		if (next_byte_offset == offset || new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0)
 		{
 			return nullptr;
 		}

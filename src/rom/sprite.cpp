@@ -1,6 +1,7 @@
 #include "rom/sprite.h"
 
 #include "rom/sprite_tile.h"
+#include "rom/spinball_rom.h"
 #include "render.h"
 
 namespace spintool::rom
@@ -21,8 +22,9 @@ namespace spintool::rom
 		return bounds;
 	}
 
-	const Uint8* Sprite::LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset)
+	const size_t Sprite::LoadFromROM(const size_t rom_data_offset, const SpinballROM& src_rom)
 	{
+		const Uint8* rom_data_start = &src_rom.m_buffer[rom_data_offset];
 		const Uint8* current_byte = rom_data_start;
 
 		num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
@@ -30,7 +32,7 @@ namespace spintool::rom
 
 		if (num_tiles == 0 || num_tiles > 0x80)
 		{
-			return nullptr;
+			return rom_data_offset;
 		}
 
 		num_vdp_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
@@ -48,14 +50,14 @@ namespace spintool::rom
 
 		if (GetBoundingBox().Width() <= 1 || GetBoundingBox().Height() <= 1 || GetBoundingBox().Width() > 512 || GetBoundingBox().Height() > 512)
 		{
-			return nullptr;
+			return rom_data_offset;
 		}
 
 		constexpr int max_tiles = 64;
 
 		if (num_vdp_tiles > max_tiles)
 		{
-			return nullptr;
+			return rom_data_offset;
 		}
 
 		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
@@ -63,16 +65,16 @@ namespace spintool::rom
 			const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
 			if (total_pixels != 0)
 			{
-				//if (sprite_tile->rom_offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < m_buffer.size())
+				if (rom_data_offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < src_rom.m_buffer.size())
 				{
-					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), current_byte, (current_byte - rom_data_start) + rom_data_offset);
+					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), (current_byte - rom_data_start) + rom_data_offset, src_rom);
 				}
 			}
 		}
 
 		rom_data.SetROMData(rom_data_start, current_byte, rom_data_offset);
 
-		return current_byte;
+		return rom_data.rom_offset_end;
 	}
 
 	void rom::Sprite::RenderToSurface(SDL_Surface* surface) const

@@ -9,6 +9,10 @@ struct SDL_Surface;
 namespace spintool
 {
 	struct BoundingBox;
+	namespace rom
+	{
+		class SpinballROM;
+	}
 }
 
 namespace spintool::rom
@@ -34,7 +38,7 @@ namespace spintool::rom
 
 		ROMData tile_rom_data;
 
-		const Uint8* LoadFromROM(const SpriteTileHeader& header, const Uint8* rom_data_start, const size_t rom_data_offset);
+		const Uint8* LoadFromROM(const SpriteTileHeader& header, const size_t rom_data_offset, const SpinballROM& src_rom);
 	};
 
 	struct SpriteTile
