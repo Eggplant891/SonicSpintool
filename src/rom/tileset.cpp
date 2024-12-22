@@ -56,7 +56,7 @@ namespace spintool::rom
 				++current_byte;
 			}
 		}
-		new_sprite->rom_data.SetROMData(&raw_data[offset], current_byte, offset);
+		new_sprite->rom_data.SetROMData(rom_data.rom_offset + offset, rom_data.rom_offset + (current_byte - &raw_data[offset]));
 
 		return new_sprite;
 	}
