@@ -28,5 +28,7 @@ namespace spintool
 		int m_chosen_palette_index = 0;
 		float m_zoom = 4.0f;;
 		bool m_is_open = true;
+		bool m_render_tile_borders = true;
+		bool m_render_sprite_origin = true;
 	};
 }

@@ -43,6 +43,9 @@ namespace spintool
 			ImGui::Text("Num Tiles: %d (%02X)", selected_sprite.num_tiles, selected_sprite.num_tiles);
 			ImGui::Text("Num VDP Tiles (8x8): %d (%02X)", selected_sprite.num_vdp_tiles, selected_sprite.num_vdp_tiles);
 
+			ImGui::Checkbox("Render Tile Borders", &m_render_tile_borders);
+			ImGui::Checkbox("Render Origin", &m_render_sprite_origin);
+
 			if (DrawPaletteSelector(m_chosen_palette_index, m_owning_ui))
 			{
 				m_rendered_sprite_texture.texture.reset();
@@ -68,17 +71,22 @@ namespace spintool
 			const BoundingBox image_preview_pos = { static_cast<int>(ImGui::GetItemRectMin().x), static_cast<int>(ImGui::GetItemRectMin().y), static_cast<int>(ImGui::GetItemRectMax().x), static_cast<int>(ImGui::GetItemRectMax().y) };
 
 			const Point origin_point = m_sprite->GetOriginOffsetFromMinBounds();
-			ImGui::GetWindowDrawList()->AddRect({ image_preview_pos.min.x + ((origin_point.x - 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y - 1) * m_zoom) }, { image_preview_pos.min.x + ((origin_point.x + 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y + 1) * m_zoom) }, ImGui::GetColorU32(ImVec4{64, 64, 64, 255}));
-
-			for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+			if (m_render_sprite_origin)
 			{
-				Point tile_offset{ sprite_tile->x_offset + origin_point.x, sprite_tile->y_offset + origin_point.y };
-				ImGui::GetWindowDrawList()->AddRect(
-					{ image_preview_pos.min.x + (tile_offset.x * m_zoom), image_preview_pos.min.y + (tile_offset.y * m_zoom) },
-					{ image_preview_pos.min.x + (tile_offset.x * m_zoom) + (sprite_tile->x_size * m_zoom), image_preview_pos.min.y + (tile_offset.y * m_zoom) + (sprite_tile->y_size * m_zoom) }
-				, ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 0.0f, 0, 1);
+				ImGui::GetWindowDrawList()->AddRect({ image_preview_pos.min.x + ((origin_point.x - 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y - 1) * m_zoom) }, { image_preview_pos.min.x + ((origin_point.x + 1) * m_zoom), image_preview_pos.min.y + ((origin_point.y + 1) * m_zoom) }, ImGui::GetColorU32(ImVec4{ 64, 64, 64, 255 }));
 			}
-			
+
+			if (m_render_tile_borders)
+			{
+				for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+				{
+					Point tile_offset{ sprite_tile->x_offset + origin_point.x, sprite_tile->y_offset + origin_point.y };
+					ImGui::GetWindowDrawList()->AddRect(
+						{ image_preview_pos.min.x + (tile_offset.x * m_zoom) - 1, image_preview_pos.min.y + (tile_offset.y * m_zoom) - 1 },
+						{ image_preview_pos.min.x + (tile_offset.x * m_zoom) + (sprite_tile->x_size * m_zoom) + 1, image_preview_pos.min.y + (tile_offset.y * m_zoom) + (sprite_tile->y_size * m_zoom) + 1 }
+					, ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 0.0f, 0, 1);
+				}
+			}
 
 			for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
 			{
