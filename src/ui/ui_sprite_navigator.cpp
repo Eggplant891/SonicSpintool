@@ -154,33 +154,17 @@ namespace spintool
 					size_t offset = 0;
 					while (true)
 					{
-						std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(*tileset, offset);
+						std::shared_ptr<const rom::Sprite> new_sprite = tileset->CreateSpriteFromTile(offset);
 						if (new_sprite == nullptr)
 						{
 							break;
 						}
-						offset += new_sprite->sprite_tiles.at(0)->pixel_data.size();
+						offset = new_sprite->rom_data.rom_offset_end;
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
 				}
 			}
-
-			//if (ImGui::Button("Show Tiles using binary"))
-			//{
-			//	size_t offset = 0;
-			//	while (true)
-			//	{
-			//		std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadLevelTile(m_rom.m_buffer, offset);
-			//		if (new_sprite == nullptr)
-			//		{
-			//			break;
-			//		}
-			//		offset += new_sprite->rom_data.real_size;
-			//		m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-			//		m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
-			//	}
-			//}
 
 			if (ImGui::Button("Goto next sprite"))
 			{

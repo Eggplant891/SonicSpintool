@@ -2,6 +2,8 @@
 
 #include "ui/ui_editor.h"
 #include "rom/spinball_rom.h"
+#include "rom/ssc_decompressor.h"
+#include <iostream>
 
 namespace spintool
 {
@@ -40,6 +42,80 @@ namespace spintool
 				{
 					m_tilesets.emplace_back(m_owning_ui.GetROM().LoadTileData(offset));
 				}
+			}
+
+			static int actual_offset = 0;
+			static bool validated_data = false;
+			static rom::SSCDecompressionResult result;
+			if (ImGui::InputInt("ROM Offset", &actual_offset, 1, 0x10, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
+			{
+				validated_data = false;
+			}
+
+			if (ImGui::Button("Validate SSC Data"))
+			{
+				validated_data = true;
+				result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_rom.m_buffer[actual_offset], actual_offset);
+			}
+			if (validated_data)
+			{
+				ImGui::Text(result.error_msg.value_or(std::string("OK!")).c_str());
+			}
+
+			static std::vector<rom::SSCDecompressionResult> valid_ssc_results;
+			valid_ssc_results.reserve(0xFFFF);
+			if (ImGui::Button("Search for SSC Compressed data"))
+			{
+				constexpr size_t max_tiles = 256;
+				valid_ssc_results.clear();
+				size_t next_offset = actual_offset;
+				while (next_offset+2 < m_rom.m_buffer.size())
+				{
+					Uint16 num_tiles = (static_cast<Sint16>(m_rom.m_buffer[next_offset] << 8)) | (static_cast<Sint16>(m_rom.m_buffer[next_offset + 1]));
+					if (num_tiles >= 2 && num_tiles < max_tiles)
+					{
+						rom::SSCDecompressionResult result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_rom.m_buffer[next_offset+2], next_offset+2);
+						//rom::SSCDecompressionResult decompressed_data_result = rom::SSCDecompressor::DecompressData(&m_rom.m_buffer[next_offset+2], num_tiles * 0x40);
+						next_offset += 2;// result.rom_data.rom_offset_end;
+						if (result.error_msg.has_value() == false)
+						{
+							//if (result.uncompressed_size != decompressed_data_result.uncompressed_data.size())
+							//{
+							//	//char buffer[2048];
+							//	//sprintf_s(buffer, "Mismatched size detected at 0x%08X [Expected: %llu] [Actual: %llu]", static_cast<unsigned int>(result.rom_data.rom_offset), result.uncompressed_size, decompressed_data_result.uncompressed_data.size());
+							//	//std::cout << buffer << std::endl;
+							//}
+
+							if (result.uncompressed_size > 0x400 && (valid_ssc_results.empty() || result.rom_data.rom_offset_end != valid_ssc_results.back().rom_data.rom_offset_end))
+							{
+								//std::shared_ptr<const rom::TileSet> tileset_result = m_rom.LoadTileData(next_offset);
+								//if (tileset_result->num_tiles == num_tiles)
+								{
+									valid_ssc_results.emplace_back(result);
+									//valid_ssc_results.emplace_back(result, std::move(tileset_result));
+								}
+							}
+						}
+
+						if (next_offset % 2 == 1)
+						{
+							next_offset++;
+						}
+					}
+					else
+					{
+						next_offset += 2;
+					}
+				}
+			}
+
+			if (valid_ssc_results.empty() == false)
+			{
+				ImGui::SeparatorText("Valid SSC data found");
+			}
+			for (const rom::SSCDecompressionResult& result : valid_ssc_results)
+			{
+				ImGui::Text("0x%08X -> 0x%08X [0x%02X] (Tiles: %u)", result.rom_data.rom_offset, result.rom_data.rom_offset_end, result.uncompressed_size);
 			}
 
 			for (const std::shared_ptr<const rom::TileSet>& tileset : m_tilesets)

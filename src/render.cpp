@@ -37,8 +37,6 @@ namespace spintool
 
 	SDLTextureHandle window_texture;
 
-	SDL_Palette* palette;
-
 	SDL_Texture* Renderer::GetTexture()
 	{
 		current_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(renderer, sprite_atlas_surface) };
@@ -139,8 +137,14 @@ namespace spintool
 
 	SDLTextureHandle Renderer::RenderToTexture(const rom::Sprite& sprite)
 	{
+		auto old_atlas_surface = std::move(sprite_atlas_surface);
+		sprite_atlas_surface = SDL_CreateSurface(sprite.GetBoundingBox().Width(), sprite.GetBoundingBox().Height(), s_pixel_format_details->format);
+		SDL_SetSurfacePalette(sprite_atlas_surface, SDL_GetSurfacePalette(old_atlas_surface));
 		sprite.RenderToSurface(sprite_atlas_surface);
-		return RenderToTexture(sprite_atlas_surface);
+		SDLTextureHandle tex_handle = RenderToTexture(sprite_atlas_surface);
+		delete sprite_atlas_surface;
+		sprite_atlas_surface = std::move(old_atlas_surface);
+		return tex_handle;
 	}
 
 	SDLTextureHandle Renderer::RenderToTexture(const rom::SpriteTile& sprite_tile)

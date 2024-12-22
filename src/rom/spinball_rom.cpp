@@ -24,7 +24,9 @@ namespace spintool
 		
 		new_tileset->num_tiles = (static_cast<Sint16>(*(&m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&m_buffer[rom_offset+1]));
 		new_tileset->raw_data.clear();
-		new_tileset->raw_data = rom::SSCDecompressor::DecompressData(&m_buffer[rom_offset+2], new_tileset->num_tiles * 64);
+		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(&m_buffer[rom_offset+2], new_tileset->num_tiles * 64);
+		new_tileset->uncompressed_size = results.uncompressed_data.size();
+		new_tileset->raw_data = std::move(results.uncompressed_data);
 
 		new_tileset->rom_data.SetROMData(&m_buffer[rom_offset+2], &m_buffer[rom_offset+2] + new_tileset->raw_data.size(), rom_offset);
 
@@ -72,57 +74,6 @@ namespace spintool
 		}
 
 		return std::move(new_sprite);
-	}
-
-	std::shared_ptr<const spintool::rom::Sprite> rom::SpinballROM::LoadLevelTile(const rom::TileSet& tileset, const size_t offset)
-	{
-		if (offset >= tileset.raw_data.size() || offset + 64 >= tileset.raw_data.size())
-		{
-			return nullptr;
-		}
-
-		const Uint8* current_byte = &tileset.raw_data[offset];
-
-		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
-
-		new_sprite->rom_data.rom_offset = tileset.rom_data.rom_offset;
-		constexpr int num_tiles_to_wrangle = 1;
-		new_sprite->num_tiles = num_tiles_to_wrangle;
-
-		for (int i = 0; i < num_tiles_to_wrangle; ++i)
-		{
-			std::shared_ptr<rom::SpriteTile> sprite_tile = new_sprite->sprite_tiles.emplace_back(std::make_shared<rom::SpriteTile>());
-			sprite_tile->x_size = 8;
-			sprite_tile->y_size = 8;
-
-			if (i == 1)
-			{
-				sprite_tile->y_offset = 8;
-			}
-			else if (i == 2)
-			{
-				sprite_tile->x_offset = 8;
-				sprite_tile->y_offset = 8;
-			}
-			else if (i == 3)
-			{
-				sprite_tile->x_offset = 8;
-			}
-			size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-			for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < tileset.raw_data.size(); i += 2)
-			{
-				const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
-				const Uint32 right_byte = 0x0F & *current_byte;
-
-				sprite_tile->pixel_data.emplace_back(left_byte);
-				sprite_tile->pixel_data.emplace_back(right_byte);
-
-				++current_byte;
-			}
-		}
-		new_sprite->rom_data.SetROMData(&tileset.raw_data[offset], current_byte, offset);
-
-		return new_sprite;
 	}
 
 	std::vector<spintool::rom::Palette> rom::SpinballROM::LoadPalettes(size_t num_palettes)
