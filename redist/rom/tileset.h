@@ -20,9 +20,13 @@ namespace spintool::rom
 
 		ROMData rom_data;
 		std::vector<Uint8> raw_data;
-
 		Uint16 num_tiles;
 
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const size_t offset) const;
+
+		constexpr const static Uint16 s_tile_width = 0x08;
+		constexpr const static Uint16 s_tile_height = 0x08;
+		constexpr const static Uint16 s_tile_total_pixels = s_tile_width * s_tile_height;
+		constexpr const static Uint16 s_tile_total_bytes = (s_tile_width / 2) * s_tile_height;
 	};
 }

@@ -5,7 +5,7 @@ namespace spintool::rom
 {
 	std::shared_ptr<const Sprite> TileSet::CreateSpriteFromTile(const size_t offset) const
 	{
-		if (offset >= raw_data.size() || offset + 64 >= raw_data.size())
+		if (offset >= raw_data.size() || offset + s_tile_total_bytes >= raw_data.size())
 		{
 			return nullptr;
 		}
