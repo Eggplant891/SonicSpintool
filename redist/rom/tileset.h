@@ -19,7 +19,7 @@ namespace spintool::rom
 		size_t compressed_size = 0;
 		size_t uncompressed_size = 0;
 
-		Uint16 num_tiles;
+		Uint16 num_tiles = 0;
 		std::vector<Uint8> uncompressed_data;
 
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const size_t offset) const;
