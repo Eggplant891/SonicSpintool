@@ -141,8 +141,15 @@ namespace spintool
 							ImGui::Text("Failed to render texture");
 							ImGui::EndDisabled();
 						}
-						ImGui::Text("Header address range: 0x%06X -> 0x%06X", sprite_tile->header_rom_data.rom_offset, sprite_tile->header_rom_data.rom_offset_end - 1);
-						ImGui::Text("Data address range: 0x%06X -> 0x%06X", sprite_tile->tile_rom_data.rom_offset, sprite_tile->tile_rom_data.rom_offset_end - 1);
+
+						if (sprite_tile->header_rom_data.real_size != 0)
+						{
+							ImGui::Text("Header address range: 0x%06X -> 0x%06X", sprite_tile->header_rom_data.rom_offset, sprite_tile->header_rom_data.rom_offset_end - 1);
+						}
+						if (sprite_tile->tile_rom_data.real_size != 0)
+						{
+							ImGui::Text("Data address range: 0x%06X -> 0x%06X", sprite_tile->tile_rom_data.rom_offset, sprite_tile->tile_rom_data.rom_offset_end - 1);
+						}
 
 						ImGui::Text("Offset X: %d (0x%04X)", sprite_tile->x_offset, sprite_tile->x_offset);
 						ImGui::Text("Offset Y: %d (0x%04X)", sprite_tile->y_offset, sprite_tile->y_offset);

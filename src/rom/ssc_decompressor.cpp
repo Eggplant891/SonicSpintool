@@ -74,27 +74,42 @@ namespace spintool::rom
 		return results;
 	}
 
-	SSCDecompressionResult SSCDecompressor::DecompressData(const Uint8* in_data, size_t size_hint)
+	SSCDecompressionResult SSCDecompressor::DecompressData(const std::vector<Uint8>& in_data, const size_t offset, const size_t working_data_size_hint)
 	{
-		const Uint8* compressed_data_root = in_data;
 		SSCDecompressionResult results;
-		std::vector<Uint8>& out_data = results.uncompressed_data;
+		
+		if (in_data.empty() || offset >= in_data.size())
+		{
+			results.error_msg = "Data buffer supplied was empty";
+			return results;
+		}
+
+		if (offset >= in_data.size())
+		{
+			results.error_msg = "Offset supplied would result in reading beyond the size of the supplied data buffer";
+			return results;
+		}
+
+		const Uint8* compressed_data_root = &in_data[offset];
+		const Uint8* current_byte = compressed_data_root;
+
 		static std::vector<Uint8> working_data = []()  // Needs to be indexable even before we have written to it
 			{
 				std::vector<Uint8> data_vec;
 				data_vec.resize(0x1000);
 				return data_vec;
 			}();
-
-		out_data.reserve(size_hint); // Size needs to be accurate to determine where to index in working_data.
 		memset(working_data.data(), 0, 0x1000);
+
+		std::vector<Uint8>& out_data = results.uncompressed_data;
+		out_data.reserve(working_data_size_hint); // Size needs to be accurate to determine where to index in working_data.
 
 		bool end_reached = false;
 		while (end_reached == false)
 		{
 			const Uint8* next_byte = nullptr;
-			Uint8 fragment_header = *compressed_data_root;
-			++compressed_data_root;
+			Uint8 fragment_header = *current_byte;
+			++current_byte;
 
 			for (int fragments_remaining = 7; fragments_remaining >= 0; --fragments_remaining)
 			{
@@ -102,11 +117,12 @@ namespace spintool::rom
 				fragment_header = fragment_header >> 1;
 				if (is_raw_data == false)
 				{
-					next_byte = compressed_data_root + 1;
+					next_byte = current_byte + 1;
 
-					Uint16 tile_index_offset = (static_cast<Uint16>((*next_byte) & 0xF0) << 4) | static_cast<Uint16>(*compressed_data_root);
+					Uint16 tile_index_offset = (static_cast<Uint16>((*next_byte) & 0xF0) << 4) | static_cast<Uint16>(*current_byte);
 					if (tile_index_offset == 0)
 					{
+						current_byte = next_byte;
 						end_reached = true;
 						break;
 					}
@@ -121,14 +137,14 @@ namespace spintool::rom
 				}
 				else
 				{
-					out_data.emplace_back(*compressed_data_root);
-					working_data[out_data.size() & 0xFFF] = *compressed_data_root;
-					next_byte = compressed_data_root;
+					out_data.emplace_back(*current_byte);
+					working_data[out_data.size() & 0xFFF] = *current_byte;
+					next_byte = current_byte;
 				}
-				compressed_data_root = next_byte + 1;
+				current_byte = next_byte + 1;
 			}
 		}
-
+		results.rom_data.SetROMData(compressed_data_root, current_byte + 1, offset);
 		results.uncompressed_size = results.uncompressed_data.size();
 		return results;
 	}

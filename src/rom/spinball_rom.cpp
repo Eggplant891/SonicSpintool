@@ -23,12 +23,13 @@ namespace spintool
 		auto new_tileset = std::make_shared<rom::TileSet>();
 		
 		new_tileset->num_tiles = (static_cast<Sint16>(*(&m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&m_buffer[rom_offset+1]));
-		new_tileset->raw_data.clear();
-		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(&m_buffer[rom_offset+2], new_tileset->num_tiles * 64);
-		new_tileset->uncompressed_size = results.uncompressed_data.size();
-		new_tileset->raw_data = std::move(results.uncompressed_data);
+		new_tileset->uncompressed_data.clear();
 
-		new_tileset->rom_data.SetROMData(&m_buffer[rom_offset+2], &m_buffer[rom_offset+2] + new_tileset->raw_data.size(), rom_offset);
+		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
+		new_tileset->uncompressed_size = results.uncompressed_data.size();
+		new_tileset->compressed_size = results.rom_data.real_size;
+		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
+		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
 
 		return new_tileset;
 	}

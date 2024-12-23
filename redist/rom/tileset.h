@@ -15,12 +15,12 @@ namespace spintool::rom
 {
 	struct TileSet
 	{
+		ROMData rom_data;
 		size_t compressed_size = 0;
 		size_t uncompressed_size = 0;
 
-		ROMData rom_data;
-		std::vector<Uint8> raw_data;
 		Uint16 num_tiles;
+		std::vector<Uint8> uncompressed_data;
 
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const size_t offset) const;
 

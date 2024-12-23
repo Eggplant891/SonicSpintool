@@ -121,12 +121,26 @@ namespace spintool
 			for (const std::shared_ptr<const rom::TileSet>& tileset : m_tilesets)
 			{
 				char name_buffer[1024];
-				sprintf_s(name_buffer, "Tileset(0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
-				ImGui::SeparatorText(name_buffer);
-				ImGui::Text("Tiles: %02d (0x%02X)", tileset->num_tiles, tileset->num_tiles);
-				ImGui::Text("Size on ROM: %02d (0x%04X)", tileset->rom_data.real_size, tileset->rom_data.real_size);
-				ImGui::Text("Compressed Size: %02d (0x%04X)", tileset->compressed_size, tileset->compressed_size);
-				ImGui::Text("Uncompressed Size: %02d (0x%04X)", tileset->uncompressed_size, tileset->uncompressed_size);
+				sprintf_s(name_buffer, "Tileset (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
+				if (ImGui::TreeNode(name_buffer))
+				{
+					ImGui::Text("Total size on ROM: %02d (0x%04X)", tileset->rom_data.real_size, tileset->rom_data.real_size);
+					sprintf_s(name_buffer,"Header (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset + 2));
+					if (ImGui::TreeNodeEx(name_buffer, ImGuiTreeNodeFlags_DefaultOpen))
+					{
+						ImGui::Text("Tiles: %02d (0x%04X)", tileset->num_tiles, tileset->num_tiles);
+						ImGui::TreePop();
+					}
+
+					sprintf_s(name_buffer, "Tile Data: (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset + 2), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
+					if (ImGui::TreeNodeEx(name_buffer, ImGuiTreeNodeFlags_DefaultOpen))
+					{
+						ImGui::Text("Compressed Size: %02d (0x%04X)", tileset->compressed_size, tileset->compressed_size);
+						ImGui::Text("Uncompressed Size: %02d (0x%04X)", tileset->uncompressed_size, tileset->uncompressed_size);
+						ImGui::TreePop();
+					}
+					ImGui::TreePop();
+				}
 			}
 		}
 		ImGui::End();
