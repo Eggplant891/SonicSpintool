@@ -210,6 +210,7 @@
     <ClCompile Include="src\rom\sprite_tile.cpp" />
     <ClCompile Include="src\rom\ssc_decompressor.cpp" />
     <ClCompile Include="src\rom\tileset.cpp" />
+    <ClCompile Include="src\rom\tile_layout.cpp" />
     <ClCompile Include="src\types\bounding_box.cpp" />
     <ClCompile Include="src\ui\ui_editor.cpp" />
     <ClCompile Include="src\ui\ui_file_selector.cpp" />
@@ -241,6 +242,7 @@
     <ClInclude Include="redist\rom\sprite_tile.h" />
     <ClInclude Include="redist\rom\ssc_decompressor.h" />
     <ClInclude Include="redist\rom\tileset.h" />
+    <ClInclude Include="redist\rom\tile_layout.h" />
     <ClInclude Include="redist\sdl_handle_defs.h" />
     <ClInclude Include="redist\ui\ui_editor.h" />
     <ClInclude Include="redist\ui\ui_file_selector.h" />
