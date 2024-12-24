@@ -2,6 +2,12 @@
 
 #include "rom_data.h"
 #include <vector>
+#include <memory>
+
+namespace spintool::rom
+{
+	class SpinballROM;
+}
 
 namespace spintool::rom
 {
@@ -23,5 +29,7 @@ namespace spintool::rom
 		int layout_width = 0;
 		int layout_height = 0;
 		std::vector<TileInstance> tile_instances;
+
+		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, size_t offset);
 	};
 }
