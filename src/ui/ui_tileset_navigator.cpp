@@ -40,7 +40,7 @@ namespace spintool
 			{
 				for (size_t offset : s_tile_offsets)
 				{
-					m_tilesets.emplace_back(m_owning_ui.GetROM().LoadTileData(offset));
+					m_tilesets.emplace_back(rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), offset));
 				}
 			}
 

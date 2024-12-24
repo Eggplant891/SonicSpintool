@@ -1,18 +1,36 @@
 #include "rom/tileset.h"
 #include "rom/sprite.h"
+#include "rom/spinball_rom.h"
+#include "rom/ssc_decompressor.h"
 
 namespace spintool::rom
 {
-	std::shared_ptr<const Sprite> TileSet::CreateSpriteFromTile(const size_t offset) const
+	std::shared_ptr<const TileSet> TileSet::LoadFromROM(const SpinballROM& src_rom, size_t rom_offset)
 	{
-		if (offset >= uncompressed_data.size() || offset + s_tile_total_bytes >= uncompressed_data.size())
+		auto new_tileset = std::make_shared<rom::TileSet>();
+
+		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
+		new_tileset->uncompressed_data.clear();
+
+		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
+		new_tileset->uncompressed_size = results.uncompressed_data.size();
+		new_tileset->compressed_size = results.rom_data.real_size;
+		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
+		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
+
+		return new_tileset;
+	}
+
+	std::shared_ptr<const Sprite> TileSet::CreateSpriteFromTile(const size_t relative_offset) const
+	{
+		if (relative_offset >= uncompressed_data.size() || relative_offset + s_tile_total_bytes >= uncompressed_data.size())
 		{
 			return nullptr;
 		}
 
 		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
 
-		const Uint8* tileset_start_byte = &uncompressed_data[offset];
+		const Uint8* tileset_start_byte = &uncompressed_data[relative_offset];
 		const Uint8* current_byte = tileset_start_byte;
 		const int num_tiles_to_wrangle = num_tiles;
 		const int num_tiles_per_row = 16;
@@ -60,11 +78,10 @@ namespace spintool::rom
 				++current_byte;
 			}
 
-			sprite_tile->tile_rom_data.SetROMData(rom_data.rom_offset + offset + (tile_start_byte - tileset_start_byte), rom_data.rom_offset + offset + (current_byte - tileset_start_byte));
+			sprite_tile->tile_rom_data.SetROMData(rom_data.rom_offset + relative_offset + (tile_start_byte - tileset_start_byte), rom_data.rom_offset + relative_offset + (current_byte - tileset_start_byte));
 		}
-		new_sprite->rom_data.SetROMData(rom_data.rom_offset + offset, rom_data.rom_offset + (current_byte - &uncompressed_data[offset]));
+		new_sprite->rom_data.SetROMData(rom_data.rom_offset + relative_offset, rom_data.rom_offset + (current_byte - &uncompressed_data[relative_offset]));
 
 		return new_sprite;
 	}
-
 }

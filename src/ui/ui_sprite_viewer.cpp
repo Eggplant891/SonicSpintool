@@ -66,7 +66,7 @@ namespace spintool
 
 			if (m_rendered_sprite_texture.texture == nullptr)
 			{
-				m_selected_palette = m_owning_ui.GetPalettes().at(m_chosen_palette_index);
+				m_selected_palette = *m_owning_ui.GetPalettes().at(m_chosen_palette_index);
 				m_rendered_sprite_texture.texture = m_rendered_sprite_texture.RenderTextureForPalette(m_selected_palette);
 			}
 

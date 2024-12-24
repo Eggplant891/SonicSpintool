@@ -192,7 +192,7 @@ namespace spintool
 		return m_tileset_navigator.m_tilesets;
 	}
 
-	const std::vector<rom::Palette>& EditorUI::GetPalettes() const
+	const std::vector<std::shared_ptr<rom::Palette>>& EditorUI::GetPalettes() const
 	{
 		return m_palettes;
 	}

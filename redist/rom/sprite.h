@@ -26,7 +26,7 @@ namespace spintool::rom
 
 		ROMData rom_data;
 		bool is_valid = false;
-		const size_t LoadFromROM(const size_t rom_data_offset, const SpinballROM& src_rom);
+		static std::shared_ptr<const Sprite> LoadFromROM(const SpinballROM& src_rom, size_t offset);
 
 		void RenderToSurface(SDL_Surface* surface) const;
 

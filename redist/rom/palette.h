@@ -4,8 +4,14 @@
 
 #include "SDL3/SDL_stdinc.h"
 #include <array>
+#include <memory>
 
 struct ImColor;
+
+namespace spintool::rom
+{
+	class SpinballROM;
+}
 
 namespace spintool::rom
 {
@@ -20,7 +26,14 @@ namespace spintool::rom
 
 	struct Palette
 	{
-		std::array<Swatch, 16> palette_swatches;
+		constexpr static const size_t s_swatches_per_palette = 16;
+		constexpr static const size_t s_size_per_swatch = 2;
+		constexpr static const size_t s_palette_size_on_rom = s_swatches_per_palette * s_size_per_swatch;
+		
+		std::array<Swatch, s_swatches_per_palette> palette_swatches;
 		size_t offset;
+
+		static std::shared_ptr<Palette> LoadFromROM(const SpinballROM& src_rom, size_t offset);
+
 	};
 }

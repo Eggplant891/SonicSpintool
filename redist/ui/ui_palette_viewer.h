@@ -34,7 +34,7 @@ namespace spintool
 	public:
 		EditorPaletteViewer(EditorUI& owning_ui);
 
-		void Update(std::vector<rom::Palette>& palettes);
+		void Update(std::vector<std::shared_ptr<rom::Palette>>& palettes);
 
 		bool visible = false;
 

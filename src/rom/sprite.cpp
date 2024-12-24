@@ -28,59 +28,68 @@ namespace spintool::rom
 		return { -bounds.min.x, -bounds.min.y };
 	}
 
-	const size_t Sprite::LoadFromROM(const size_t rom_data_offset, const SpinballROM& src_rom)
+	std::shared_ptr<const Sprite> Sprite::LoadFromROM(const SpinballROM& src_rom, size_t offset)
 	{
-		const Uint8* rom_data_start = &src_rom.m_buffer[rom_data_offset];
-		const Uint8* current_byte = rom_data_start;
-
-		num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
-		current_byte += 2;
-
-		if (num_tiles == 0 || num_tiles > 0x80)
+		if (offset + 4 < offset) // overflow detection
 		{
-			return rom_data_offset;
+			return nullptr;
 		}
 
-		num_vdp_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		size_t next_byte_offset = offset;
+
+		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
+
+		const Uint8* rom_data_start = &src_rom.m_buffer[offset];
+		const Uint8* current_byte = rom_data_start;
+
+		new_sprite->num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
 		current_byte += 2;
 
-		sprite_tiles.resize(num_tiles);
+		if (new_sprite->num_tiles == 0 || new_sprite->num_tiles > 0x80)
+		{
+			return nullptr;
+		}
+
+		new_sprite->num_vdp_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		current_byte += 2;
+
+		new_sprite->sprite_tiles.resize(new_sprite->num_tiles);
 
 
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
 		{
 			sprite_tile = std::make_shared<rom::SpriteTile>();
 
-			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, (current_byte - rom_data_start) + rom_data_offset);
+			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, (current_byte - rom_data_start) + offset);
 		}
 
-		if (GetBoundingBox().Width() <= 1 || GetBoundingBox().Height() <= 1 || GetBoundingBox().Width() > 512 || GetBoundingBox().Height() > 512)
+		if (new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0 || new_sprite->GetBoundingBox().Width() > 512 || new_sprite->GetBoundingBox().Height() > 512)
 		{
-			return rom_data_offset;
+			return nullptr;
 		}
 
 		constexpr int max_tiles = 64;
 
-		if (num_vdp_tiles > max_tiles)
+		if (new_sprite->num_vdp_tiles > max_tiles)
 		{
-			return rom_data_offset;
+			return nullptr;
 		}
 
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
 		{
 			const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
 			if (total_pixels != 0)
 			{
-				if (rom_data_offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < src_rom.m_buffer.size())
+				if (offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < src_rom.m_buffer.size())
 				{
-					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), (current_byte - rom_data_start) + rom_data_offset, src_rom);
+					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), (current_byte - rom_data_start) + offset, src_rom);
 				}
 			}
 		}
 
-		rom_data.SetROMData(rom_data_start, current_byte, rom_data_offset);
+		new_sprite->rom_data.SetROMData(rom_data_start, current_byte, offset);
 
-		return rom_data.rom_offset_end;
+		return new_sprite;
 	}
 
 	void rom::Sprite::RenderToSurface(SDL_Surface* surface) const

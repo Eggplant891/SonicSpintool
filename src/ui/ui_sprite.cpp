@@ -14,16 +14,18 @@ namespace spintool
 
 	void UISpriteTexture::DrawForImGui(const float zoom /*= 1.0f*/) const
 	{
-		ImGui::Image((ImTextureID)texture.get()
-			, ImVec2(static_cast<float>(dimensions.x) * zoom, static_cast<float>(dimensions.y) * zoom)
-			, { 0,0 }
-		, { static_cast<float>(dimensions.x) / texture->w, static_cast<float>((dimensions.y) / texture->h) });
+		if (texture != nullptr)
+		{
+			ImGui::Image((ImTextureID)texture.get()
+				, ImVec2(static_cast<float>(dimensions.x) * zoom, static_cast<float>(dimensions.y) * zoom)
+				, { 0,0 }
+			, { static_cast<float>(dimensions.x) / texture->w, static_cast<float>((dimensions.y) / texture->h) });
+		}
 	}
 
 	SDLTextureHandle UISpriteTexture::RenderTextureForPalette(const UIPalette& palette) const
 	{
 		Renderer::s_sdl_update_mutex.lock();
-
 		Renderer::SetPalette(palette.sdl_palette);
 		SDLTextureHandle new_tex = Renderer::RenderToTexture(*sprite);
 
@@ -31,9 +33,7 @@ namespace spintool
 		{
 			tile_texture.texture = tile_texture.RenderTextureForPalette(palette);
 		}
-
 		Renderer::s_sdl_update_mutex.unlock();
-
 		return std::move(new_tex);
 	}
 

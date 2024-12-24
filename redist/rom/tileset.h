@@ -8,6 +8,7 @@
 
 namespace spintool::rom
 {
+	class SpinballROM;
 	struct Sprite;
 }
 
@@ -22,6 +23,7 @@ namespace spintool::rom
 		Uint16 num_tiles = 0;
 		std::vector<Uint8> uncompressed_data;
 
+		static std::shared_ptr<const TileSet> LoadFromROM(const SpinballROM& src_rom, size_t rom_offset);
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const size_t offset) const;
 
 		constexpr const static Uint16 s_tile_width = 0x08;

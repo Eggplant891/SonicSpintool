@@ -68,7 +68,7 @@ namespace spintool
 			{
 				if (m_render_arbitrary_with_palette)
 				{
-					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height }, m_owning_ui.GetPalettes().at(m_chosen_palette));
+					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
 				else
 				{
@@ -85,7 +85,7 @@ namespace spintool
 				const auto current_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 					{
-						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
+						return sprite_tex != nullptr && sprite_tex->sprite->rom_data.rom_offset == m_offset;
 					});
 				const UISpriteTexture* next_sprite = nullptr;
 				if (current_sprite != std::end(m_sprites_found))
@@ -99,18 +99,18 @@ namespace spintool
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 						{
-							return sprite_tex->sprite->rom_data.rom_offset == m_offset;
+							return sprite_tex != nullptr && sprite_tex->sprite->rom_data.rom_offset == m_offset;
 						});
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset);
+						std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset);
 
 						if (new_sprite)
 						{
 							m_offset = new_sprite->rom_data.rom_offset_end;
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
+							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 						}
 						else
 						{
@@ -129,7 +129,7 @@ namespace spintool
 				const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
 					{
-						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
+						return sprite_tex != nullptr && sprite_tex->sprite->rom_data.rom_offset == m_offset;
 					});
 
 				if (found_sprite != std::end(m_sprites_found))
@@ -138,10 +138,10 @@ namespace spintool
 				}
 				else
 				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset))
+					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset))
 					{
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
+						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
 				}
 			}
@@ -161,7 +161,7 @@ namespace spintool
 						}
 						offset = new_sprite->rom_data.rom_offset_end;
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
+						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
 				}
 			}
@@ -185,10 +185,10 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						if (std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(m_offset))
+						if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset))
 						{
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(m_owning_ui.GetPalettes().front());
+							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().front());
 						}
 					}
 				}
@@ -215,7 +215,7 @@ namespace spintool
 						{
 							render_process_progress = working_offset / static_cast<float>(m_rom.m_buffer.size());
 
-							std::shared_ptr<const rom::Sprite> new_sprite = m_rom.LoadSprite(working_offset);
+							std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, working_offset);
 							if (new_sprite == nullptr)
 							{
 								working_offset+=2;
@@ -246,7 +246,7 @@ namespace spintool
 								{
 									m_owning_ui.m_render_to_texture_mutex.lock();
 									std::shared_ptr<UISpriteTexture>& new_sprite = m_sprites_found.emplace_back(*current_sprite_it);
-									new_sprite->texture = new_sprite->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
+									new_sprite->texture = new_sprite->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 									++progress;
 									m_owning_ui.m_render_to_texture_mutex.unlock();
 
@@ -303,7 +303,7 @@ namespace spintool
 
 					if (tex->texture == nullptr)
 					{
-						tex->texture = tex->RenderTextureForPalette(m_owning_ui.GetPalettes().at(m_chosen_palette));
+						tex->texture = tex->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
 
 					if (tex->dimensions.x == 0 || tex->dimensions.y == 0)
@@ -343,7 +343,7 @@ namespace spintool
 						{
 							sprintf_s(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 							std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-							SDLPaletteHandle palette = Renderer::CreateSDLPalette(m_owning_ui.GetPalettes().at(2));
+							SDLPaletteHandle palette = Renderer::CreateSDLPalette(*m_owning_ui.GetPalettes().at(2));
 							SDLSurfaceHandle out_surface{ SDL_CreateSurface(tex->sprite->GetBoundingBox().Width(), tex->sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8)};
 							SDL_SetSurfacePalette(out_surface.get(), palette.get());
 							tex->sprite->RenderToSurface(out_surface.get());

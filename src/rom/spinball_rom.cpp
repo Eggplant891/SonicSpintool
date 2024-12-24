@@ -12,31 +12,11 @@
 
 namespace spintool
 {
-	std::shared_ptr<const rom::TileSet> rom::SpinballROM::LoadTileData(size_t rom_offset)
-	{
-		auto new_tileset = std::make_shared<rom::TileSet>();
-		
-		new_tileset->num_tiles = (static_cast<Sint16>(*(&m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&m_buffer[rom_offset+1]));
-		new_tileset->uncompressed_data.clear();
-
-		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
-		new_tileset->uncompressed_size = results.uncompressed_data.size();
-		new_tileset->compressed_size = results.rom_data.real_size;
-		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
-		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
-
-		return new_tileset;
-	}
-
 	bool rom::SpinballROM::LoadROMFromPath(const std::filesystem::path& path)
 	{
 		std::ifstream input = std::ifstream{ path, std::ios::binary };
 		m_filepath = path;
 		m_buffer = std::vector<unsigned char>{ std::istreambuf_iterator<char>(input), {} };
-		if (m_buffer.empty() == false)
-		{
-			LoadTileData(0x9bcd0);
-		}
 		return m_buffer.empty() == false;
 	}
 
@@ -51,49 +31,14 @@ namespace spintool
 		return current_sprite.rom_data.rom_offset + current_sprite.GetSizeOf();
 	}
 
-	std::shared_ptr<const rom::Sprite> rom::SpinballROM::LoadSprite(size_t offset)
-	{
-		if (offset + 4 < offset) // overflow detection
-		{
-			return nullptr;
-		}
-
-		size_t next_byte_offset = offset;
-
-		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
-		next_byte_offset = new_sprite->LoadFromROM(next_byte_offset, *this);
-
-		if (next_byte_offset == offset || new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0)
-		{
-			return nullptr;
-		}
-
-		return std::move(new_sprite);
-	}
-
-	std::vector<spintool::rom::Palette> rom::SpinballROM::LoadPalettes(size_t num_palettes)
+	std::vector<std::shared_ptr<rom::Palette>> rom::SpinballROM::LoadPalettes(size_t num_palettes)
 	{
 		constexpr size_t offset = 0xDFC;
-		Uint8* current_byte = &m_buffer[offset];
-		std::vector<spintool::rom::Palette> results;
+		std::vector<std::shared_ptr<rom::Palette>> results;
 
 		for (size_t p = 0; p < num_palettes; ++p)
 		{
-			rom::Palette palette;
-			palette.offset = current_byte - m_buffer.data();
-
-			for (size_t i = 0; i < 16; ++i)
-			{
-				const Uint8 first_byte = *current_byte;
-				++current_byte;
-				const Uint8 second_byte = *current_byte;
-				++current_byte;
-				rom::Swatch swatch;
-				swatch.packed_value = static_cast<Uint16>((static_cast<Uint16>(first_byte) << 8) | second_byte);
-
-				palette.palette_swatches[i] = swatch;
-			}
-			results.emplace_back(palette);
+			results.emplace_back(rom::Palette::LoadFromROM(*this, offset + (Palette::s_palette_size_on_rom * p)));
 		}
 
 		return results;

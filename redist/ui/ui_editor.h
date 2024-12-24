@@ -36,7 +36,7 @@ namespace spintool
 		std::filesystem::path GetSpriteExportPath() const;
 
 		const std::vector<std::shared_ptr<const rom::TileSet>>& GetTilesets() const;
-		const std::vector<rom::Palette>& GetPalettes() const;
+		const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
 		void OpenSpriteImporter(int rom_offset);
 		std::recursive_mutex m_render_to_texture_mutex;
@@ -47,7 +47,7 @@ namespace spintool
 		std::filesystem::path m_rom_export_path;
 		std::filesystem::path m_sprite_export_path;
 		rom::SpinballROM m_rom;
-		std::vector<rom::Palette> m_palettes;
+		std::vector<std::shared_ptr<rom::Palette>> m_palettes;
 
 		std::vector<std::unique_ptr<EditorSpriteViewer>> m_sprite_viewer_windows;
 		EditorSpriteNavigator m_sprite_navigator;
