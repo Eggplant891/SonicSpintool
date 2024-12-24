@@ -22,6 +22,12 @@ namespace spintool::rom
 		return bounds;
 	}
 
+	Point rom::Sprite::GetOriginOffsetFromMinBounds() const
+	{
+		BoundingBox bounds = GetBoundingBox();
+		return { -bounds.min.x, -bounds.min.y };
+	}
+
 	const size_t Sprite::LoadFromROM(const size_t rom_data_offset, const SpinballROM& src_rom)
 	{
 		const Uint8* rom_data_start = &src_rom.m_buffer[rom_data_offset];

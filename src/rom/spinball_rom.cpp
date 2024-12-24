@@ -12,12 +12,6 @@
 
 namespace spintool
 {
-	Point rom::Sprite::GetOriginOffsetFromMinBounds() const
-	{
-		BoundingBox bounds = GetBoundingBox();
-		return { -bounds.min.x, -bounds.min.y };
-	}
-
 	std::shared_ptr<const rom::TileSet> rom::SpinballROM::LoadTileData(size_t rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
