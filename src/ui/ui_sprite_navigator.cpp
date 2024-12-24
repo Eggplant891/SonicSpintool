@@ -106,7 +106,7 @@ namespace spintool
 					{
 						std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset);
 
-						if (new_sprite)
+						if (new_sprite != nullptr)
 						{
 							m_offset = new_sprite->rom_data.rom_offset_end;
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
