@@ -46,18 +46,22 @@ namespace spintool
 
 	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const
 	{
-		Renderer::s_sdl_update_mutex.lock();
-		SDL_LockSurface(surface);
-
-		SDL_ClearSurface(surface, 0, 0, 0, 255);
-
-		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
+		if (dimensions.x <= 0 || dimensions.y <= 0)
+		{
+			return;
+		}
 
 		if (offset >= m_buffer.size())
 		{
 			return;
 		}
 
+		Renderer::s_sdl_update_mutex.lock();
+		SDL_LockSurface(surface);
+
+		SDL_ClearSurface(surface, 0, 0, 0, 255);
+
+		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
 		const SDL_PixelFormatDetails* pixel_format = SDL_GetPixelFormatDetails(surface->format);
 
 		const Uint8* current_byte = &m_buffer[offset];
@@ -86,6 +90,16 @@ namespace spintool
 
 	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const
 	{
+		if (dimensions.x <= 0 || dimensions.y <= 0)
+		{
+			return;
+		}
+
+		if (offset >= m_buffer.size())
+		{
+			return;
+		}
+
 		Renderer::s_sdl_update_mutex.lock();
 		SDL_LockSurface(surface);
 
