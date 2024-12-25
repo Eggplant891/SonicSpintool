@@ -1,9 +1,11 @@
 #pragma once
 
 #include "rom/rom_data.h"
+#include "types/blit_settings.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include <vector>
+#include <optional>
 
 struct SDL_Surface;
 namespace spintool
@@ -45,6 +47,8 @@ namespace spintool::rom
 		: public SpriteTileHeader
 		, public SpriteTileData
 	{
+		BlitSettings blit_settings;
+		
 		void RenderToSurface(SDL_Surface* surface) const;
 		void BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 	};

@@ -7,41 +7,49 @@ namespace spintool::rom
 {
 	void rom::SpriteTile::RenderToSurface(SDL_Surface* surface) const
 	{
-		Renderer::s_sdl_update_mutex.lock();
-		SDL_LockSurface(surface);
-
-		SDL_ClearSurface(surface, 0, 0, 0, 0);
-
 		const BoundingBox& bounds{ x_offset, y_offset, x_offset + x_size, y_offset + y_size };
+		Renderer::s_sdl_update_mutex.lock();
+		SDL_ClearSurface(surface, 0, 0, 0, 0);
 
 		if (bounds.Width() > 0 && bounds.Height() > 0)
 		{
 			BlitPixelDataToSurface(surface, bounds, pixel_data);
 		}
-
-		SDL_UnlockSurface(surface);
 		Renderer::s_sdl_update_mutex.unlock();
 	}
 
 	void rom::SpriteTile::BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const
 	{
-		int x_off = (x_offset - bounds.min.x);
-		int y_off = (y_offset - bounds.min.y);
-		int x_max = x_off + x_size;
-		int y_max = y_off + y_size;
+		SDLSurfaceHandle temp_surface{ SDL_CreateSurface(x_size, y_size, SDL_PIXELFORMAT_INDEX8) };
+		SDLPaletteHandle palette = Renderer::CreateSDLPalette(*blit_settings.palette.get());
+		SDL_SetSurfacePalette(temp_surface.get(), palette.get());
 
-		size_t target_pixel_index = (y_off * surface->pitch) + x_off;
-
-		for (size_t i = 0; i < pixels_data.size() && i < surface->pitch * surface->h && i / x_max < y_max; ++i, target_pixel_index += 1)
+		size_t target_pixel_index = 0;
+		for (size_t i = 0; i < pixels_data.size() && i < temp_surface->pitch * temp_surface->h && (i / x_size) < y_size; ++i, target_pixel_index += 1)
 		{
 			if ((i % x_size) == 0)
 			{
-				target_pixel_index = (y_off * surface->pitch) + (surface->pitch * (i / x_size)) + x_off;
+				target_pixel_index = temp_surface->pitch * (i / x_size);
 			}
 
-			//*(Uint32*)(&((Uint8*)surface->pixels)[target_pixel_index]) = SDL_MapRGB(Renderer::s_pixel_format_details, NULL, static_cast<Uint8>((pixel_data[i] / 16.0f) * 255), 0, 0);
-			((Uint8*)surface->pixels)[target_pixel_index] = pixels_data[i];
+			reinterpret_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = pixels_data[i];
 		}
+
+		const int x_off = (x_offset - bounds.min.x);
+		const int y_off = (y_offset - bounds.min.y);
+
+		if (blit_settings.flip_horizontal)
+		{
+			SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
+		}
+
+		if (blit_settings.flip_vertical)
+		{
+			SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
+		}
+
+		SDL_Rect target_rect{ x_off, y_off, x_size, y_size };
+		SDL_BlitSurface(temp_surface.get(), nullptr, surface, &target_rect);
 	}
 
 	const Uint8* SpriteTileHeader::LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset)
