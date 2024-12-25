@@ -42,11 +42,13 @@ namespace spintool
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
+		rom::SpinballROM m_rom;
+
 		std::filesystem::path m_rom_path;
 		std::filesystem::path m_rom_load_path;
 		std::filesystem::path m_rom_export_path;
 		std::filesystem::path m_sprite_export_path;
-		rom::SpinballROM m_rom;
+
 		std::vector<std::shared_ptr<rom::Palette>> m_palettes;
 
 		std::vector<std::unique_ptr<EditorSpriteViewer>> m_sprite_viewer_windows;
