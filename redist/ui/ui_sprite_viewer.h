@@ -19,7 +19,6 @@ namespace spintool
 	public:
 		EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const rom::Sprite> sprite);
 		void Update();
-		bool IsOpen() const;
 		size_t GetOffset() const;
 
 	private:

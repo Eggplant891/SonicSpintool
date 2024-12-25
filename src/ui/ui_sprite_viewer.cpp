@@ -5,11 +5,6 @@
 
 namespace spintool
 {
-	bool EditorSpriteViewer::IsOpen() const
-	{
-		return m_visible;
-	}
-
 	size_t EditorSpriteViewer::GetOffset() const
 	{
 		return m_offset;

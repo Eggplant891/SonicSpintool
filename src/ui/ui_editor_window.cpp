@@ -7,4 +7,10 @@ namespace spintool
 	{
 
 	}
+
+	bool EditorWindowBase::IsOpen() const
+	{
+		return m_visible;
+	}
+
 }
