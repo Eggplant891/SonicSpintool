@@ -5,6 +5,7 @@
 #include "render.h"
 #include "rom/tileset.h"
 #include "rom/sprite.h"
+#include "rom/palette.h"
 
 #include "SDL3/SDL.h"
 #include "imgui.h"
@@ -31,5 +32,9 @@ namespace spintool::rom
 
 		std::vector<unsigned char> m_buffer;
 		std::filesystem::path m_filepath;
+
+		// Hardcoded resources
+		rom::PaletteSet GetOptionsScreenPaletteSet() const;
+		rom::PaletteSet GetToxicCavesPaletteSet() const;
 	};
 }

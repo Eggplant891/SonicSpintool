@@ -146,4 +146,34 @@ namespace spintool
 			((Uint32*)surface->pixels)[target_pixel_index] = pixels_data[i];
 		}
 	}
+
+	//000bfc50 - Rom palette sets array
+
+	rom::PaletteSet rom::SpinballROM::GetOptionsScreenPaletteSet() const
+	{
+		rom::PaletteSet palette_set =
+		{
+			rom::Palette::LoadFromROM(*this, 0x115C),
+			rom::Palette::LoadFromROM(*this, 0x117C),
+			rom::Palette::LoadFromROM(*this, 0x119C),
+			rom::Palette::LoadFromROM(*this, 0x11BC)
+		};
+
+		return palette_set;
+	}
+
+	rom::PaletteSet rom::SpinballROM::GetToxicCavesPaletteSet() const
+	{
+		constexpr size_t root_palette = 0xDFC;
+		rom::PaletteSet palette_set =
+		{
+			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x06)),
+			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x0B)),
+			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x02)),
+			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x10))
+		};
+
+		return palette_set;
+	}
+
 }
