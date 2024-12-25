@@ -211,6 +211,7 @@
     <ClCompile Include="src\rom\ssc_decompressor.cpp" />
     <ClCompile Include="src\rom\tileset.cpp" />
     <ClCompile Include="src\rom\tile_layout.cpp" />
+    <ClCompile Include="src\types\blit_settings.cpp" />
     <ClCompile Include="src\types\bounding_box.cpp" />
     <ClCompile Include="src\ui\ui_editor.cpp" />
     <ClCompile Include="src\ui\ui_file_selector.cpp" />
@@ -221,6 +222,7 @@
     <ClCompile Include="src\ui\ui_sprite_navigator.cpp" />
     <ClCompile Include="src\ui\ui_sprite_viewer.cpp" />
     <ClCompile Include="src\ui\ui_tileset_navigator.cpp" />
+    <ClCompile Include="src\ui\ui_tile_layout_viewer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\backends\imgui_impl_sdl3.h" />
@@ -244,6 +246,7 @@
     <ClInclude Include="redist\rom\tileset.h" />
     <ClInclude Include="redist\rom\tile_layout.h" />
     <ClInclude Include="redist\sdl_handle_defs.h" />
+    <ClInclude Include="redist\types\blit_settings.h" />
     <ClInclude Include="redist\ui\ui_editor.h" />
     <ClInclude Include="redist\ui\ui_file_selector.h" />
     <ClInclude Include="redist\ui\ui_palette.h" />
@@ -253,6 +256,7 @@
     <ClInclude Include="redist\ui\ui_sprite_navigator.h" />
     <ClInclude Include="redist\ui\ui_sprite_viewer.h" />
     <ClInclude Include="redist\ui\ui_tileset_navigator.h" />
+    <ClInclude Include="redist\ui\ui_tile_layout_viewer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
