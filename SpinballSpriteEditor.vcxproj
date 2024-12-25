@@ -214,6 +214,7 @@
     <ClCompile Include="src\types\blit_settings.cpp" />
     <ClCompile Include="src\types\bounding_box.cpp" />
     <ClCompile Include="src\ui\ui_editor.cpp" />
+    <ClCompile Include="src\ui\ui_editor_window.cpp" />
     <ClCompile Include="src\ui\ui_file_selector.cpp" />
     <ClCompile Include="src\ui\ui_palette.cpp" />
     <ClCompile Include="src\ui\ui_palette_viewer.cpp" />
@@ -248,6 +249,7 @@
     <ClInclude Include="redist\sdl_handle_defs.h" />
     <ClInclude Include="redist\types\blit_settings.h" />
     <ClInclude Include="redist\ui\ui_editor.h" />
+    <ClInclude Include="redist\ui\ui_editor_window.h" />
     <ClInclude Include="redist\ui\ui_file_selector.h" />
     <ClInclude Include="redist\ui\ui_palette.h" />
     <ClInclude Include="redist\ui\ui_palette_viewer.h" />

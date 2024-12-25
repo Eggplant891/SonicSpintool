@@ -7,7 +7,7 @@ namespace spintool
 {
 	bool EditorSpriteViewer::IsOpen() const
 	{
-		return m_is_open;
+		return m_visible;
 	}
 
 	size_t EditorSpriteViewer::GetOffset() const
@@ -16,7 +16,7 @@ namespace spintool
 	}
 
 	EditorSpriteViewer::EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const rom::Sprite> spr)
-		: m_owning_ui(owning_ui)
+		: EditorWindowBase(owning_ui)
 		, m_sprite(spr)
 		, m_rendered_sprite_texture(spr)
 		, m_offset(spr->rom_data.rom_offset)
@@ -33,7 +33,7 @@ namespace spintool
 		char name[64];
 		sprintf_s(name, "Sprite Viewer (0x%06X)", static_cast<unsigned int>(m_sprite->rom_data.rom_offset));
 		ImGui::SetNextWindowSize(ImVec2(static_cast<float>(m_sprite->GetBoundingBox().Width() * m_zoom) + 32, 640), ImGuiCond_Appearing);
-		if (ImGui::Begin(name, &m_is_open, ImGuiWindowFlags_NoSavedSettings))
+		if (ImGui::Begin(name, &m_visible, ImGuiWindowFlags_NoSavedSettings))
 		{
 			ImGui::SliderFloat("Zoom", &m_zoom, 1.0f, 8.0f, "%.1f");
 			ImGui::Text("0x%06X -> 0x%06X ", m_sprite->rom_data.rom_offset, m_sprite->rom_data.rom_offset_end - 1);

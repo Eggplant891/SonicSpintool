@@ -1,9 +1,11 @@
 #pragma once
 
+#include "ui/ui_editor_window.h"
 #include "ui/ui_sprite.h"
 #include "ui/ui_palette_viewer.h"
 
 #include <vector>
+
 
 namespace spintool
 {
@@ -12,19 +14,14 @@ namespace spintool
 
 namespace spintool
 {
-	class EditorSpriteNavigator
+	class EditorSpriteNavigator : public EditorWindowBase
 	{
 	public:
-		EditorSpriteNavigator(EditorUI& owning_ui);
+		using EditorWindowBase::EditorWindowBase;
 
-		void Update();
-
-		bool visible = false;
+		void Update() override;
 
 	private:
-		EditorUI& m_owning_ui;
-		rom::SpinballROM& m_rom;
-
 		std::vector<std::shared_ptr<UISpriteTexture>> m_sprites_found;
 		SDLTextureHandle m_random_texture;
 		int random_tex_width = 128;

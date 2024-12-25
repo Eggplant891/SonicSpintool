@@ -14,17 +14,9 @@
 
 namespace spintool
 {
-
-	EditorSpriteNavigator::EditorSpriteNavigator(EditorUI& owning_ui)
-		: m_owning_ui(owning_ui)
-		, m_rom(owning_ui.GetROM())
-	{
-
-	}
-
 	void EditorSpriteNavigator::Update()
 	{
-		if (visible == false)
+		if (m_visible == false)
 		{
 			return;
 		}
@@ -38,7 +30,7 @@ namespace spintool
 			}
 			ImGui::End();
 		}
-		if (ImGui::Begin("Sprite Discoverator", &visible))
+		if (ImGui::Begin("Sprite Discoverator", &m_visible))
 		{
 			static char path_buffer[4096];
 
@@ -76,11 +68,11 @@ namespace spintool
 			{
 				if (m_render_arbitrary_with_palette)
 				{
-					//m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
+					//m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_owning_ui.GetROM(), m_offset, { random_tex_width, random_tex_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
 				else
 				{
-					//m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height });
+					//m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_owning_ui.GetROM(), m_offset, { random_tex_width, random_tex_height });
 				}
 				m_attempt_render_of_arbitrary_data = false;
 			}
@@ -102,7 +94,7 @@ namespace spintool
 					m_offset += next_sprite->sprite->GetSizeOf();
 				}
 
-				for (size_t a = 0; a < num_searches && m_offset < m_rom.m_buffer.size(); ++a)
+				for (size_t a = 0; a < num_searches && m_offset < m_owning_ui.GetROM().m_buffer.size(); ++a)
 				{
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
@@ -112,7 +104,7 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset);
+						std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset);
 
 						if (new_sprite != nullptr)
 						{
@@ -146,7 +138,7 @@ namespace spintool
 				}
 				else
 				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset))
+					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset))
 					{
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
@@ -177,9 +169,9 @@ namespace spintool
 			if (ImGui::Button("Show Test Layout"))
 			{
 				std::shared_ptr<const rom::TileSet> tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), 0x000394aa);
-				std::shared_ptr<rom::TileLayout> test_layout = rom::TileLayout::LoadFromROM(m_rom, 0x0003e800);
+				std::shared_ptr<rom::TileLayout> test_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), 0x0003e800);
 				//std::shared_ptr<const rom::TileSet> tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), 0x000BDD2E);
-				//std::shared_ptr<rom::TileLayout> test_layout = rom::TileLayout::LoadFromROM(m_rom, 0x000BDFBC);
+				//std::shared_ptr<rom::TileLayout> test_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), 0x000BDFBC);
 				std::shared_ptr<const rom::Sprite> tileset_sprite = tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
 
@@ -187,8 +179,8 @@ namespace spintool
 				constexpr size_t brushes_per_row = 20;
 				constexpr size_t tiles_per_brush_row = 4;
 
-				//const rom::PaletteSet palette_set = m_rom.GetOptionsScreenPaletteSet();
-				const rom::PaletteSet palette_set = m_rom.GetToxicCavesPaletteSet();
+				//const rom::PaletteSet palette_set = m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
+				const rom::PaletteSet palette_set = m_owning_ui.GetROM().GetToxicCavesPaletteSet();
 
 				for (size_t i = 0; i < test_layout->tile_instances.size(); ++i)
 				{
@@ -242,7 +234,7 @@ namespace spintool
 
 					if (found_sprite == std::end(m_sprites_found))
 					{
-						if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, m_offset))
+						if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset))
 						{
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().front());
@@ -268,11 +260,11 @@ namespace spintool
 						results.clear();
 
 						size_t working_offset = 0;
-						while (working_offset < m_rom.m_buffer.size())
+						while (working_offset < m_owning_ui.GetROM().m_buffer.size())
 						{
-							render_process_progress = working_offset / static_cast<float>(m_rom.m_buffer.size());
+							render_process_progress = working_offset / static_cast<float>(m_owning_ui.GetROM().m_buffer.size());
 
-							std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_rom, working_offset);
+							std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), working_offset);
 							if (new_sprite == nullptr)
 							{
 								working_offset+=2;

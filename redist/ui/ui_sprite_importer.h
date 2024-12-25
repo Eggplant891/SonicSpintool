@@ -1,11 +1,15 @@
 #pragma once
 
-#include "types/sdl_handle_defs.h"
+#include "ui/ui_editor_window.h"
 #include "ui/ui_palette.h"
+
 #include "rom/spinball_rom.h"
+#include "types/sdl_handle_defs.h"
+
+#include "imgui.h"
+
 #include <string>
 #include <vector>
-#include "imgui.h"
 
 namespace spintool
 {
@@ -19,20 +23,17 @@ namespace spintool
 		ImColor colour;
 		Uint8 palette_index;
 	};
-	class EditorSpriteImporter
+
+	class EditorSpriteImporter : public EditorWindowBase
 	{
 	public:
-		EditorSpriteImporter(EditorUI& owning_ui);
+		using EditorWindowBase::EditorWindowBase;
 
-		void Update();
+		void Update() override;
 		void ChangeTargetWriteLocation(size_t rom_offset);
-
-		bool visible = false;
 
 	private:
 		void InnerUpdate();
-		
-		EditorUI& m_owning_ui;
 
 		SDLSurfaceHandle m_imported_image;
 		SDLSurfaceHandle m_preview_image;

@@ -7,13 +7,6 @@
 
 namespace spintool
 {
-	EditorTilesetNavigator::EditorTilesetNavigator(EditorUI& owning_ui)
-		: m_owning_ui(owning_ui)
-		, m_rom(owning_ui.GetROM())
-	{
-
-	}
-
 	size_t s_tile_offsets[] =
 	{
 		0x0003DBB2, // Toxic Caves
@@ -29,12 +22,12 @@ namespace spintool
 
 	void EditorTilesetNavigator::Update()
 	{
-		if (visible == false)
+		if (m_visible == false)
 		{
 			return;
 		}
 
-		if (ImGui::Begin("Tileset Navigator", &visible))
+		if (ImGui::Begin("Tileset Navigator", &m_visible))
 		{
 			if (ImGui::Button("Load all tilesets"))
 			{
@@ -55,7 +48,7 @@ namespace spintool
 			if (ImGui::Button("Validate SSC Data"))
 			{
 				validated_data = true;
-				result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_rom.m_buffer[actual_offset], actual_offset);
+				result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_owning_ui.GetROM().m_buffer[actual_offset], actual_offset);
 			}
 			if (validated_data)
 			{
@@ -69,13 +62,13 @@ namespace spintool
 				constexpr size_t max_tiles = 256;
 				valid_ssc_results.clear();
 				size_t next_offset = actual_offset;
-				while (next_offset+2 < m_rom.m_buffer.size())
+				while (next_offset+2 < m_owning_ui.GetROM().m_buffer.size())
 				{
-					Uint16 num_tiles = (static_cast<Sint16>(m_rom.m_buffer[next_offset] << 8)) | (static_cast<Sint16>(m_rom.m_buffer[next_offset + 1]));
+					Uint16 num_tiles = (static_cast<Sint16>(m_owning_ui.GetROM().m_buffer[next_offset] << 8)) | (static_cast<Sint16>(m_owning_ui.GetROM().m_buffer[next_offset + 1]));
 					if (num_tiles >= 2 && num_tiles < max_tiles)
 					{
-						rom::SSCDecompressionResult result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_rom.m_buffer[next_offset+2], next_offset+2);
-						//rom::SSCDecompressionResult decompressed_data_result = rom::SSCDecompressor::DecompressData(&m_rom.m_buffer[next_offset+2], num_tiles * 0x40);
+						rom::SSCDecompressionResult result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_owning_ui.GetROM().m_buffer[next_offset+2], next_offset+2);
+						//rom::SSCDecompressionResult decompressed_data_result = rom::SSCDecompressor::DecompressData(&m_owning_ui.GetROM().m_buffer[next_offset+2], num_tiles * 0x40);
 						next_offset += 2;// result.rom_data.rom_offset_end;
 						if (result.error_msg.has_value() == false)
 						{
@@ -88,7 +81,7 @@ namespace spintool
 
 							if (result.uncompressed_size > 0x400 && (valid_ssc_results.empty() || result.rom_data.rom_offset_end != valid_ssc_results.back().rom_data.rom_offset_end))
 							{
-								//std::shared_ptr<const rom::TileSet> tileset_result = m_rom.LoadTileData(next_offset);
+								//std::shared_ptr<const rom::TileSet> tileset_result = m_owning_ui.GetROM().LoadTileData(next_offset);
 								//if (tileset_result->num_tiles == num_tiles)
 								{
 									valid_ssc_results.emplace_back(result);

@@ -76,11 +76,11 @@ namespace spintool
 				}
 				if (ImGui::BeginMenu("Tools"))
 				{
-					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.visible);
-					ImGui::MenuItem("Tileset Navigator", nullptr, &m_tileset_navigator.visible);
-					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.visible);
+					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.m_visible);
+					ImGui::MenuItem("Tileset Navigator", nullptr, &m_tileset_navigator.m_visible);
+					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.m_visible);
 					ImGui::Separator();
-					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.visible);
+					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.m_visible);
 					ImGui::EndMenu();
 				}
 				ImGui::SameLine();
@@ -141,7 +141,7 @@ namespace spintool
 		m_sprite_importer.Update();
 		m_sprite_navigator.Update();
 		m_tileset_navigator.Update();
-		m_palette_viewer.Update(m_palettes);
+		m_palette_viewer.Update();
 
 		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)
 		{
@@ -213,7 +213,7 @@ namespace spintool
 
 	void EditorUI::OpenSpriteImporter(int rom_offset)
 	{
-		m_sprite_importer.visible = true;
+		m_sprite_importer.m_visible = true;
 		m_sprite_importer.ChangeTargetWriteLocation(rom_offset);
 	}
 

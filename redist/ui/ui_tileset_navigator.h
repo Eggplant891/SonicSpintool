@@ -1,4 +1,7 @@
 #pragma once
+
+#include "ui_editor_window.h"
+
 #include <memory>
 #include <vector>
 
@@ -14,19 +17,13 @@ namespace spintool
 
 namespace spintool
 {
-	class EditorTilesetNavigator
+	class EditorTilesetNavigator : public EditorWindowBase
 	{
 	public:
-		EditorTilesetNavigator(EditorUI& owning_ui);
+		using EditorWindowBase::EditorWindowBase;
+		
+		void Update() override;
 
-		void Update();
-
-		bool visible = false;
 		std::vector<std::shared_ptr<const rom::TileSet>> m_tilesets;
-
-	private:
-		EditorUI& m_owning_ui;
-		rom::SpinballROM& m_rom;
-
 	};
 }

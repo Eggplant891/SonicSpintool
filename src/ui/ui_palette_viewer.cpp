@@ -66,20 +66,16 @@ namespace spintool
 		return selection_changed;
 	}
 
-	EditorPaletteViewer::EditorPaletteViewer(EditorUI& owning_ui)
-		: m_owning_ui(owning_ui)
+	void EditorPaletteViewer::Update()
 	{
-
-	}
-
-	void EditorPaletteViewer::Update(std::vector<std::shared_ptr<rom::Palette>>& palettes)
-	{
-		if (visible == false)
+		if (m_visible == false)
 		{
 			return;
 		}
 
-		if (ImGui::Begin("Palettes", &visible))
+		auto& palettes = const_cast<std::vector<std::shared_ptr<rom::Palette>>&>(m_owning_ui.GetPalettes());
+
+		if (ImGui::Begin("Palettes", &m_visible))
 		{
 			if (ImGui::Button("Save Changes"))
 			{

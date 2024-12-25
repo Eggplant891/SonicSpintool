@@ -11,11 +11,6 @@
 
 namespace spintool
 {
-	EditorSpriteImporter::EditorSpriteImporter(EditorUI& owning_ui)
-		: m_owning_ui(owning_ui)
-	{
-	}
-
 	void EditorSpriteImporter::InnerUpdate()
 	{
 		static char path_buffer[4096] = "E:\\Development\\_RETRODEV\\MegaDrive\\Spinball\\_ASSETS\\tails_spinball\\tails_idle.png";;
@@ -318,13 +313,13 @@ namespace spintool
 
 	void EditorSpriteImporter::Update()
 	{
-		if (visible == false)
+		if (m_visible == false)
 		{
 			return;
 		}
 
 		ImGui::SetNextWindowSize({ 1024, -1 });
-		if (ImGui::Begin("Sprite Importer", &visible))
+		if (ImGui::Begin("Sprite Importer", &m_visible))
 		{
 			InnerUpdate();
 		}

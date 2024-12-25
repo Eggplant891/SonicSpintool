@@ -1,7 +1,9 @@
 #pragma once
 
-#include <vector>
 #include "ui/ui_palette.h"
+#include "ui/ui_editor_window.h"
+
+#include <vector>
 
 namespace spintool
 {
@@ -29,16 +31,10 @@ namespace spintool
 	void DrawPaletteSwatchPreview(const rom::Palette& palette, int palette_index);
 	bool DrawPaletteSelector(int& chosen_palette, const EditorUI& owning_ui);
 
-	class EditorPaletteViewer
+	class EditorPaletteViewer : public EditorWindowBase
 	{
 	public:
-		EditorPaletteViewer(EditorUI& owning_ui);
-
-		void Update(std::vector<std::shared_ptr<rom::Palette>>& palettes);
-
-		bool visible = false;
-
-	private:
-		EditorUI& m_owning_ui;
+		using EditorWindowBase::EditorWindowBase;
+		void Update() override;
 	};
 }
