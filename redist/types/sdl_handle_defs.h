@@ -16,7 +16,6 @@ struct SDLSurfaceDeleter
 {
 	void operator()(SDL_Surface* surface) const
 	{
-		SDL_LockSurface(surface);
 		SDL_DestroySurface(surface);
 	}
 };
