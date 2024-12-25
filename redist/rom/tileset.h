@@ -10,6 +10,7 @@ namespace spintool::rom
 {
 	class SpinballROM;
 	struct Sprite;
+	struct SpriteTile;
 }
 
 namespace spintool::rom
@@ -25,7 +26,7 @@ namespace spintool::rom
 
 		static std::shared_ptr<const TileSet> LoadFromROM(const SpinballROM& src_rom, size_t rom_offset);
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const size_t offset) const;
-
+		std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const size_t tile_index) const;
 		constexpr const static Uint16 s_tile_width = 0x08;
 		constexpr const static Uint16 s_tile_height = 0x08;
 		constexpr const static Uint16 s_tile_total_pixels = s_tile_width * s_tile_height;
