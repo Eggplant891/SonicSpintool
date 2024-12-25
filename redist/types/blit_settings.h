@@ -4,7 +4,7 @@
 
 #include "SDL3/SDL_stdinc.h"
 
-#include <optional>
+#include <memory>
 
 namespace spintool
 {
@@ -12,6 +12,6 @@ namespace spintool
 	{
 		bool flip_horizontal = false;
 		bool flip_vertical = false;
-		std::optional<rom::Palette> palette;
+		std::shared_ptr<rom::Palette> palette;
 	};
 }
