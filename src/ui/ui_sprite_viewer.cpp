@@ -101,66 +101,71 @@ namespace spintool
 					}
 				}
 
-				for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+				if (ImGui::TreeNode("Tiles"))
 				{
-					++i;
+					for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_sprite->sprite_tiles)
+					{
+						++i;
 
-					auto ui_tile_tex = std::find_if(std::begin(m_rendered_sprite_tile_textures), std::end(m_rendered_sprite_tile_textures),
-						[&sprite_tile](const UISpriteTileTexture& tile_tex)
+						auto ui_tile_tex = std::find_if(std::begin(m_rendered_sprite_tile_textures), std::end(m_rendered_sprite_tile_textures),
+							[&sprite_tile](const UISpriteTileTexture& tile_tex)
+							{
+								return tile_tex.sprite_tile.get() == sprite_tile.get();
+							});
+
+						UISpriteTileTexture* tile_tex = nullptr;
+
+						if (ui_tile_tex != std::end(m_rendered_sprite_tile_textures))
 						{
-							return tile_tex.sprite_tile.get() == sprite_tile.get();
-						});
-
-					UISpriteTileTexture* tile_tex = nullptr;
-
-					if (ui_tile_tex != std::end(m_rendered_sprite_tile_textures))
-					{
-						tile_tex = &*ui_tile_tex;
-					}
-					else
-					{
-						tile_tex = &m_rendered_sprite_tile_textures.emplace_back(sprite_tile);
-					}
-
-					if (tile_tex->texture == nullptr)
-					{
-						tile_tex->texture = tile_tex->RenderTextureForPalette(m_selected_palette);
-					}
-
-					sprintf_s(name_buffer, "Tile %d", i);
-					if (ImGui::TreeNode(name_buffer))
-					{
-						if (tile_tex->texture != nullptr)
-						{
-							tile_tex->DrawForImGui(m_zoom);
-
+							tile_tex = &*ui_tile_tex;
 						}
 						else
 						{
-							ImGui::BeginDisabled();
-							ImGui::Text("Failed to render texture");
-							ImGui::EndDisabled();
+							tile_tex = &m_rendered_sprite_tile_textures.emplace_back(sprite_tile);
 						}
 
-						if (sprite_tile->header_rom_data.real_size != 0)
+						sprintf_s(name_buffer, "Tile %d", i);
+						if (ImGui::TreeNode(name_buffer))
 						{
-							ImGui::Text("Header address range: 0x%06X -> 0x%06X", sprite_tile->header_rom_data.rom_offset, sprite_tile->header_rom_data.rom_offset_end - 1);
+							if (tile_tex->texture == nullptr)
+							{
+								tile_tex->texture = tile_tex->RenderTextureForPalette(m_selected_palette);
+							}
+
+
+							if (tile_tex->texture != nullptr)
+							{
+								tile_tex->DrawForImGui(m_zoom);
+
+							}
+							else
+							{
+								ImGui::BeginDisabled();
+								ImGui::Text("Failed to render texture");
+								ImGui::EndDisabled();
+							}
+
+							if (sprite_tile->header_rom_data.real_size != 0)
+							{
+								ImGui::Text("Header address range: 0x%06X -> 0x%06X", sprite_tile->header_rom_data.rom_offset, sprite_tile->header_rom_data.rom_offset_end - 1);
+							}
+							if (sprite_tile->tile_rom_data.real_size != 0)
+							{
+								ImGui::Text("Data address range: 0x%06X -> 0x%06X", sprite_tile->tile_rom_data.rom_offset, sprite_tile->tile_rom_data.rom_offset_end - 1);
+							}
+
+							ImGui::Text("Offset X: %d (0x%04X)", sprite_tile->x_offset, sprite_tile->x_offset);
+							ImGui::Text("Offset Y: %d (0x%04X)", sprite_tile->y_offset, sprite_tile->y_offset);
+
+							ImGui::Text("Dimensions X: %d (0x%02X)", sprite_tile->x_size, sprite_tile->x_size);
+							ImGui::Text("Dimensions Y: %d (0x%02X)", sprite_tile->y_size, sprite_tile->y_size);
+							int working_val[2] = { sprite_tile->x_size, sprite_tile->y_size };
+							ImGui::Text("Pixels: %d (0x%04X)", sprite_tile->pixel_data.size(), sprite_tile->pixel_data.size());
+
+							ImGui::TreePop();
 						}
-						if (sprite_tile->tile_rom_data.real_size != 0)
-						{
-							ImGui::Text("Data address range: 0x%06X -> 0x%06X", sprite_tile->tile_rom_data.rom_offset, sprite_tile->tile_rom_data.rom_offset_end - 1);
-						}
-
-						ImGui::Text("Offset X: %d (0x%04X)", sprite_tile->x_offset, sprite_tile->x_offset);
-						ImGui::Text("Offset Y: %d (0x%04X)", sprite_tile->y_offset, sprite_tile->y_offset);
-
-						ImGui::Text("Dimensions X: %d (0x%02X)", sprite_tile->x_size, sprite_tile->x_size);
-						ImGui::Text("Dimensions Y: %d (0x%02X)", sprite_tile->y_size, sprite_tile->y_size);
-						int working_val[2] = { sprite_tile->x_size, sprite_tile->y_size };
-						ImGui::Text("Pixels: %d (0x%04X)", sprite_tile->pixel_data.size(), sprite_tile->pixel_data.size());
-
-						ImGui::TreePop();
 					}
+					ImGui::TreePop();
 				}
 			}
 			ImGui::EndChild();
