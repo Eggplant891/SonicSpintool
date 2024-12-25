@@ -38,5 +38,6 @@ namespace spintool
 
 		bool m_render_arbitrary_with_palette = true;
 		bool m_attempt_render_of_arbitrary_data = false;
+		bool m_show_arbitrary_render = false;
 	};
 }

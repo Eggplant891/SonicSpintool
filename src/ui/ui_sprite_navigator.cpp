@@ -9,6 +9,8 @@
 #include "SDL3/SDL_image.h"
 #include "ui/ui_palette_viewer.h"
 #include <filesystem>
+#include "rom/tile_layout.h"
+#include "rom/tileset.h"
 
 namespace spintool
 {
@@ -27,12 +29,12 @@ namespace spintool
 			return;
 		}
 
-		if (m_random_texture != nullptr)
+		if (m_show_arbitrary_render && m_random_texture != nullptr)
 		{
-			ImGui::SetNextWindowSize(ImVec2{ -1,-1 });
-			if (ImGui::Begin("Arbitrary texture preview"))
+			ImGui::SetNextWindowSize(ImVec2{ static_cast<float>(m_random_texture->w), static_cast<float>(m_random_texture->h) });
+			if (ImGui::Begin("Arbitrary texture preview", &m_show_arbitrary_render, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing))
 			{
-				ImGui::Image((ImTextureID)m_random_texture.get(), { random_tex_width * m_zoom, random_tex_height * m_zoom });
+				ImGui::Image((ImTextureID)m_random_texture.get(), { m_random_texture->w * m_zoom, m_random_texture->h * m_zoom });
 			}
 			ImGui::End();
 		}
@@ -59,20 +61,26 @@ namespace spintool
 				m_render_arbitrary_with_palette = true;
 				m_attempt_render_of_arbitrary_data = true;
 			}
+			ImGui::SameLine();
+			if (ImGui::Checkbox("Display arbitrary render preview", &m_show_arbitrary_render))
+			{
+				m_attempt_render_of_arbitrary_data |= true;
+				m_random_texture.reset();
+			}
 			ImGui::SetNextItemWidth(128);
 			m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Width", &random_tex_width, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(128);
 			m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Height", &random_tex_height, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
-			if (m_attempt_render_of_arbitrary_data)
+			if (m_attempt_render_of_arbitrary_data && m_show_arbitrary_render)
 			{
 				if (m_render_arbitrary_with_palette)
 				{
-					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
+					//m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
 				}
 				else
 				{
-					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height });
+					//m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_rom, m_offset, { random_tex_width, random_tex_height });
 				}
 				m_attempt_render_of_arbitrary_data = false;
 			}
@@ -164,6 +172,55 @@ namespace spintool
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 					}
 				}
+			}
+
+			if (ImGui::Button("Show Test Layout"))
+			{
+				std::shared_ptr<const rom::TileSet> tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), 0x000394aa);
+				std::shared_ptr<rom::TileLayout> test_layout = rom::TileLayout::LoadFromROM(m_rom, 0x0003e800);
+				//std::shared_ptr<const rom::TileSet> tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), 0x000BDD2E);
+				//std::shared_ptr<rom::TileLayout> test_layout = rom::TileLayout::LoadFromROM(m_rom, 0x000BDFBC);
+				std::shared_ptr<const rom::Sprite> tileset_sprite = tileset->CreateSpriteFromTile(0);
+				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
+
+				constexpr size_t tiles_per_tile_brush = 16;
+				constexpr size_t brushes_per_row = 20;
+				constexpr size_t tiles_per_brush_row = 4;
+
+				//const rom::PaletteSet palette_set = m_rom.GetOptionsScreenPaletteSet();
+				const rom::PaletteSet palette_set = m_rom.GetToxicCavesPaletteSet();
+
+				for (size_t i = 0; i < test_layout->tile_instances.size(); ++i)
+				{
+					rom::TileInstance& tile = test_layout->tile_instances[i];
+					std::shared_ptr<rom::SpriteTile> sprite_tile = tileset->CreateSpriteTileFromTile(tile.tile_index);
+
+					const size_t current_tile_brush = i / tiles_per_tile_brush;
+					const size_t current_brush_offset = i - (current_tile_brush * tiles_per_tile_brush);
+
+					sprite_tile->x_offset = static_cast<Sint16>((current_tile_brush % brushes_per_row) * (rom::TileSet::s_tile_width * tiles_per_brush_row));
+					sprite_tile->x_offset += static_cast<Sint16>((current_brush_offset % 4) * rom::TileSet::s_tile_width);
+					sprite_tile->y_offset = static_cast<Sint16>(((current_tile_brush - (current_tile_brush % brushes_per_row)) / brushes_per_row) * (rom::TileSet::s_tile_height * tiles_per_brush_row));
+					sprite_tile->y_offset += static_cast<Sint16>((current_brush_offset - (current_brush_offset % 4)) / 4) * rom::TileSet::s_tile_height;
+					
+					sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
+					sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
+
+					sprite_tile->blit_settings.palette = palette_set.palette_lines.at(tile.palette_line);
+
+					const_cast<rom::Sprite*>(tile_layout_sprite.get())->sprite_tiles.emplace_back(std::move(sprite_tile));
+				}
+				const_cast<rom::Sprite*>(tile_layout_sprite.get())->num_tiles = static_cast<Uint16>(tile_layout_sprite->sprite_tiles.size());
+				//m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(tile_layout_sprite));
+				//m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().front());
+
+				static SDLSurfaceHandle new_surface;
+				new_surface = SDLSurfaceHandle{ SDL_CreateSurface(tile_layout_sprite->GetBoundingBox().Width(), tile_layout_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+				//UIPalette ui_palette{palette};
+				//SDL_SetSurfacePalette(new_surface.get(), ui_palette.sdl_palette.get());
+				tile_layout_sprite->RenderToSurface(new_surface.get());
+				m_random_texture = Renderer::RenderToTexture(new_surface.get());
+				m_show_arbitrary_render = true;
 			}
 
 			if (ImGui::Button("Goto next sprite"))
