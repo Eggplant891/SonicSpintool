@@ -34,7 +34,7 @@ namespace spintool::rom
 		std::filesystem::path m_filepath;
 
 		// Hardcoded resources
-		rom::PaletteSet GetOptionsScreenPaletteSet() const;
-		rom::PaletteSet GetToxicCavesPaletteSet() const;
+		rom::PaletteSet& GetOptionsScreenPaletteSet() const;
+		rom::PaletteSet& GetToxicCavesPaletteSet() const;
 	};
 }

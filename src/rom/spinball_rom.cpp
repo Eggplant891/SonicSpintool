@@ -149,9 +149,9 @@ namespace spintool
 
 	//000bfc50 - Rom palette sets array
 
-	rom::PaletteSet rom::SpinballROM::GetOptionsScreenPaletteSet() const
+	rom::PaletteSet& rom::SpinballROM::GetOptionsScreenPaletteSet() const
 	{
-		rom::PaletteSet palette_set =
+		static rom::PaletteSet palette_set =
 		{
 			rom::Palette::LoadFromROM(*this, 0x115C),
 			rom::Palette::LoadFromROM(*this, 0x117C),
@@ -162,10 +162,10 @@ namespace spintool
 		return palette_set;
 	}
 
-	rom::PaletteSet rom::SpinballROM::GetToxicCavesPaletteSet() const
+	rom::PaletteSet& rom::SpinballROM::GetToxicCavesPaletteSet() const
 	{
 		constexpr size_t root_palette = 0xDFC;
-		rom::PaletteSet palette_set =
+		static rom::PaletteSet palette_set =
 		{
 			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x06)),
 			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x0B)),

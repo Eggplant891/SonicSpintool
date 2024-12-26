@@ -25,8 +25,8 @@ namespace spintool::rom
 
 	struct TileBrush
 	{
-		constexpr static const size_t s_brush_width = 16;
-		constexpr static const size_t s_brush_height = 16;
+		constexpr static const size_t s_brush_width = 4;
+		constexpr static const size_t s_brush_height = 4;
 		constexpr static const size_t s_brush_total_tiles = s_brush_width * s_brush_height;
 
 		ROMData rom_data;
@@ -37,7 +37,11 @@ namespace spintool::rom
 	{
 		Uint16 x_offset = 0;
 		Uint16 y_offset = 0;
-		TileBrush tile_brush;
+		
+		bool is_flipped_vertically = false;
+		bool is_flipped_horizontally = false;
+		int palette_line = 0; // 2 bit value. 0x0 -> 0x3
+		int tile_brush_index = 0;
 	};
 
 	struct TileLayout
@@ -52,6 +56,6 @@ namespace spintool::rom
 
 		std::vector<TileInstance> tile_instances;
 
-		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, size_t offset);
+		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t layout_offset, size_t layout_size);
 	};
 }

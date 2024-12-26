@@ -149,11 +149,21 @@ namespace spintool
 								ImGui::Text("Data address range: 0x%06X -> 0x%06X", sprite_tile->tile_rom_data.rom_offset, sprite_tile->tile_rom_data.rom_offset_end - 1);
 							}
 
-							ImGui::Text("Offset X: %d (0x%04X)", sprite_tile->x_offset, sprite_tile->x_offset);
-							ImGui::Text("Offset Y: %d (0x%04X)", sprite_tile->y_offset, sprite_tile->y_offset);
+							ImGui::Text("Offset X: %d (0x%04X) Y: %d (0x%04X) ", sprite_tile->x_offset, sprite_tile->x_offset, sprite_tile->y_offset, sprite_tile->y_offset);
+							ImGui::Text("Dimensions X: %d (0x%02X) Y: %d (0x%02X)", sprite_tile->x_size, sprite_tile->x_size, sprite_tile->y_size, sprite_tile->y_size);
+							ImGui::Text("Flip X: %s Y: %s", sprite_tile->blit_settings.flip_horizontal ? "true" : "false", sprite_tile->blit_settings.flip_vertical ? "true" : "false");
+							auto palette_found = std::find_if(std::begin(m_owning_ui.GetPalettes()), std::end(m_owning_ui.GetPalettes()),
+								[&sprite_tile](const std::shared_ptr<rom::Palette>& palette)
+								{
+									return palette.get() == sprite_tile->blit_settings.palette.get();
+								});
 
-							ImGui::Text("Dimensions X: %d (0x%02X)", sprite_tile->x_size, sprite_tile->x_size);
-							ImGui::Text("Dimensions Y: %d (0x%02X)", sprite_tile->y_size, sprite_tile->y_size);
+							Sint64 palette_index = -1;
+							if (palette_found != std::end(m_owning_ui.GetPalettes()))
+							{
+								palette_index = std::distance(std::begin(m_owning_ui.GetPalettes()), palette_found);
+							}
+							ImGui::Text("Palette: %d", palette_index);
 							int working_val[2] = { sprite_tile->x_size, sprite_tile->y_size };
 							ImGui::Text("Pixels: %d (0x%04X)", sprite_tile->pixel_data.size(), sprite_tile->pixel_data.size());
 

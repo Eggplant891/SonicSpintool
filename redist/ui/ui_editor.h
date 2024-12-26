@@ -9,6 +9,7 @@
 #include "ui/ui_sprite_viewer.h"
 #include "ui/ui_sprite_navigator.h"
 #include "ui/ui_tileset_navigator.h"
+#include "ui/ui_tile_layout_viewer.h"
 #include "ui/ui_palette_viewer.h"
 #include "ui/ui_sprite_importer.h"
 
@@ -54,6 +55,7 @@ namespace spintool
 		std::vector<std::unique_ptr<EditorSpriteViewer>> m_sprite_viewer_windows;
 		EditorSpriteNavigator m_sprite_navigator;
 		EditorTilesetNavigator m_tileset_navigator;
+		EditorTileLayoutViewer m_tile_layout_viewer;
 		EditorPaletteViewer m_palette_viewer;
 		EditorSpriteImporter m_sprite_importer;
 
