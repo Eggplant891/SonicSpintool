@@ -20,9 +20,20 @@ namespace spintool::rom
 
 	void rom::SpriteTile::BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const
 	{
-		SDLSurfaceHandle temp_surface{ SDL_CreateSurface(x_size, y_size, SDL_PIXELFORMAT_INDEX8) };
-		SDLPaletteHandle palette = Renderer::CreateSDLPalette(*blit_settings.palette.get());
-		SDL_SetSurfacePalette(temp_surface.get(), palette.get());
+		SDLSurfaceHandle temp_surface;
+		SDLPaletteHandle palette;
+		const bool is_palette_specified = blit_settings.palette != nullptr;
+		if (is_palette_specified)
+		{
+			temp_surface = SDLSurfaceHandle{SDL_CreateSurface(x_size, y_size, SDL_PIXELFORMAT_INDEX8) };
+			palette = Renderer::CreateSDLPalette(*blit_settings.palette.get());
+			SDL_SetSurfacePalette(temp_surface.get(), palette.get());
+		}
+		else
+		{
+			temp_surface = SDLSurfaceHandle{ SDL_CreateSurface(x_size, y_size, surface->format) };
+			SDL_SetSurfacePalette(temp_surface.get(), SDL_GetSurfacePalette(surface));
+		}
 
 		size_t target_pixel_index = 0;
 		for (size_t i = 0; i < pixels_data.size() && i < temp_surface->pitch * temp_surface->h && (i / x_size) < y_size; ++i, target_pixel_index += 1)

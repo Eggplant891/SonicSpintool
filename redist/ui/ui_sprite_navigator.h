@@ -24,8 +24,8 @@ namespace spintool
 	private:
 		std::vector<std::shared_ptr<UISpriteTexture>> m_sprites_found;
 		SDLTextureHandle m_random_texture;
-		int random_tex_width = 128;
-		int random_tex_height = 128;
+		int m_arbitrary_texture_width = 128;
+		int m_arbitrary_texture_height = 128;
 
 		size_t m_starting_offset = 0;
 		size_t m_selected_sprite_rom_offset = 0;

@@ -207,7 +207,8 @@ namespace spintool
 
 		if (selected_sprite_window_it == std::end(m_sprite_viewer_windows))
 		{
-			m_sprite_viewer_windows.emplace_back(std::make_unique<EditorSpriteViewer>(*this, sprite));
+			auto& new_viewer = m_sprite_viewer_windows.emplace_back(std::make_unique<EditorSpriteViewer>(*this, sprite));
+			new_viewer->m_visible = true;
 		}
 	}
 
