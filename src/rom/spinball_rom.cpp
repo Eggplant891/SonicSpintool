@@ -149,31 +149,43 @@ namespace spintool
 
 	//000bfc50 - Rom palette sets array
 
-	rom::PaletteSet& rom::SpinballROM::GetOptionsScreenPaletteSet() const
+	std::shared_ptr<rom::PaletteSet> rom::SpinballROM::GetOptionsScreenPaletteSet() const
 	{
-		static rom::PaletteSet palette_set =
-		{
-			rom::Palette::LoadFromROM(*this, 0x115C),
-			rom::Palette::LoadFromROM(*this, 0x117C),
-			rom::Palette::LoadFromROM(*this, 0x119C),
-			rom::Palette::LoadFromROM(*this, 0x11BC)
-		};
+		static std::shared_ptr<rom::PaletteSet> palette_set = [this]()
+			{
+				auto out_set = std::make_shared<rom::PaletteSet>();
+				out_set->palette_lines =
+				{
+					rom::Palette::LoadFromROM(*this, 0x115C),
+					rom::Palette::LoadFromROM(*this, 0x117C),
+					rom::Palette::LoadFromROM(*this, 0x119C),
+					rom::Palette::LoadFromROM(*this, 0x11BC)
+				};
+				return std::move(out_set);
+			}();
+		
 
 		return palette_set;
 	}
 
-	rom::PaletteSet& rom::SpinballROM::GetToxicCavesPaletteSet() const
+	Uint32 rom::SpinballROM::ReadUint32(size_t offset) const
 	{
-		constexpr size_t root_palette = 0xDFC;
-		static rom::PaletteSet palette_set =
+		if (offset + 4 < m_buffer.size())
 		{
-			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x06)),
-			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x0B)),
-			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x02)),
-			rom::Palette::LoadFromROM(*this, root_palette + (0x20 * 0x10))
-		};
+			Uint32 out_offset = (static_cast<Uint32>(m_buffer[offset]) << 24) | (static_cast<Uint32>(m_buffer[offset+1]) << 16) | (static_cast<Uint32>(m_buffer[offset+2]) << 8) | (static_cast<Uint32>(m_buffer[offset+3]));
+			return out_offset;
+		}
+		return 0;
+	}
 
-		return palette_set;
+	Uint16 rom::SpinballROM::ReadUint16(size_t offset) const
+	{
+		if (offset + 2 < m_buffer.size())
+		{
+			Uint16 out_offset = (static_cast<Uint16>(m_buffer[offset]) << 8) | (static_cast<Uint16>(m_buffer[offset + 1]));
+			return out_offset;
+		}
+		return 0;
 	}
 
 }

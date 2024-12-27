@@ -30,11 +30,13 @@ namespace spintool::rom
 		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const;
 		void BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 
+		Uint16 ReadUint16(size_t offset) const;
+		Uint32 ReadUint32(size_t offset) const;
+
 		std::vector<unsigned char> m_buffer;
 		std::filesystem::path m_filepath;
 
 		// Hardcoded resources
-		rom::PaletteSet& GetOptionsScreenPaletteSet() const;
-		rom::PaletteSet& GetToxicCavesPaletteSet() const;
+		std::shared_ptr<rom::PaletteSet> GetOptionsScreenPaletteSet() const;
 	};
 }
