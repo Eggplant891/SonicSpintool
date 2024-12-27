@@ -6,8 +6,11 @@
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
 
+#include "SDL3/SDL_image.h"
 #include "imgui.h"
 #include <memory>
+#include <cassert>
+
 
 namespace spintool
 {
@@ -34,17 +37,25 @@ namespace spintool
 			ImGui::SliderInt("###Level Index", &level_index, 0, 3);
 
 
-			if (ImGui::Button("Preview level BG"))
+			bool render_bg = ImGui::Button("Preview level BG");
+			ImGui::SameLine();
+			bool export_bg = ImGui::Button("Export level BG");
+
+			bool render_fg = ImGui::Button("Preview level FG");
+			ImGui::SameLine();
+			bool export_fg = ImGui::Button("Export level FG");
+
+			if (render_bg || export_bg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
 				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(0x000bfbf0 + (4 * level_index));
-				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(0x000bfc00 + (4 * level_index));
 				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(0x000bfc10 + (4 * level_index));
+				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(0x000bfc30 + (4 * level_index));
 
 				LevelPaletteSet = rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), 0x000bfc50 + (8 * level_index));
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(0x000bfc70 + (8 * level_index));
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(0x000bfc72 + (8 * level_index));
+				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(0x000bfc70 + (4 * level_index));
+				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(0x000bfc72 + (4 * level_index));
 
 				tileset_address = BGTilesetOffsets;
 				tile_brushes_address = BGTilesetBrushes;
@@ -54,22 +65,24 @@ namespace spintool
 				tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_brush_height * rom::TileSet::s_tile_height);
 
 				tile_layout_address = BGTilesetLayouts;
-				tile_layout_address_end = tile_layout_address + (tile_layout_width* tile_layout_height);
+				tile_layout_address_end = tile_layout_address + (tile_layout_width* tile_layout_height * 2);
 				
 				render_preview = true;
 			}
 
-			if (ImGui::Button("Preview level FG"))
+			
+
+			if (render_fg || export_fg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
 				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(0x000bfbe0 + (4 * level_index));
+				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(0x000bfc00 + (4 * level_index));
 				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(0x000bfc20 + (4 * level_index));
-				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(0x000bfc30 + (4 * level_index));
 
 				LevelPaletteSet = rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), 0x000bfc50 + (8 * level_index));
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(0x000bfc70 + (8 * level_index));
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(0x000bfc72 + (8 * level_index));
+				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(0x000bfc70 + (4 * level_index));
+				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(0x000bfc72 + (4 * level_index));
 
 				tileset_address = FGTilesetOffsets;
 				tile_brushes_address = FGTilesetBrushes;
@@ -79,7 +92,7 @@ namespace spintool
 				tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_brush_height * rom::TileSet::s_tile_height);
 
 				tile_layout_address = FGTilesetLayouts;
-				tile_layout_address_end = tile_layout_address + (tile_layout_width * tile_layout_height);
+				tile_layout_address_end = tile_layout_address + (tile_layout_width * tile_layout_height * 2);
 
 				render_preview = true;
 			}
@@ -121,7 +134,7 @@ namespace spintool
 
 						if (sprite_tile == nullptr)
 						{
-							break;
+							continue;
 						}
 
 						const size_t current_brush_offset = i;
@@ -140,6 +153,7 @@ namespace spintool
 					}
 					brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
 					SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+					SDL_ClearSurface(new_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 					brush_sprite.RenderToSurface(new_surface.get());
 					SDL_Surface* the_surface = new_surface.get();
 					m_tile_brushes_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
@@ -149,7 +163,7 @@ namespace spintool
 				constexpr size_t brush_height = rom::TileBrush::s_brush_height * rom::TileSet::s_tile_height;
 
 				SDLSurfaceHandle layout_preview_surface{ SDL_CreateSurface(brush_width * tile_layout_width, brush_height * tile_layout_height, SDL_PIXELFORMAT_RGBA32) };
-
+				SDL_ClearSurface(layout_preview_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 				for (size_t i = 0; i < m_tile_layout->tile_brush_instances.size(); ++i)
 				{
 					const auto tile_brush_index = m_tile_layout->tile_brush_instances[i].tile_brush_index;
@@ -164,6 +178,11 @@ namespace spintool
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
 					}
 
+					if (m_tile_layout->tile_brush_instances[i].is_flipped_vertically)
+					{
+						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
+					}
+
 					int x_off = static_cast<int>((i % tile_layout_width) * brush_width);
 					int y_off = static_cast<int>(((i-(i % tile_layout_width)) / tile_layout_width) * brush_height);
 
@@ -171,17 +190,35 @@ namespace spintool
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
 				}
 
+				if (export_bg)
+				{
+					static char path_buffer[4096];
+
+					sprintf_s(path_buffer, "spinball_level_%X02_BG.png", level_index);
+					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
+				}
+
+				if (export_fg)
+				{
+					static char path_buffer[4096];
+
+					sprintf_s(path_buffer, "spinball_level_%X02_FG.png", level_index);
+					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
+				}
+
 				m_tile_layout_preview = Renderer::RenderToTexture(layout_preview_surface.get());
 			}
 
-			constexpr size_t preview_brushes_per_row = 16;
+			constexpr size_t preview_brushes_per_row = 32;
 			constexpr const float zoom = 1.0f;
 
 			if (ImGui::TreeNode("Brush Previews"))
 			{
 				if (m_tile_brushes_previews.empty() == false)
 				{
-					int i = 0;
+					size_t i = 0;
 					for (const TileBrushPreview& preview_brush : m_tile_brushes_previews)
 					{
 						if (preview_brush.texture != nullptr)
@@ -192,6 +229,11 @@ namespace spintool
 							}
 
 							ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
+							if (ImGui::BeginItemTooltip())
+							{
+								ImGui::Text("Tile Index: 0x%02X", i);
+								ImGui::EndTooltip();
+							}
 							++i;
 						}
 					}

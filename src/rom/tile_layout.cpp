@@ -10,8 +10,6 @@ namespace spintool::rom
 		const Uint8* current_byte = start_byte;
 
 		auto new_layout = std::make_shared<TileLayout>();
-		new_layout->layout_width = 40;//48;
-		new_layout->layout_height = 28;
 
 		const size_t total_brushes = ((brushes_end - brushes_offset) / 2) / TileBrush::s_brush_total_tiles;
 		new_layout->tile_brushes.resize(total_brushes);
@@ -43,10 +41,11 @@ namespace spintool::rom
 			++current_byte;
 
 			TileBrushInstance brush_instance;
+			brush_instance.is_flipped_vertically = (0x10 & first_byte) != 0;
 			brush_instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
-			static Uint8 first_byte_mask = 0x00;
+			static Uint8 first_byte_mask = 0x03;
 			static Uint8 second_byte_mask = 0xFF;
-			brush_instance.tile_brush_index = (static_cast<Uint16>(first_byte_mask & first_byte) << 8) | (second_byte_mask & second_byte);
+			brush_instance.tile_brush_index = ((first_byte & 0x03) << 8) | (second_byte & 0xFF);
 			new_layout->tile_brush_instances.emplace_back(brush_instance);
 		}
 		return new_layout;

@@ -35,9 +35,6 @@ namespace spintool::rom
 
 	struct TileBrushInstance
 	{
-		Uint16 x_offset = 0;
-		Uint16 y_offset = 0;
-		
 		bool is_flipped_vertically = false;
 		bool is_flipped_horizontally = false;
 		int palette_line = 0; // 2 bit value. 0x0 -> 0x3
