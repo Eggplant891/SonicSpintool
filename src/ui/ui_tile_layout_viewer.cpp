@@ -97,17 +97,22 @@ namespace spintool
 				render_preview = true;
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Preview Options Menu"))
+			bool preview_options = ImGui::Button("Preview Options Menu");
+			bool export_options = ImGui::Button("Export Options Menu");
+			if (preview_options || export_options)
 			{
 				tileset_address = 0x000BDD2E;
 				tile_brushes_address = 0x000BDFBC;
 				tile_brushes_address_end = 0x000BE1BC;
 				tile_layout_address = 0x000BE1BC;
 				tile_layout_address_end = 0x000BE248;
+
 				tile_layout_width = 0xA;
-				tile_layout_height = 0xA;
-				render_preview = true;
+				tile_layout_height = 0x7;
+
 				LevelPaletteSet = m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
+
+				render_preview = true;
 			}
 
 			if (render_preview)
@@ -205,6 +210,12 @@ namespace spintool
 
 					sprintf_s(path_buffer, "spinball_level_%X02_FG.png", level_index);
 					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
+				}
+
+				if (export_options)
+				{
+					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append("spinball_level_OPTIONS.png");
 					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
 				}
 
