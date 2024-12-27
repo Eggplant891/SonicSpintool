@@ -23,7 +23,7 @@ namespace spintool
 
 		if (m_show_arbitrary_render && m_random_texture != nullptr)
 		{
-			ImGui::SetNextWindowSize(ImVec2{ static_cast<float>(m_random_texture->w), static_cast<float>(m_random_texture->h) });
+			ImGui::SetNextWindowSize(ImVec2{ -1, -1 }, ImGuiCond_Always);
 			if (ImGui::Begin("Arbitrary texture preview", &m_show_arbitrary_render, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing))
 			{
 				ImGui::Image((ImTextureID)m_random_texture.get(), { m_random_texture->w * m_zoom, m_random_texture->h * m_zoom });
