@@ -4,7 +4,7 @@
 
 namespace spintool::rom
 {
-	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t layout_offset, size_t layout_size)
+	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t brushes_end, size_t layout_offset, size_t layout_end)
 	{
 		const Uint8* start_byte = &src_rom.m_buffer[brushes_offset];
 		const Uint8* current_byte = start_byte;
@@ -13,7 +13,7 @@ namespace spintool::rom
 		new_layout->layout_width = 40;//48;
 		new_layout->layout_height = 28;
 
-		const size_t total_brushes = ((layout_offset - brushes_offset) / 2) / TileBrush::s_brush_total_tiles;
+		const size_t total_brushes = ((brushes_end - brushes_offset) / 2) / TileBrush::s_brush_total_tiles;
 		new_layout->tile_brushes.resize(total_brushes);
 
 		for (TileBrush& current_brush : new_layout->tile_brushes)
@@ -35,7 +35,7 @@ namespace spintool::rom
 		}
 
 		current_byte = &src_rom.m_buffer[layout_offset];
-		for (size_t i = 0; i < layout_size / 2; ++i)
+		for (size_t i = 0; i < (layout_end - layout_offset) / 2; ++i)
 		{
 			const Uint8 first_byte = *current_byte;
 			++current_byte;
