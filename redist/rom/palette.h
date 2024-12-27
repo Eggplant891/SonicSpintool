@@ -42,5 +42,7 @@ namespace spintool::rom
 		constexpr static const size_t s_max_palettes = 4;
 
 		std::array<std::shared_ptr<Palette>, s_max_palettes> palette_lines;
+
+		static std::shared_ptr<PaletteSet> LoadFromROM(const SpinballROM& src_rom, size_t offset);
 	};
 }

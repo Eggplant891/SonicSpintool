@@ -17,16 +17,10 @@ namespace spintool::rom
 
 		new_palette->offset = offset;
 
-		const Uint8* current_byte = &src_rom.m_buffer[offset];
-
 		for (Swatch& palette_swatch : new_palette->palette_swatches)
 		{
-			const Uint8 first_byte = *current_byte;
-			++current_byte;
-			const Uint8 second_byte = *current_byte;
-			++current_byte;
-
-			palette_swatch.packed_value = static_cast<Uint16>((static_cast<Uint16>(first_byte) << 8) | second_byte);
+			palette_swatch.packed_value = src_rom.ReadUint16(offset);
+			offset += 2;
 		}
 
 		return new_palette;
@@ -51,4 +45,27 @@ namespace spintool::rom
 		float col[3] = { static_cast<float>(GetUnpacked().r / 255.0f), static_cast<float>(GetUnpacked().g / 255.0f), static_cast<float>(GetUnpacked().b / 255.0f) };
 		return ImColor{ col[0], col[1], col[2], 1.0f };
 	}
+
+	std::shared_ptr<spintool::rom::PaletteSet> PaletteSet::LoadFromROM(const SpinballROM& src_rom, size_t offset)
+	{
+		constexpr size_t root_palette = 0xDFC;
+
+		if (offset + 2 * 4 >= src_rom.m_buffer.size())
+		{
+			return nullptr;
+		}
+
+		std::shared_ptr<rom::PaletteSet> palette_set = std::make_shared<rom::PaletteSet>();
+
+		palette_set->palette_lines =
+		{
+			rom::Palette::LoadFromROM(src_rom, root_palette + (src_rom.ReadUint16(offset) * 0x20)),
+			rom::Palette::LoadFromROM(src_rom, root_palette + (src_rom.ReadUint16(offset + 2) * 0x20)),
+			rom::Palette::LoadFromROM(src_rom, root_palette + (src_rom.ReadUint16(offset + 4) * 0x20)),
+			rom::Palette::LoadFromROM(src_rom, root_palette + (src_rom.ReadUint16(offset + 6) * 0x20))
+		};
+
+		return palette_set;
+	}
+
 }
