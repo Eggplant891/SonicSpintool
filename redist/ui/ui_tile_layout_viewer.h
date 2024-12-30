@@ -14,6 +14,16 @@ namespace spintool::rom
 
 namespace spintool
 {
+	struct RenderTileLayoutRequest
+	{
+		size_t tileset_address = 0;
+		size_t tile_brushes_address = 0;
+		size_t tile_brushes_address_end = 0;
+		size_t tile_layout_address = 0;
+		size_t tile_layout_address_end = 0;
+		unsigned int tile_layout_width = 0;
+		unsigned int tile_layout_height = 0;
+	};
 	struct TileBrushPreview
 	{
 		SDLSurfaceHandle surface;
