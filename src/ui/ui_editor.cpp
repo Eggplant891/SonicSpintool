@@ -16,6 +16,7 @@ namespace spintool
 		, m_tile_layout_viewer(*this)
 		, m_palette_viewer(*this)
 		, m_sprite_importer(*this)
+		, m_animation_navigator(*this)
 	{
 		m_rom_load_path = std::filesystem::current_path().append("roms");
 		if (std::filesystem::exists(m_rom_load_path) == false)
@@ -78,6 +79,7 @@ namespace spintool
 				if (ImGui::BeginMenu("Tools"))
 				{
 					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.m_visible);
+					ImGui::MenuItem("Animation Navigator", nullptr, &m_animation_navigator.m_visible);
 					ImGui::MenuItem("Tileset Navigator", nullptr, &m_tileset_navigator.m_visible);
 					ImGui::MenuItem("Tile Layout Viewer", nullptr, &m_tile_layout_viewer.m_visible);
 					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.m_visible);
@@ -144,6 +146,7 @@ namespace spintool
 		m_sprite_navigator.Update();
 		m_tileset_navigator.Update();
 		m_tile_layout_viewer.Update();
+		m_animation_navigator.Update();
 		m_palette_viewer.Update();
 
 		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)

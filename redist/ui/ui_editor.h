@@ -12,6 +12,7 @@
 #include "ui/ui_tile_layout_viewer.h"
 #include "ui/ui_palette_viewer.h"
 #include "ui/ui_sprite_importer.h"
+#include "ui/ui_animation_navigator.h"
 
 #include "imgui.h"
 #include <vector>
@@ -56,6 +57,7 @@ namespace spintool
 		EditorSpriteNavigator m_sprite_navigator;
 		EditorTilesetNavigator m_tileset_navigator;
 		EditorTileLayoutViewer m_tile_layout_viewer;
+		EditorAnimationNavigator m_animation_navigator;
 		EditorPaletteViewer m_palette_viewer;
 		EditorSpriteImporter m_sprite_importer;
 
