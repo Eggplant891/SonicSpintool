@@ -65,6 +65,20 @@ namespace spintool
 		return new_palette;
 	}
 
+	SDLPaletteHandle Renderer::CreateSDLPaletteForSet(const rom::PaletteSet& palette_set)
+	{
+		SDLPaletteHandle new_palette{ SDL_CreatePalette(64) };
+		for (size_t a = 0; a < 4; ++a)
+		{
+			for (size_t i = 0; i < 16; ++i)
+			{
+				rom::Colour colour = palette_set.palette_lines[a]->palette_swatches[i].GetUnpacked();
+				new_palette->colors[(a * 16) + i] = { colour.r, colour.g, colour.b, 255 };
+			}
+		}
+		return new_palette;
+	}
+
 	void Renderer::Initialise()
 	{
 		SDL_CreateWindowAndRenderer("Sonic Spintool", window_width, window_height, 0, &window, &renderer);
@@ -117,6 +131,27 @@ namespace spintool
 		ImGui::Render();
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
 		SDL_RenderPresent(renderer);
+	}
+
+	SDLTextureHandle Renderer::RenderArbitaryOffsetToTilesetTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions_in_tiles)
+	{
+		const Point tile_dimensions{ rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, };
+		const Point dimensions{ dimensions_in_tiles.x * tile_dimensions.x, dimensions_in_tiles.y * tile_dimensions.y };
+		SDLSurfaceHandle new_surface{ SDL_CreateSurface( dimensions.x, dimensions.y, SDL_PIXELFORMAT_RGBA32) };
+
+		SDLSurfaceHandle tile_surface{ SDL_CreateSurface(rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, SDL_PIXELFORMAT_RGBA32) };
+		size_t next_offset = offset;
+		for (int i = 0; i < dimensions_in_tiles.x * dimensions_in_tiles.y; ++i)
+		{
+			SDL_ClearSurface(tile_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+			rom.RenderToSurface(tile_surface.get(), offset, tile_dimensions);
+
+			SDL_Rect target_rect{ (i % dimensions_in_tiles.x) * tile_surface->w, ((i - (i % dimensions_in_tiles.x)) / dimensions_in_tiles.x) * tile_surface->h, tile_surface->w, tile_surface->h};
+
+			SDL_BlitSurface(tile_surface.get(), nullptr, new_surface.get(), &target_rect);
+			offset += (tile_surface->w, tile_surface->h) * 2;
+		}
+		return RenderToTexture(new_surface.get());
 	}
 
 	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions)

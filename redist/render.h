@@ -11,6 +11,7 @@ namespace spintool::rom
 
 	struct Sprite;
 	struct Palette;
+	struct PaletteSet;
 	struct SpriteTile;
 }
 
@@ -25,6 +26,7 @@ namespace spintool
 		static void Render();
 
 		static SDLPaletteHandle CreateSDLPalette(const rom::Palette& palette);
+		static SDLPaletteHandle CreateSDLPaletteForSet(const rom::PaletteSet& palette_set);
 		static void SetPalette(const SDLPaletteHandle& palette);
 
 		static SDLTextureHandle RenderToTexture(const rom::Sprite& sprite);
@@ -32,6 +34,8 @@ namespace spintool
 		static SDLTextureHandle RenderToTexture(SDL_Surface* surface);
 		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions);
 		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions, const rom::Palette& palette);
+		static SDLTextureHandle RenderArbitaryOffsetToTilesetTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions_in_tiles);
+
 		static SDL_Texture* GetTexture();
 		static SDL_Texture* GetViewportTexture();
 

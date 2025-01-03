@@ -24,6 +24,8 @@ namespace spintool
 	private:
 		std::vector<std::shared_ptr<UISpriteTexture>> m_sprites_found;
 		SDLTextureHandle m_random_texture;
+		int m_arbitrary_num_tiles_width = 16;
+		int m_arbitrary_num_tiles_height = 16;
 		int m_arbitrary_texture_width = 128;
 		int m_arbitrary_texture_height = 128;
 
@@ -33,7 +35,14 @@ namespace spintool
 		int m_chosen_palette = 0;
 		float m_zoom = 2.0f;
 
-		bool m_render_arbitrary_with_palette = true;
+		enum class ArbitraryRenderMode
+		{
+			VDP_COLOUR,
+			VDP_TILES,
+			PALETTE,
+		};
+
+		ArbitraryRenderMode m_render_arbitrary_with_palette = ArbitraryRenderMode::PALETTE;
 		bool m_attempt_render_of_arbitrary_data = false;
 		bool m_show_arbitrary_render = false;
 	};

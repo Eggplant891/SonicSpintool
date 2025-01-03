@@ -42,15 +42,21 @@ namespace spintool
 			}
 
 			bool changed = false;
-			if (ImGui::RadioButton("Render 16-bit Colour", m_render_arbitrary_with_palette == false))
+			if (ImGui::RadioButton("Render 8x8 VDP Tiles", m_render_arbitrary_with_palette == ArbitraryRenderMode::VDP_TILES))
 			{
-				m_render_arbitrary_with_palette = false;
+				m_render_arbitrary_with_palette = ArbitraryRenderMode::VDP_TILES;
 				m_attempt_render_of_arbitrary_data = true;
 			}
 			ImGui::SameLine();
-			if (ImGui::RadioButton("Render Palette Colour", m_render_arbitrary_with_palette == true))
+			if (ImGui::RadioButton("Render 16-bit Colour", m_render_arbitrary_with_palette == ArbitraryRenderMode::VDP_COLOUR))
 			{
-				m_render_arbitrary_with_palette = true;
+				m_render_arbitrary_with_palette = ArbitraryRenderMode::VDP_COLOUR;
+				m_attempt_render_of_arbitrary_data = true;
+			}
+			ImGui::SameLine();
+			if (ImGui::RadioButton("Render Palette Colour", m_render_arbitrary_with_palette == ArbitraryRenderMode::PALETTE))
+			{
+				m_render_arbitrary_with_palette = ArbitraryRenderMode::PALETTE;
 				m_attempt_render_of_arbitrary_data = true;
 			}
 			ImGui::SameLine();
@@ -59,20 +65,43 @@ namespace spintool
 				m_attempt_render_of_arbitrary_data |= true;
 				m_random_texture.reset();
 			}
-			ImGui::SetNextItemWidth(128);
-			m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Width", &m_arbitrary_texture_width, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(128);
-			m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Height", &m_arbitrary_texture_height, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+			if (m_render_arbitrary_with_palette == ArbitraryRenderMode::VDP_TILES)
+			{
+				ImGui::SetNextItemWidth(128);
+				m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Num Tiles Width", &m_arbitrary_num_tiles_width, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(128);
+				m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Num Tiles Height", &m_arbitrary_num_tiles_height, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+			}
+			else
+			{
+				ImGui::SetNextItemWidth(128);
+				m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Width", &m_arbitrary_texture_width, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+				ImGui::SameLine();
+				ImGui::SetNextItemWidth(128);
+				m_attempt_render_of_arbitrary_data |= ImGui::InputInt("Height", &m_arbitrary_texture_height, 1, 10, ImGuiInputTextFlags_EnterReturnsTrue);
+			}
 			if (m_attempt_render_of_arbitrary_data && m_show_arbitrary_render)
 			{
-				if (m_render_arbitrary_with_palette)
+				switch (m_render_arbitrary_with_palette)
 				{
-					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_owning_ui.GetROM(), m_offset, { m_arbitrary_texture_width, m_arbitrary_texture_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
-				}
-				else
-				{
-					m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_owning_ui.GetROM(), m_offset, { m_arbitrary_texture_width, m_arbitrary_texture_height });
+					case ArbitraryRenderMode::PALETTE:
+					{
+						m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_owning_ui.GetROM(), m_offset, { m_arbitrary_texture_width, m_arbitrary_texture_height }, *m_owning_ui.GetPalettes().at(m_chosen_palette));
+					}
+					break;
+
+					case ArbitraryRenderMode::VDP_COLOUR:
+					{
+						m_random_texture = Renderer::RenderArbitaryOffsetToTexture(m_owning_ui.GetROM(), m_offset, { m_arbitrary_texture_width, m_arbitrary_texture_height });
+					}
+					break;
+
+					case ArbitraryRenderMode::VDP_TILES:
+					{
+						m_random_texture = Renderer::RenderArbitaryOffsetToTilesetTexture(m_owning_ui.GetROM(), m_offset, { m_arbitrary_num_tiles_width, m_arbitrary_num_tiles_height });
+					}
+					break;
 				}
 				m_attempt_render_of_arbitrary_data = false;
 			}
