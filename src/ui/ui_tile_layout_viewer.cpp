@@ -5,6 +5,7 @@
 #include "rom/sprite.h"
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
+#include "rom/game_objects/game_object_flipper.h"
 
 #include "SDL3/SDL_image.h"
 #include "imgui.h"
@@ -24,7 +25,10 @@ namespace spintool
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar))
 		{
 			static std::vector<RenderTileLayoutRequest> s_tile_layout_render_requests;
+			static std::vector<rom::FlipperInstance> s_flipper_instances;
 			bool render_preview = false;
+			static SDLSurfaceHandle LevelFlipperSpriteSurface;
+			static SDLPaletteHandle LevelFlipperPalette;
 			static std::shared_ptr<rom::PaletteSet> LevelPaletteSet;
 
 			static int level_index = 0;
@@ -40,10 +44,13 @@ namespace spintool
 			ImGui::SameLine();
 			bool export_fg = ImGui::Button("Export level FG");
 
+			bool render_flippers = false;
+
 			if (render_both)
 			{
 				render_fg = true;
 				render_bg = true;
+				render_flippers = true;
 			}
 
 			if (render_bg || export_bg)
@@ -72,8 +79,6 @@ namespace spintool
 				
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
-
-			
 
 			if (render_fg || export_fg)
 			{
@@ -121,6 +126,41 @@ namespace spintool
 				LevelPaletteSet = m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
 
 				s_tile_layout_render_requests.emplace_back(std::move(request));
+			}
+
+			if (render_flippers)
+			{
+				const static size_t flippers_ptr_table_offset = 0x000C08BE;
+				const static size_t flippers_count_table_offset = 0x000C08EE;
+				const static size_t flipper_sprite_offset[4] =
+				{
+					0x00017E82,
+					0x0002594A,
+					0x0002E05C,
+					0x00035692
+				};
+
+				std::shared_ptr<const rom::Sprite> LevelFlipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[level_index]);
+				LevelFlipperSpriteSurface = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
+				LevelFlipperPalette = Renderer::CreateSDLPalette(*LevelPaletteSet->palette_lines[0].get());
+				SDL_SetSurfacePalette(LevelFlipperSpriteSurface.get(), LevelFlipperPalette.get());
+				SDL_ClearSurface(LevelFlipperSpriteSurface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+				SDL_SetSurfaceColorKey(LevelFlipperSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelFlipperSpriteSurface->format), nullptr, 0, 0, 0, 0));
+				LevelFlipperSprite->RenderToSurface(LevelFlipperSpriteSurface.get());
+
+				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * level_index));
+				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * level_index));
+
+				s_flipper_instances.clear();
+				s_flipper_instances.reserve(num_flippers);
+
+				size_t current_table_offset = flippers_table_begin;
+
+				for (size_t i = 0; i < num_flippers; ++i)
+				{
+					s_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+					current_table_offset = s_flipper_instances.back().rom_data.rom_offset_end;
+				}
 			}
 
 			constexpr size_t brush_width = rom::TileBrush::s_brush_width * rom::TileSet::s_tile_width;
@@ -238,6 +278,26 @@ namespace spintool
 				}
 			
 				s_tile_layout_render_requests.erase(std::begin(s_tile_layout_render_requests));
+			}
+
+			if (render_flippers)
+			{
+				for (size_t i = 0; i < s_flipper_instances.size(); ++i)
+				{
+					const rom::FlipperInstance& flipper = s_flipper_instances[i];
+
+					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(LevelFlipperSpriteSurface.get()) };
+					int x_off = -24;
+					if (flipper.is_x_flipped)
+					{
+						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
+						x_off = -20;
+					}
+
+					SDL_Rect target_rect{ flipper.x_pos + x_off, flipper.y_pos - 31, 44, 31 };
+					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
+					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+				}
 			}
 
 			if (will_be_rendering_preview)
