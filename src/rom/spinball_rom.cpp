@@ -108,14 +108,14 @@ namespace spintool
 		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
 		const SDL_PixelFormatDetails* pixel_format = SDL_GetPixelFormatDetails(surface->format);
 
-		const Uint8* current_byte = &m_buffer[offset];
+		size_t next_offset = offset;
 		std::vector<Uint32> pixels_data;
 		for (int i = 0; i < dimensions.x * dimensions.y; ++i)
 		{
-			Uint16 colour_data = (static_cast<Uint16>(*(current_byte)) << 8) | static_cast<Uint16>(*(current_byte + 1));
-			rom::Colour found_colour{ 0, Colour::levels_lookup[(0x0F00 & colour_data) >> 8], Colour::levels_lookup[(0x00F0 & colour_data) >> 4], Colour::levels_lookup[(0x000F & colour_data)] };
+			const Uint16 colour_data = ReadUint16(next_offset);
+			const rom::Colour found_colour{ 0, Colour::levels_lookup[(0x0F00 & colour_data) >> 8], Colour::levels_lookup[(0x00F0 & colour_data) >> 4], Colour::levels_lookup[(0x000F & colour_data)] };
 			pixels_data.emplace_back(SDL_MapRGB(pixel_format, nullptr, found_colour.r, found_colour.g, found_colour.b));
-			current_byte += 2;
+			next_offset += 2;
 		}
 
 		BlitRawPixelDataToSurface(surface, bounds, pixels_data);
@@ -187,5 +187,4 @@ namespace spintool
 		}
 		return 0;
 	}
-
 }
