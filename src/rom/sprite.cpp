@@ -97,7 +97,7 @@ namespace spintool::rom
 		const BoundingBox& bounds = GetBoundingBox();
 
 		Renderer::s_sdl_update_mutex.lock();
-		SDL_ClearSurface(surface, 0, 0, 0, 255);
+		SDL_ClearSurface(surface, 0, 0, 0, 0);
 		if (bounds.Width() > 0 && bounds.Height() > 0)
 		{
 			for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
