@@ -23,6 +23,7 @@ namespace spintool
 		size_t tile_layout_address_end = 0;
 		unsigned int tile_layout_width = 0;
 		unsigned int tile_layout_height = 0;
+		bool is_chroma_keyed = false;
 	};
 	struct TileBrushPreview
 	{

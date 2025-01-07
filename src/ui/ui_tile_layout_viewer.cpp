@@ -39,6 +39,9 @@ namespace spintool
 
 
 			bool render_both = ImGui::Button("Preview Level");
+			ImGui::SameLine();
+			bool export_both = ImGui::Button("Export level");
+
 			bool render_bg = ImGui::Button("Preview level BG");
 			ImGui::SameLine();
 			bool export_bg = ImGui::Button("Export level BG");
@@ -54,6 +57,14 @@ namespace spintool
 			{
 				render_fg = true;
 				render_bg = true;
+				render_flippers = true;
+				render_rings = true;
+			}
+
+			if (export_both)
+			{
+				export_fg = true;
+				export_bg = true;
 				render_flippers = true;
 				render_rings = true;
 			}
@@ -81,6 +92,8 @@ namespace spintool
 
 				request.tile_layout_address = BGTilesetLayouts;
 				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
+
+				request.is_chroma_keyed = false;
 				
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -109,6 +122,8 @@ namespace spintool
 				request.tile_layout_address = FGTilesetLayouts;
 				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
 
+				request.is_chroma_keyed = true;
+
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 			ImGui::SameLine();
@@ -127,6 +142,8 @@ namespace spintool
 
 				request.tile_layout_width = 0xA;
 				request.tile_layout_height = 0x7;
+
+				request.is_chroma_keyed = false;
 
 				LevelPaletteSet = m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
 
@@ -270,8 +287,8 @@ namespace spintool
 					}
 					brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
 					SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-					SDL_ClearSurface(new_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-					SDL_SetSurfaceColorKey(new_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
+					SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
+					SDL_ClearSurface(new_surface.get(), 0.0f, 0.0f, 0.0f, 255.0f);
 					brush_sprite.RenderToSurface(new_surface.get());
 					SDL_Surface* the_surface = new_surface.get();
 					m_tile_brushes_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
@@ -300,7 +317,7 @@ namespace spintool
 					int y_off = static_cast<int>(((i-(i % request.tile_layout_width)) / request.tile_layout_width) * brush_height);
 
 					SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
-					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
+					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
 				}
 
@@ -362,6 +379,15 @@ namespace spintool
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
 				}
+			}
+
+			if (export_both)
+			{
+				static char path_buffer[4096];
+
+				sprintf_s(path_buffer, "spinball_level_%X02_FullLayout.png", level_index);
+				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+				assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
 			}
 
 			if (will_be_rendering_preview)
