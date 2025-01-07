@@ -1,5 +1,5 @@
-/.vs
-/bin
-/intermediate
-/lib
+/.vs/*
+/bin/*
+/intermediate/*
+/lib/*
 *.vcxproj.*
