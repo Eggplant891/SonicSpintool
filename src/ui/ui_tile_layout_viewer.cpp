@@ -6,6 +6,7 @@
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
 #include "rom/game_objects/game_object_flipper.h"
+#include "rom/game_objects/game_object_ring.h"
 
 #include "SDL3/SDL_image.h"
 #include "imgui.h"
