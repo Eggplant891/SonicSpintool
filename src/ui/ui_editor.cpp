@@ -43,6 +43,7 @@ namespace spintool
 		{
 			m_rom_path = rom_path;
 			m_palettes = m_rom.LoadPalettes(48);
+			//m_palettes = m_rom.LoadPalettes(8);
 			return true;
 		}
 

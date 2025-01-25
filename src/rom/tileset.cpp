@@ -91,10 +91,10 @@ namespace spintool::rom
 
 		const Uint8* tileset_start_byte = &uncompressed_data[relative_offset];
 		const Uint8* current_byte = tileset_start_byte;
-		const int num_tiles_to_wrangle = num_tiles;
+		const size_t num_tiles_to_wrangle = num_tiles <= (uncompressed_data.size() / s_tile_total_pixels) ? num_tiles : (uncompressed_data.size() / s_tile_total_pixels);
 
 		new_sprite->rom_data.rom_offset = rom_data.rom_offset;
-		new_sprite->num_tiles = num_tiles_to_wrangle;
+		new_sprite->num_tiles = static_cast<Uint16>(num_tiles_to_wrangle);
 
 		for (int i = 0; i < num_tiles_to_wrangle; ++i)
 		{

@@ -183,6 +183,11 @@ namespace spintool
 					size_t offset = 0;
 					while (true)
 					{
+						if (tileset->rom_data.rom_offset_end <= offset)
+						{
+							break;
+						}
+
 						std::shared_ptr<const rom::Sprite> new_sprite = tileset->CreateSpriteFromTile(offset);
 						if (new_sprite == nullptr)
 						{
