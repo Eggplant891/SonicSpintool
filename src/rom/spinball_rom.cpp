@@ -33,7 +33,9 @@ namespace spintool
 
 	std::vector<std::shared_ptr<rom::Palette>> rom::SpinballROM::LoadPalettes(size_t num_palettes)
 	{
-		constexpr size_t offset = 0xDFC;
+		constexpr size_t offset = 0xDFC; // Level Palettes
+		//constexpr size_t offset = 0x9BCDA; // Main menu palettes
+		//constexpr size_t offset = 0xA1388; // Veg-o-Fortress cutscene palettes
 		std::vector<std::shared_ptr<rom::Palette>> results;
 
 		for (size_t p = 0; p < num_palettes; ++p)

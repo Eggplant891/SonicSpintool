@@ -18,6 +18,7 @@ namespace spintool
 		0x00053214, // Showdown
 		0x0004FEE4,
 		0x000BDD2E, // Options
+		0x0009bd34, // Main Menu
 	};
 
 	void EditorTilesetNavigator::Update()
