@@ -122,14 +122,14 @@ namespace spintool
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0,0 });
 
-			ImVec2 dim{ static_cast<float>(Renderer::window_width), static_cast<float>(Renderer::window_height) - menu_bar_height };
+			ImVec2 dim{ static_cast<float>(Renderer::s_window_width), static_cast<float>(Renderer::s_window_height) - menu_bar_height };
 
 			ImGui::SetNextWindowSize(dim, ImGuiCond_Always);
 			ImGui::SetNextWindowPos({ 0, menu_bar_height }, ImGuiCond_Always);
 
 			if (ImGui::Begin("main_viewport", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoNavInputs))
 			{
-				float adjusted_height_uv = dim.y / Renderer::window_height;
+				float adjusted_height_uv = dim.y / Renderer::s_window_height;
 				if (viewport)
 				{
 					ImGui::Image((ImTextureID)viewport, dim, { 0,0 }, { 1, adjusted_height_uv });

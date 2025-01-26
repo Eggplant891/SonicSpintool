@@ -36,16 +36,17 @@ namespace spintool
 		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions, const rom::Palette& palette);
 		static SDLTextureHandle RenderArbitaryOffsetToTilesetTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions_in_tiles);
 
-		static SDL_Texture* GetTexture();
 		static SDL_Texture* GetViewportTexture();
 
-		static SDL_PixelFormat s_pixel_format;
-		static const SDL_PixelFormatDetails* s_pixel_format_details;
-		static const SDL_PixelFormatDetails* s_bitmap_pixel_format_details;
+		static SDL_Renderer* s_renderer;
+		static SDL_Window* s_window;
+		static SDL_Surface* s_window_surface;
+		static SDLTextureHandle s_window_texture;
+		static SDLPaletteHandle s_current_palette;
 
 		static std::recursive_mutex s_sdl_update_mutex;
 
-		constexpr static const int window_width = 1600;
-		constexpr static const int window_height = 900;
+		constexpr static const int s_window_width = 1600;
+		constexpr static const int s_window_height = 900;
 	};
 }

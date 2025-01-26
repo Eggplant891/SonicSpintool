@@ -17,41 +17,26 @@
 
 namespace spintool
 {
-	constexpr int canvas_width = 128;
-	constexpr int canvas_height = 128;
-
-	static Point s_next_location = { 0,0 };
-
-	SDL_Renderer* renderer;
-	SDL_Window* window;
-	SDLTextureHandle current_texture;
-	SDLPaletteHandle current_palette;
-	SDL_Surface* window_surface = nullptr;
-	SDL_Surface* sprite_atlas_surface = nullptr;
-	SDL_Surface* bitmap_sprite_surface = nullptr;
-
-	SDL_PixelFormat Renderer::s_pixel_format;
-	const SDL_PixelFormatDetails* Renderer::s_pixel_format_details = nullptr;
-	const SDL_PixelFormatDetails* Renderer::s_bitmap_pixel_format_details = nullptr;
+	SDL_Renderer* Renderer::s_renderer = nullptr;
+	SDL_Window* Renderer::s_window = nullptr;
+	SDL_Surface* Renderer::s_window_surface = nullptr;
+	SDLTextureHandle Renderer::s_window_texture;
+	SDLPaletteHandle Renderer::s_current_palette;
 	std::recursive_mutex Renderer::s_sdl_update_mutex;
 
-	SDLTextureHandle window_texture;
-
-	SDL_Texture* Renderer::GetTexture()
-	{
-		current_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(renderer, sprite_atlas_surface) };
-		SDL_SetTextureScaleMode(current_texture.get(), SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
-		return current_texture.get();
-	}
 
 	SDL_Texture* Renderer::GetViewportTexture()
 	{
-		return window_texture.get();
+		return s_window_texture.get();
 	}
 
 	void Renderer::SetPalette(const SDLPaletteHandle& palette)
 	{
-		SDL_SetSurfacePalette(sprite_atlas_surface, palette.get());
+		if (s_current_palette == nullptr || palette->ncolors != s_current_palette->ncolors)
+		{
+			s_current_palette = SDLPaletteHandle{ SDL_CreatePalette(palette->ncolors) };
+		}
+		*s_current_palette = *palette;
 	}
 
 	SDLPaletteHandle Renderer::CreateSDLPalette(const rom::Palette& palette)
@@ -81,32 +66,25 @@ namespace spintool
 
 	void Renderer::Initialise()
 	{
-		SDL_CreateWindowAndRenderer("Sonic Spintool", window_width, window_height, 0, &window, &renderer);
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-		SDL_RenderClear(renderer);
-		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+		SDL_CreateWindowAndRenderer("Sonic Spintool", s_window_width, s_window_height, 0, &s_window, &s_renderer);
+		SDL_SetRenderDrawColor(s_renderer, 0, 0, 0, 0);
+		SDL_RenderClear(s_renderer);
+		SDL_SetRenderDrawColor(s_renderer, 0, 0, 0, 255);
 
 		ImGui::CreateContext();
 		ImGui::StyleColorsDark();
-		ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
-		ImGui_ImplSDLRenderer3_Init(renderer);
+		ImGui_ImplSDL3_InitForSDLRenderer(s_window, s_renderer);
+		ImGui_ImplSDLRenderer3_Init(s_renderer);
 
-		sprite_atlas_surface = SDL_CreateSurface(canvas_width, canvas_height, SDL_PIXELFORMAT_INDEX8);
-		bitmap_sprite_surface = SDL_CreateSurface(canvas_width, canvas_height, SDL_PIXELFORMAT_RGBA32);
-		window_surface = SDL_CreateSurface(window_width, window_height, SDL_PIXELFORMAT_RGBA32);
-		s_pixel_format = sprite_atlas_surface->format;
-		s_pixel_format_details = SDL_GetPixelFormatDetails(sprite_atlas_surface->format);
-		s_bitmap_pixel_format_details = SDL_GetPixelFormatDetails(bitmap_sprite_surface->format);
-
-
-		SDL_ClearSurface(window_surface, 0, 0, 255, 255);
-		window_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(renderer, window_surface) };
+		s_window_surface = SDL_CreateSurface(s_window_width, s_window_height, SDL_PIXELFORMAT_RGBA32);
+		SDL_ClearSurface(s_window_surface, 0, 0, 255, 255);
+		s_window_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(s_renderer, s_window_surface) };
 	}
 
 	void Renderer::Shutdown()
 	{
-		SDL_DestroyRenderer(renderer);
-		SDL_DestroyWindow(window);
+		SDL_DestroyRenderer(s_renderer);
+		SDL_DestroyWindow(s_window);
 	}
 
 
@@ -116,21 +94,17 @@ namespace spintool
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 
-		window_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(renderer, window_surface) };
+		s_window_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(s_renderer, s_window_surface) };
 	}
 
 	void Renderer::Render()
 	{
-		SDL_RenderClear(renderer);
+		SDL_RenderClear(s_renderer);
 
-		//SDL_BlitSurfaceScaled(sprite_atlas_surface, NULL, window_surface, NULL, SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
-		//SDL_SetTextureScaleMode(current_texture.get(), SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
-		//SDL_RenderTexture(renderer, current_texture.get(), NULL, NULL);
-
-		SDL_RenderTexture(renderer, window_texture.get(), nullptr, nullptr);
+		SDL_RenderTexture(s_renderer, s_window_texture.get(), nullptr, nullptr);
 		ImGui::Render();
-		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), renderer);
-		SDL_RenderPresent(renderer);
+		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), s_renderer);
+		SDL_RenderPresent(s_renderer);
 	}
 
 	SDLTextureHandle Renderer::RenderArbitaryOffsetToTilesetTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions_in_tiles)
@@ -172,28 +146,24 @@ namespace spintool
 
 	SDLTextureHandle Renderer::RenderToTexture(const rom::Sprite& sprite)
 	{
-		auto old_atlas_surface = std::move(sprite_atlas_surface);
-		sprite_atlas_surface = SDL_CreateSurface(sprite.GetBoundingBox().Width(), sprite.GetBoundingBox().Height(), s_pixel_format_details->format);
-		SDL_SetSurfacePalette(sprite_atlas_surface, SDL_GetSurfacePalette(old_atlas_surface));
+		auto sprite_atlas_surface = SDL_CreateSurface(sprite.GetBoundingBox().Width(), sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8);
+		SDL_SetSurfacePalette(sprite_atlas_surface, s_current_palette.get());
 		sprite.RenderToSurface(sprite_atlas_surface);
-		SDLTextureHandle tex_handle = RenderToTexture(sprite_atlas_surface);
-		delete sprite_atlas_surface;
-		sprite_atlas_surface = std::move(old_atlas_surface);
-		return tex_handle;
+		return RenderToTexture(sprite_atlas_surface);
 	}
 
 	SDLTextureHandle Renderer::RenderToTexture(const rom::SpriteTile& sprite_tile)
 	{
+		auto sprite_atlas_surface = SDL_CreateSurface(sprite_tile.x_size, sprite_tile.y_size, SDL_PIXELFORMAT_INDEX8);
+		SDL_SetSurfacePalette(sprite_atlas_surface, s_current_palette.get());
 		sprite_tile.RenderToSurface(sprite_atlas_surface);
 		return RenderToTexture(sprite_atlas_surface);
 	}
 
 	SDLTextureHandle Renderer::RenderToTexture(SDL_Surface* surface)
 	{
-		SDL_LockSurface(surface);
-		SDLTextureHandle new_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(renderer, surface) };
+		SDLTextureHandle new_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(s_renderer, surface) };
 		SDL_SetTextureScaleMode(new_texture.get(), SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
-		SDL_UnlockSurface(surface);
 		return new_texture;
 	}
 
