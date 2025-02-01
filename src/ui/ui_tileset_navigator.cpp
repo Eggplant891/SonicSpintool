@@ -18,7 +18,12 @@ namespace spintool
 		0x00053214, // Showdown
 		0x0004FEE4,
 		0x000BDD2E, // Options
-		0x0009bd34, // Main Menu
+	};
+
+	size_t s_tile_offsets_non_ssc[] =
+	{
+		//0x000C77b0, // Bonus Stage BG tiles
+		//0x000C9016  // Bonus stage FG tiles
 	};
 
 	void EditorTilesetNavigator::Update()
@@ -35,6 +40,11 @@ namespace spintool
 				for (size_t offset : s_tile_offsets)
 				{
 					m_tilesets.emplace_back(rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), offset));
+				}
+
+				for (size_t offset : s_tile_offsets_non_ssc)
+				{
+					m_tilesets.emplace_back(rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), offset));
 				}
 			}
 

@@ -2,6 +2,7 @@
 #include "rom/sprite.h"
 #include "rom/spinball_rom.h"
 #include "rom/ssc_decompressor.h"
+#include "rom/second_decompressor.h"
 
 namespace spintool::rom
 {
@@ -13,6 +14,22 @@ namespace spintool::rom
 		new_tileset->uncompressed_data.clear();
 
 		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
+		new_tileset->uncompressed_size = results.uncompressed_data.size();
+		new_tileset->compressed_size = results.rom_data.real_size;
+		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
+		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
+
+		return new_tileset;
+	}
+
+	std::shared_ptr<const TileSet> TileSet::LoadFromROMSecondCompression(const SpinballROM& src_rom, size_t rom_offset)
+	{
+		auto new_tileset = std::make_shared<rom::TileSet>();
+
+		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
+		new_tileset->uncompressed_data.clear();
+
+		SecondDecompressionResult results = rom::SecondDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
 		new_tileset->uncompressed_size = results.uncompressed_data.size();
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
