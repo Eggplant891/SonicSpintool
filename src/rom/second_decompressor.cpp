@@ -43,6 +43,7 @@ namespace spintool::rom
 		constexpr Uint16 s_token_halt = 0x101;
 		constexpr size_t a5_to_a6_offset = 0x408;
 
+		Uint32 combined_d0 = 0;
 		Uint16 upper_d0 = 0;
 		Uint16 lower_d0 = 0;
 		Uint16 upper_d1 = 0;
@@ -60,18 +61,21 @@ namespace spintool::rom
 		Uint16 lower_d0_stored_in_a3 = 0;
 		size_t offset_a5 = start_offset; // A5 points to a table of size $400 bytes(likely)
 		size_t next_token_write = start_offset + a5_to_a6_offset; // A5 points to a table of size $400 bytes(likely) // A5 and A6 point to the same location, but A5 has some base displacement($408 bytes)
-		token_data.resize(0x400* 4);
+		token_data.resize(0x400*4);
 
 		while (true)
 		{
 			// Read next token of length 9, 10 or 11 bits(see D5, (A2)) from the compressed stream
 			stream_current_offset_bytes = stream_current_offset_bits_d3 >> 3; // X / 8
 			upper_d0 = (static_cast<Uint16>(stream_target[stream_current_offset_bytes + 2]));
-			lower_d0 = (static_cast<Uint16>(stream_target[stream_current_offset_bytes + 1]) << 8) | (static_cast<Uint32>(stream_target[stream_current_offset_bytes])); // Read 3 bytes. Reverse order in  binary
+			lower_d0 = (static_cast<Uint16>(stream_target[stream_current_offset_bytes + 1]) << 8) | (static_cast<Uint16>(stream_target[stream_current_offset_bytes])); // Read 3 bytes. Reverse order in  binary
 			stream_current_offset_bits_d3 += token_size_d5; // increment compressed stream pointer(in bits)
 			lower_d1 = (stream_current_offset_bits_d3 & 0x0000FFFF) & 7;
-			lower_d0 = lower_d0 >> lower_d1;
-			upper_d0 = upper_d0 >> lower_d1;
+			combined_d0 = (upper_d0 << 16) | lower_d0;
+			combined_d0 = combined_d0 >> lower_d1;
+			lower_d0 = combined_d0 & 0x0000FFFF;
+			upper_d0 = (combined_d0 & 0xFFFF0000) >> 16;
+
 			lower_d0 = lower_d0 & TokenBitmaskLookup[loaded_bitmask_index_a2]; // mask out bits(9, 10 or 11)
 
 			if (lower_d0 == s_token_halt) // Token $101 : Halt decompression
@@ -89,15 +93,21 @@ namespace spintool::rom
 				max_token_index = 0x200;
 				loaded_bitmask_index_a2 = 0; // reset mask to 9 bits
 				next_token_write = start_offset + a5_to_a6_offset; // reset unknown dictionary
+				//token_data.clear();
+				//token_data.resize(0x400 * 4);
 
 				// Read next token of length 9 bits(see D5, (A2)) from the compressed stream
 				stream_current_offset_bytes = stream_current_offset_bits_d3 >> 3; // X / 8
 				upper_d0 = (static_cast<Uint16>(stream_target[stream_current_offset_bytes + 2]));
-				lower_d0 = (static_cast<Uint16>(stream_target[stream_current_offset_bytes + 1]) << 8) | (static_cast<Uint32>(stream_target[stream_current_offset_bytes])); // Read 3 bytes. Reverse order in  binary
+				lower_d0 = (static_cast<Uint16>(stream_target[stream_current_offset_bytes + 1]) << 8) | (static_cast<Uint16>(stream_target[stream_current_offset_bytes])); // Read 3 bytes. Reverse order in  binary
 				stream_current_offset_bits_d3 += token_size_d5; // increment compressed stream pointer(in bits)
 				lower_d1 = (stream_current_offset_bits_d3 & 0x0000FFFF) & 7;
-				lower_d0 = lower_d0 >> lower_d1;
-				upper_d0 = upper_d0 >> lower_d1;
+
+				combined_d0 = (upper_d0 << 16) | lower_d0;
+				combined_d0 = combined_d0 >> lower_d1;
+				upper_d0 = combined_d0 & 0x0000FFFF;
+				lower_d0 = (combined_d0 & 0xFFFF0000) >> 16;
+
 				lower_d0 = lower_d0 & TokenBitmaskLookup[loaded_bitmask_index_a2]; // mask out bits(9, 10 or 11)
 
 				lower_d7 = lower_d0;
@@ -117,22 +127,21 @@ namespace spintool::rom
 				}
 				lower_d0 = lower_d7;
 			}
-			else
-			{
-				while (lower_d0 > 255)
-				{
-					const Uint16 index = lower_d0 * 4;
-					const Uint8 byte_to_push = (index + 1) >= token_data.size() ? 0 : token_data[index + 1];
-					const Uint8 new_index_low = (index + 2) >= token_data.size() ? 0 : token_data[index + 2];
-					const Uint8 new_index_high = (index + 3) >= token_data.size() ? 0 : token_data[index + 3];
-					auto result = PushByteToStack(stack_data, byte_to_push); // put raw uncompressed byte
-					lower_d0 = (static_cast<Uint16>(new_index_high) << 8) | new_index_low; // next index or token to process
 
-					if (result)
-					{
-						final_result = result.value();
-						break;
-					}
+			while (lower_d0 > 255)
+			{
+				const Uint16 index = lower_d0 * 4;
+				const Uint8 byte_to_push = (index + 1) >= token_data.size() ? 0 : token_data[index + 1];
+				const Uint8 new_index_low = (index + 3) >= token_data.size() ? 0 : token_data[index + 3];
+				const Uint8 new_index_high = (index + 2) >= token_data.size() ? 0 : token_data[index + 2];
+				auto result = PushByteToStack(stack_data, byte_to_push); // put raw uncompressed byte
+
+				lower_d0 = (static_cast<Uint16>(new_index_high) << 8) | new_index_low; // next index or token to process
+
+				if (result)
+				{
+					final_result = result.value();
+					break;
 				}
 			}
 
