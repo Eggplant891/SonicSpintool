@@ -22,8 +22,8 @@ namespace spintool
 
 	size_t s_tile_offsets_non_ssc[] =
 	{
-		//0x000C77b0, // Bonus Stage BG tiles
-		//0x000C9016  // Bonus stage FG tiles
+		0x000C77b0, // Bonus Stage BG tiles
+		0x000C9016  // Bonus stage FG tiles
 	};
 
 	void EditorTilesetNavigator::Update()

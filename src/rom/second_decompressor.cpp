@@ -9,13 +9,13 @@ namespace spintool::rom
 	{
 		const size_t start_offset = 0;
 
-		const Uint8* stream_target = &in_data[offset-2];
+		const Uint8* stream_target = &in_data[offset];
 
 		std::array<Uint16, 4> TokenBitmaskLookup = {
-			0x1FF,
-			0x3FF,
-			0x7FF,
-			0xFFF
+			0x01FF,
+			0x03FF,
+			0x07FF,
+			0x0FFF
 		};
 
 		std::vector<Uint8> out_data;
@@ -29,15 +29,17 @@ namespace spintool::rom
 
 //DoLoadCompressed2Tiles: // CODE XREF : LoadUncOrComp2Tiles + 16
 		// LoadCompressed2Tiles + 10↑p
+		Uint32 d0 = 0;
+		Uint32 d1 = 0;
 		Uint32 copy_counter_d2 = 0;
 		Uint32 stream_current_offset_d3 = 0; // D3
 		Sint16 working_d4 = 0x102;
 		Uint32 token_size_d5 = 9; // set token size to 9 bits. D5
 		Sint16 working_d6 = 0x200; // set token size to 9 bits
-		Uint32 d0_stored_in_a3 = 0;
 		Uint32 d7 = 0;
 
 		Uint16 loaded_bitmask_index_a2 = 0; // = TokenBitmaskLookup[0]; // set mask to 9 bits. A2
+		Uint32 d0_stored_in_a3 = 0;
 		size_t offset_a5 = start_offset; // A5 points to a table of size $400 bytes(likely)
 		size_t offset_a6 = start_offset + 0x408; // A5 and A6 point to the same location, but A5 has some base displacement($408 bytes)
 
@@ -54,19 +56,19 @@ namespace spintool::rom
 		{
 			// DoLoadCompressed2Tiles + B6 ...
 			// Read next token of length 9, 10 or 11 bits(see D5, (A2)) from the compressed stream
-			auto d1 = stream_current_offset_d3; // d1 = X
+			d1 = stream_current_offset_d3; // d1 = X
 			d1 = d1 >> 3; // d1 = X / 8
-			Uint32 d0 = 0;
-			d0 = d0 | (static_cast<Uint32>(stream_target[d1 + 2]) << 16) | (static_cast<Uint32>(stream_target[d1 + 1]) << 8) | (static_cast<Uint32>(stream_target[d1])); // Read 3 bytes. Reverse order in  binary
-			stream_current_offset_d3 = d1;
+			d0 = (static_cast<Uint32>(stream_target[d1 + 2]) << 16) | (static_cast<Uint32>(stream_target[d1 + 1]) << 8) | (static_cast<Uint32>(stream_target[d1])); // Read 3 bytes. Reverse order in  binary
+			d1 = stream_current_offset_d3;
 			stream_current_offset_d3 += token_size_d5; // increment compressed stream pointer(in bits)
 			d1 = (d1 & 0xFFFF0000) | ((d1 & 0x0000FFFF) & 7);
-			d1 = d1 << d0;
+			d0 = d0 >> d1;
 			d0 = (d0 & 0xFFFF0000) | ((d0 & 0x0000FFFF) & TokenBitmaskLookup[loaded_bitmask_index_a2]); // mask out bits(9, 10 or 11)
 
 			if ((d0 & 0x0000FFFF) == 0x101) // is token $101 ?
 			{
 				SecondDecompressionResult results;
+				results.uncompressed_data = stack_data;
 				results.rom_data.SetROMData(&in_data[offset], stream_target + 1, offset);
 				results.uncompressed_size = results.uncompressed_data.size();
 
@@ -83,22 +85,22 @@ namespace spintool::rom
 				offset_a6 = start_offset + 0x408; // reset unknown dictionary
 
 				// Read next token of length 9 bits(see D5, (A2)) from the compressed stream
-				d1 = stream_current_offset_d3;
-				d1 = d1 >> 3;
-				d0 = (stream_target[d1 + 2] << 16) | (stream_target[d1 + 1] << 8) | (stream_target[d1]);
+				d1 = stream_current_offset_d3; // d1 = X
+				d1 = d1 >> 3; // d1 = X / 8
+				d0 = (static_cast<Uint32>(stream_target[d1 + 2]) << 16) | (static_cast<Uint32>(stream_target[d1 + 1]) << 8) | (static_cast<Uint32>(stream_target[d1])); // Read 3 bytes. Reverse order in  binary
 				d1 = stream_current_offset_d3;
 				stream_current_offset_d3 += token_size_d5; // increment compressed stream pointer(in bits)
-				d1 = d1 & 7;
-				d1 = d1 << d0;
-				d0 = d0 & TokenBitmaskLookup[loaded_bitmask_index_a2];
+				d1 = (d1 & 0xFFFF0000) | ((d1 & 0x0000FFFF) & 7);
+				d0 = d0 >> d1;
+				d0 = (d0 & 0xFFFF0000) | ((d0 & 0x0000FFFF) & TokenBitmaskLookup[loaded_bitmask_index_a2]); // mask out bits(9, 10 or 11)
 
-				d7 = d0;
-				d0_stored_in_a3 = d0;
+				d7 = (d0 & 0x0000FFFF);
+				d0_stored_in_a3 = (d0 & 0x0000FFFF);
 				out_data.emplace_back((d0 & 0x000000FF)); // put raw uncompressed byte
 				continue;
 			}
 			Uint16 a4 = (d0 & 0x0000FFFF);
-			if (working_d4 < static_cast<Uint16>(d0 & 0x0000FFFF))
+			if (static_cast<Uint16>(d0 & 0x0000FFFF) < working_d4)
 			{
 				goto loc_F5B4C;
 			}
@@ -135,7 +137,7 @@ loc_F5B4C:  // CODE XREF : DoLoadCompressed2Tiles + C8
 
 //loc_F5B7A:  // CODE XREF : DoLoadCompressed2Tiles + F8
 			//dbf     d2, loc_F5B6A
-			//moveq   #0, d2
+			copy_counter_d2 = 0;
 			out_data.emplace_back(d7 & 0xFF000000); // write 4 bytes to unknown dictionary :
 			out_data.emplace_back(d7 & 0x00FF0000);
 			out_data.emplace_back(d7 & 0x0000FF00);
