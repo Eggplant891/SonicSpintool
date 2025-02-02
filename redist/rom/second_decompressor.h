@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rom_data.h"
+#include "types/decompression_result.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include <vector>
@@ -9,14 +10,7 @@
 
 namespace spintool::rom
 {
-	struct SecondDecompressionResult
-	{
-		ROMData rom_data;
-		std::vector<Uint8> uncompressed_data;
-		std::optional<std::string> error_msg;
-
-		size_t uncompressed_size = 0;
-	};
+	using SecondDecompressionResult = DecompressionResult;
 
 	class SecondDecompressor
 	{

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ui_editor_window.h"
+#include "types/decompression_result.h"
+#include "rom/tileset.h"
 
 #include <memory>
 #include <vector>
@@ -24,6 +26,6 @@ namespace spintool
 		
 		void Update() override;
 
-		std::vector<std::shared_ptr<const rom::TileSet>> m_tilesets;
+		std::vector<TilesetEntry> m_tilesets;
 	};
 }

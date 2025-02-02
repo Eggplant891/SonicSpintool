@@ -22,8 +22,11 @@ namespace spintool
 
 	size_t s_tile_offsets_non_ssc[] =
 	{
+		0x0009D102, // Main Menu BG tiles
+		0x000A3124, // Veg-o-fortress BG tiles
+		0x000A220C, // Veg-o-fortress FG tiles
 		0x000C77b0, // Bonus Stage BG tiles
-		0x000C9016  // Bonus stage FG tiles
+		0x000C9016, // Bonus stage FG tiles
 	};
 
 	void EditorTilesetNavigator::Update()
@@ -122,10 +125,13 @@ namespace spintool
 				ImGui::Text("0x%08X -> 0x%08X [0x%02X] (Tiles: %u)", result.rom_data.rom_offset, result.rom_data.rom_offset_end, result.uncompressed_size);
 			}
 
-			for (const std::shared_ptr<const rom::TileSet>& tileset : m_tilesets)
+			for (const TilesetEntry& tileset_entry : m_tilesets)
 			{
+				const std::shared_ptr<const rom::TileSet>& tileset = tileset_entry.tileset;
+
+				static std::string s_no_errors_str = "No Errors";
 				char name_buffer[1024];
-				sprintf_s(name_buffer, "Tileset (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
+				sprintf_s(name_buffer, "Tileset (0x%06X -> 0x%06X) [%s]", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1), tileset_entry.result.error_msg.value_or(s_no_errors_str).c_str());
 				if (ImGui::TreeNode(name_buffer))
 				{
 					ImGui::Text("Total size on ROM: %02d (0x%04X)", tileset->rom_data.real_size, tileset->rom_data.real_size);

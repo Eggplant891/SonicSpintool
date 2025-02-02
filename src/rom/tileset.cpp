@@ -6,7 +6,7 @@
 
 namespace spintool::rom
 {
-	std::shared_ptr<const TileSet> TileSet::LoadFromROM(const SpinballROM& src_rom, size_t rom_offset)
+	TilesetEntry TileSet::LoadFromROM(const SpinballROM& src_rom, size_t rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
 
@@ -19,14 +19,14 @@ namespace spintool::rom
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
 
-		return new_tileset;
+		return { new_tileset, results };
 	}
 
-	std::shared_ptr<const TileSet> TileSet::LoadFromROMSecondCompression(const SpinballROM& src_rom, size_t rom_offset)
+	TilesetEntry TileSet::LoadFromROMSecondCompression(const SpinballROM& src_rom, size_t rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
 
-		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
+		//new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
 		SecondDecompressionResult results = rom::SecondDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
@@ -35,7 +35,9 @@ namespace spintool::rom
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
 
-		return new_tileset;
+		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size() / (16 * 16));
+
+		return { new_tileset, results };
 	}
 
 	std::shared_ptr<rom::SpriteTile> TileSet::CreateSpriteTileFromTile(const size_t tile_index) const

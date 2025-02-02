@@ -1,8 +1,10 @@
 #pragma once
 
 #include "rom/rom_data.h"
+#include "types/decompression_result.h"
 
 #include "SDL3/SDL_stdinc.h"
+
 #include <vector>
 #include <memory>
 
@@ -11,6 +13,16 @@ namespace spintool::rom
 	class SpinballROM;
 	struct Sprite;
 	struct SpriteTile;
+	struct TileSet;
+}
+
+namespace spintool
+{
+	struct TilesetEntry
+	{
+		std::shared_ptr<const rom::TileSet> tileset;
+		DecompressionResult result;
+	};
 }
 
 namespace spintool::rom
@@ -24,8 +36,8 @@ namespace spintool::rom
 		Uint16 num_tiles = 0;
 		std::vector<Uint8> uncompressed_data;
 
-		static std::shared_ptr<const TileSet> LoadFromROM(const SpinballROM& src_rom, size_t rom_offset);
-		static std::shared_ptr<const TileSet> LoadFromROMSecondCompression(const SpinballROM& src_rom, size_t rom_offset);
+		static TilesetEntry LoadFromROM(const SpinballROM& src_rom, size_t rom_offset);
+		static TilesetEntry LoadFromROMSecondCompression(const SpinballROM& src_rom, size_t rom_offset);
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const size_t offset) const;
 		std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const size_t tile_index) const;
 		constexpr const static Uint16 s_tile_width = 0x08;

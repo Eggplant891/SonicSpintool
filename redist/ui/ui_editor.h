@@ -37,7 +37,7 @@ namespace spintool
 		std::filesystem::path GetROMExportPath() const;
 		std::filesystem::path GetSpriteExportPath() const;
 
-		const std::vector<std::shared_ptr<const rom::TileSet>>& GetTilesets() const;
+		const std::vector<TilesetEntry>& GetTilesets() const;
 		const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
 		void OpenSpriteImporter(int rom_offset);

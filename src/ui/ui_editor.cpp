@@ -194,7 +194,7 @@ namespace spintool
 		return m_sprite_export_path;
 	}
 
-	const std::vector<std::shared_ptr<const rom::TileSet>>& EditorUI::GetTilesets() const
+	const std::vector<TilesetEntry>& EditorUI::GetTilesets() const
 	{
 		return m_tileset_navigator.m_tilesets;
 	}

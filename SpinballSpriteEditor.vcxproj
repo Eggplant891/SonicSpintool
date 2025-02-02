@@ -257,6 +257,7 @@
     <ClInclude Include="redist\rom\tile_layout.h" />
     <ClInclude Include="redist\sdl_handle_defs.h" />
     <ClInclude Include="redist\types\blit_settings.h" />
+    <ClInclude Include="redist\types\decompression_result.h" />
     <ClInclude Include="redist\ui\ui_animation_navigator.h" />
     <ClInclude Include="redist\ui\ui_editor.h" />
     <ClInclude Include="redist\ui\ui_editor_window.h" />

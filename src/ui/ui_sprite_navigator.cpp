@@ -177,8 +177,10 @@ namespace spintool
 
 			if (ImGui::Button("Show Loaded Tilesets"))
 			{
-				for (const std::shared_ptr<const rom::TileSet>& tileset : m_owning_ui.GetTilesets())
+				for (const TilesetEntry& tileset_entry : m_owning_ui.GetTilesets())
 				{
+					const std::shared_ptr<const rom::TileSet>& tileset = tileset_entry.tileset;
+
 					ImGui::SeparatorText("Tileset");
 					size_t offset = 0;
 					while (true)

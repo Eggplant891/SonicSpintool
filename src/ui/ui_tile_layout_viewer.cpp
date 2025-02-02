@@ -247,7 +247,7 @@ namespace spintool
 			while (s_tile_layout_render_requests.empty() == false)
 			{
 				const RenderTileLayoutRequest& request = s_tile_layout_render_requests.front();
-				m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address);
+				m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
 				m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				std::shared_ptr<const rom::Sprite> tileset_sprite = m_tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
