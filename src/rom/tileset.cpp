@@ -33,7 +33,7 @@ namespace spintool::rom
 		new_tileset->uncompressed_size = results.uncompressed_data.size();
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
-		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
+		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset, results.rom_data.rom_offset_end);
 
 		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size() / (16 * 16));
 
