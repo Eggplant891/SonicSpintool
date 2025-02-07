@@ -17,5 +17,17 @@ namespace spintool
 		std::optional<std::string> error_msg;
 
 		size_t uncompressed_size = 0;
+
+		bool operator!=(const DecompressionResult& rhs) const
+		{
+			return operator==(rhs) == false;
+		}
+		bool operator==(const DecompressionResult& rhs) const
+		{
+			return rom_data == rhs.rom_data
+				&& uncompressed_data == rhs.uncompressed_data
+				&& error_msg == rhs.error_msg
+				&& uncompressed_size == rhs.uncompressed_size;
+		}
 	};
 }

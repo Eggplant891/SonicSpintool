@@ -22,9 +22,9 @@ namespace spintool
 
 	size_t s_tile_offsets_non_ssc[] =
 	{
-		0x0009D102, // Main Menu BG tiles
-		0x000A3124, // Veg-o-fortress BG tiles
-		0x000A220C, // Veg-o-fortress FG tiles
+		//0x0009D102, // Main Menu BG tiles
+		//0x000A3124, // Veg-o-fortress BG tiles
+		//0x000A220C, // Veg-o-fortress FG tiles
 		0x000C77b0, // Bonus Stage BG tiles
 		0x000C9016, // Bonus stage FG tiles
 	};

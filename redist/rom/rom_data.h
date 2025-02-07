@@ -12,5 +12,12 @@ namespace spintool::rom
 
 		void SetROMData(const size_t start_offset, size_t end_offset);
 		void SetROMData(const Uint8* start_data_ptr, const Uint8* end_data_ptr, const size_t start_offset);
+
+		bool operator==(const ROMData& rhs) const
+		{
+			return rom_offset == rhs.rom_offset
+				&& real_size == rhs.real_size
+				&& rom_offset_end == rhs.rom_offset_end;
+		}
 	};
 }

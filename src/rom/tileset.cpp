@@ -30,6 +30,13 @@ namespace spintool::rom
 		new_tileset->uncompressed_data.clear();
 
 		SecondDecompressionResult results = rom::SecondDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
+		//SecondDecompressionResult results2 = rom::SecondDecompressor::DecompressDataRefactored(src_rom.m_buffer, rom_offset);
+
+		//if (results != results2)
+		//{
+		//	results.error_msg = "Decompression Results Mismatch";
+		//}
+
 		new_tileset->uncompressed_size = results.uncompressed_data.size();
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
