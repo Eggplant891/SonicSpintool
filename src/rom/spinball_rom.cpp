@@ -43,6 +43,15 @@ namespace spintool
 			results.emplace_back(rom::Palette::LoadFromROM(*this, offset + (Palette::s_palette_size_on_rom * p)));
 		}
 
+		for (size_t p = 0; p < 2; ++p)
+		{
+			results.emplace_back(rom::Palette::LoadFromROM(*this, 0x000993FA + (Palette::s_palette_size_on_rom * p)));
+		}
+
+		for (size_t p = 0; p < 4; ++p)
+		{
+			results.emplace_back(rom::Palette::LoadFromROM(*this, 0x000A1388 + (Palette::s_palette_size_on_rom * p)));
+		}
 		return results;
 	}
 
@@ -166,6 +175,25 @@ namespace spintool
 				return std::move(out_set);
 			}();
 		
+
+		return palette_set;
+	}
+
+	std::shared_ptr<rom::PaletteSet> rom::SpinballROM::GetIntroCutscenePaletteSet() const
+	{
+		static std::shared_ptr<rom::PaletteSet> palette_set = [this]()
+			{
+				auto out_set = std::make_shared<rom::PaletteSet>();
+				out_set->palette_lines =
+				{
+					rom::Palette::LoadFromROM(*this,0x000A1388),
+					rom::Palette::LoadFromROM(*this,0x000A13A8),
+					rom::Palette::LoadFromROM(*this,0x000A13C8),
+					rom::Palette::LoadFromROM(*this,0x000A13E8)
+				};
+				return std::move(out_set);
+			}();
+
 
 		return palette_set;
 	}
