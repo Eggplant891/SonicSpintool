@@ -38,7 +38,7 @@ namespace spintool::rom
 		std::vector<Uint8> vram;
 
 		std::vector<Uint8> ram_pool;
-		ram_pool.resize(0x20000);
+		ram_pool.resize(0x10000);
 
 		// ---------------------------------------------------------------------- -
 		// INPUT:
@@ -50,7 +50,7 @@ namespace spintool::rom
 		// LoadCompressed2Tiles + 10↑p
 		Uint32 d0 = 0x0;
 		Uint32 d1 = 0x0;
-		Uint32 d2 = 0x0;
+		Sint32 d2 = 0x0;
 		Uint32 d3 = 0x0; // D3
 		Uint32 d4 = 0x102;
 		Uint32 d5 = 0x9; // set token size to 9 bits. D5
@@ -65,7 +65,7 @@ namespace spintool::rom
 		Uint32 a5 = 0x54CC; // A5 points to a table of size $400 bytes(likely)
 		Uint32 a6 = 0x58D4; // A5 and A6 point to the same location, but A5 has some base displacement($408 bytes)
 
-		Uint32 sp = 0xFFF0;
+		Uint32 sp = 0xFF7C;
 
 		vram.emplace_back(0);
 		vram.emplace_back(0);
@@ -133,7 +133,7 @@ namespace spintool::rom
 				ram_pool[a1] = (d0 & 0x000000FF); a1 = a1 + 1; // put raw uncompressed byte
 				d0 = (d0 & 0xFFFF0000) | (a1 & 0x0000FFFF);
 
-				if ((d0 & 1) == 1)
+				if ((d0 & 1) != 1)
 				{
 					a1 = a1 - 2;
 					vram.emplace_back(ram_pool[a1]);
@@ -148,7 +148,7 @@ namespace spintool::rom
 				goto loc_F5B4C;
 			}
 			d0 = (d0 & 0xFFFF0000) | (a3 & 0x0000FFFF);
-			sp = sp - 1;
+			sp = sp - 2;
 			ram_pool[sp] = (d0 & 0x000000FF);
 			d0 = (d0 & 0xFFFF0000) | (d7 & 0x0000FFFF);
 
@@ -160,7 +160,7 @@ loc_F5B4C:  // CODE XREF : DoLoadCompressed2Tiles + C8
 			{
 				d0 = (d0 & 0xFFFF0000) | ((d0 + d0) & 0x0000FFFF); // records in table A5 are 4 bytes long
 				d0 = (d0 & 0xFFFF0000) | ((d0 + d0) & 0x0000FFFF);
-				sp = sp - 1;
+				sp = sp - 2;
 				ram_pool[sp] = ram_pool[a5 + (d0 & 0x0000FFFF) + 1]; // put raw uncompressed byte
 				d0 = (d0 & 0xFFFF0000) | (static_cast<Uint32>(ram_pool[a5 + (d0 & 0x0000FFFF) + 2]) << 8) | (ram_pool[a5 + (d0 & 0x0000FFFF) + 3]); // next index or token to process
 				goto loc_F5B4A;
@@ -172,33 +172,33 @@ loc_F5B4C:  // CODE XREF : DoLoadCompressed2Tiles + C8
 			d7 = ((d7 & 0x0000FFFF) << 16) | ((d7 & 0xFFFF0000) >> 16);
 			d7 = (d7 & 0xFFFF0000) | (d0 & 0x0000FFFF); // prepare uncompressed byte for unknown dictionary
 			d7 = ((d7 & 0x0000FFFF) << 16) | ((d7 & 0xFFFF0000) >> 16); // store it so it's read back by 1(a5,d0.w) (see above)
-			sp = sp - 1;
+			sp = sp - 2;
 			ram_pool[sp] = (d0 & 0x000000FF); // put raw uncompressed byte
 
 loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 			ram_pool[a1] = ram_pool[sp];
-			sp = sp + 1;
+			sp = sp + 2;
 			a1 = a1 + 1;
 
-			d0 = (d0 & 0xFFFF0000) & (a1 & 0x0000FFFF);
+			d0 = (d0 & 0xFFFF0000) | (a1 & 0x0000FFFF);
 
-			if ((d0 & 1) == 1)
+			if ((d0 & 1) != 1)
 			{
 				a1 = a1 - 2;
 				vram.emplace_back(ram_pool[a1]);
 				vram.emplace_back(ram_pool[a1 + 1]);
+			}
 
-				if (d2 > 1)
-				{
-					d2 = d2 - 1;
-					goto loc_F5B6A;
-				}
+			d2 = d2 - 1;
+			if (d2 >= 0)
+			{
+				goto loc_F5B6A;
 			}
 
 			d2 = 0;
-			ram_pool[a6] = (d7 & 0xFF000000); // write 4 bytes to unknown dictionary :
-			ram_pool[a6+1] = (d7 & 0x00FF0000);
-			ram_pool[a6+2] = (d7 & 0x0000FF00);
+			ram_pool[a6] = (d7 & 0xFF000000) >> 24; // write 4 bytes to unknown dictionary :
+			ram_pool[a6+1] = (d7 & 0x00FF0000) >> 16;
+			ram_pool[a6+2] = (d7 & 0x0000FF00) >> 8;
 			ram_pool[a6+3] = (d7 & 0x000000FF);
 			a6 = a6 + 4;
 			d4 = (d4 & 0xFFFF0000) | ((d4 + 1) & 0x0000FFFF);			// $00.b - always $00(ignored)
@@ -213,8 +213,8 @@ loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 			{
 				continue;// if yes, back to the loop
 			}
-			d5 = (d5 & 0xFFFF0000) & ((d5 + 1) & 0x0000FFFF); // increase token size by 1 bit(9->10 bits, 10->11 bits)
-			d6 = (d6 & 0xFFFF0000) & ((d6 + d6) & 0x0000FFFF);
+			d5 = (d5 & 0xFFFF0000) | ((d5 + 1) & 0x0000FFFF); // increase token size by 1 bit(9->10 bits, 10->11 bits)
+			d6 = (d6 & 0xFFFF0000) | ((d6 + d6) & 0x0000FFFF);
 			a2 = a2 + 2; // use next bit mask(for 10 or 11 bits).
 			continue;
 			// End of function DoLoadCompressed2Tiles
