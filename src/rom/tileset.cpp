@@ -40,9 +40,11 @@ namespace spintool::rom
 		new_tileset->uncompressed_size = results.uncompressed_data.size();
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
+		// Seems to be necessary to remove the first 2 bytes to make it renderable. Possible these specify dimensions or other data.
+		new_tileset->uncompressed_data.erase(std::begin(new_tileset->uncompressed_data), std::begin(new_tileset->uncompressed_data) + 2);
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset, results.rom_data.rom_offset_end);
 
-		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size() / (16 * 16));
+		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size()) / TileSet::s_tile_total_bytes;
 
 		return { new_tileset, results };
 	}
