@@ -95,6 +95,7 @@ namespace spintool
 				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
 
 				request.is_chroma_keyed = false;
+				request.compression_algorithm = CompressionAlgorithm::SSC;
 				
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -124,6 +125,7 @@ namespace spintool
 				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
 
 				request.is_chroma_keyed = true;
+				request.compression_algorithm = CompressionAlgorithm::SSC;
 
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -145,8 +147,32 @@ namespace spintool
 				request.tile_layout_height = 0x7;
 
 				request.is_chroma_keyed = false;
+				request.compression_algorithm = CompressionAlgorithm::SSC;
 
 				LevelPaletteSet = m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
+
+				s_tile_layout_render_requests.emplace_back(std::move(request));
+			}
+
+			bool preview_intro = ImGui::Button("Preview Intro Cutscene");
+			bool export_intro = ImGui::Button("Export Intro Cutscene");
+			if (preview_intro || export_intro)
+			{
+				RenderTileLayoutRequest request;
+
+				request.tileset_address = 0x000A3124 + 2;
+				request.tile_brushes_address = 0x000A1984;
+				request.tile_brushes_address_end = 0x000A220C;
+				request.tile_layout_address = 0x000A14F8;
+				request.tile_layout_address_end = 0x000A14F8 + (0xE * 0xC);
+
+				request.tile_layout_width = 0xE;
+				request.tile_layout_height = 0xC;
+
+				request.is_chroma_keyed = false;
+				request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+				LevelPaletteSet = m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -247,7 +273,14 @@ namespace spintool
 			while (s_tile_layout_render_requests.empty() == false)
 			{
 				const RenderTileLayoutRequest& request = s_tile_layout_render_requests.front();
-				m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
+				if (request.compression_algorithm == CompressionAlgorithm::SSC)
+				{
+					m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
+				}
+				else if (request.compression_algorithm == CompressionAlgorithm::BOOGALOO)
+				{
+					m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
+				}
 				m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				std::shared_ptr<const rom::Sprite> tileset_sprite = m_tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();

@@ -14,8 +14,15 @@ namespace spintool::rom
 
 namespace spintool
 {
+	enum class CompressionAlgorithm
+	{
+		NONE,
+		SSC,
+		BOOGALOO
+	};
 	struct RenderTileLayoutRequest
 	{
+		CompressionAlgorithm compression_algorithm = CompressionAlgorithm::NONE;
 		size_t tileset_address = 0;
 		size_t tile_brushes_address = 0;
 		size_t tile_brushes_address_end = 0;
