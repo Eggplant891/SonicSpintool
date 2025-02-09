@@ -22,11 +22,15 @@ namespace spintool
 
 	size_t s_tile_offsets_non_ssc[] =
 	{
-		//0x0009D102, // Main Menu BG tiles
-		//0x000A3124, // Veg-o-fortress BG tiles
-		//0x000A220C, // Veg-o-fortress FG tiles
-		0x000C77b0, // Bonus Stage BG tiles
+		0x0009D104, // Main Menu BG tiles
+		(0x000A3124 + 2), // Veg-o-fortress BG tiles
+		0x000A220C, // Veg-o-fortress FG tiles
+		0x000C77B0, // Bonus Stage BG tiles
 		0x000C9016, // Bonus stage FG tiles
+		0x000cb14e, // Bonus stage FG tiles
+		0x000d10b0, // Bonus stage FG tiles
+		0x000cc710, // Bonus stage FG tiles
+		0x000cf2de // Bonus stage FG tiles
 	};
 
 	void EditorTilesetNavigator::Update()
@@ -147,6 +151,7 @@ namespace spintool
 					{
 						ImGui::Text("Compressed Size: %02d (0x%04X)", tileset->compressed_size, tileset->compressed_size);
 						ImGui::Text("Uncompressed Size: %02d (0x%04X)", tileset->uncompressed_size, tileset->uncompressed_size);
+						ImGui::Text("Compression Ratio: %.2f%%", (tileset->compressed_size / static_cast<float>(tileset->uncompressed_size)) * 100);
 						ImGui::TreePop();
 					}
 					ImGui::TreePop();
