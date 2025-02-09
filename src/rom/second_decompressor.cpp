@@ -101,7 +101,7 @@ namespace spintool::rom
 			{
 				SecondDecompressionResult results;
 				results.uncompressed_data = vram;
-				results.rom_data.SetROMData(offset, a0 + d1 + 2);
+				results.rom_data.SetROMData(offset, a0 + (d3 >> 3));
 				results.uncompressed_size = results.uncompressed_data.size();
 
 				return results; // if yes, halt decompression
