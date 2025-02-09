@@ -1,17 +1,17 @@
-﻿#include "rom/second_decompressor.h"
+﻿#include "rom/boogaloo_decompressor.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include <array>
 
 namespace spintool::rom
 {
-	std::optional<SecondDecompressionResult> PushByteToStack(std::vector<Uint8>& stack_data, Uint8 byte)
+	std::optional<BoogalooDecompressionResult> PushByteToStack(std::vector<Uint8>& stack_data, Uint8 byte)
 	{
 		stack_data.emplace_back(byte);
 
 		if (stack_data.size() > 0xFFFF)
 		{
-			SecondDecompressionResult results;
+			BoogalooDecompressionResult results;
 			results.error_msg = "Ran out of memory when writing stack_data";
 			results.uncompressed_data = stack_data;
 			results.uncompressed_size = results.uncompressed_data.size();
@@ -22,7 +22,7 @@ namespace spintool::rom
 		return std::nullopt;
 	}
 
-	SecondDecompressionResult SecondDecompressor::DecompressData(const std::vector<Uint8>& in_data, const size_t offset)
+	BoogalooDecompressionResult BoogalooDecompressor::DecompressData(const std::vector<Uint8>& in_data, const size_t offset)
 	{
 		const size_t start_offset = 0;
 
@@ -99,7 +99,7 @@ namespace spintool::rom
 
 			if ((d0 & 0x0000FFFF) == 0x101) // is token $101 ?
 			{
-				SecondDecompressionResult results;
+				BoogalooDecompressionResult results;
 				results.uncompressed_data = vram;
 				results.rom_data.SetROMData(offset, a0 + (d3 >> 3));
 				results.uncompressed_size = results.uncompressed_data.size();
@@ -221,9 +221,9 @@ loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 		}
 	}
 
-	SecondDecompressionResult SecondDecompressor::DecompressDataRefactored(const std::vector<Uint8>& in_data, const size_t offset)
+	BoogalooDecompressionResult BoogalooDecompressor::DecompressDataRefactored(const std::vector<Uint8>& in_data, const size_t offset)
 	{
-		SecondDecompressionResult final_result;
+		BoogalooDecompressionResult final_result;
 
 		const size_t start_offset = 0;
 		const Uint8* stream_target = &in_data[offset];

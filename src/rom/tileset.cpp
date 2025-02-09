@@ -2,7 +2,7 @@
 #include "rom/sprite.h"
 #include "rom/spinball_rom.h"
 #include "rom/ssc_decompressor.h"
-#include "rom/second_decompressor.h"
+#include "rom/boogaloo_decompressor.h"
 
 namespace spintool::rom
 {
@@ -29,7 +29,7 @@ namespace spintool::rom
 		//new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
-		SecondDecompressionResult results = rom::SecondDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
+		BoogalooDecompressionResult results = rom::BoogalooDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
 		//SecondDecompressionResult results2 = rom::SecondDecompressor::DecompressDataRefactored(src_rom.m_buffer, rom_offset);
 
 		//if (results != results2)

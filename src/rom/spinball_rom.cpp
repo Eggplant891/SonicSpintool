@@ -1,14 +1,14 @@
 #include "rom/spinball_rom.h"
-
 #include "render.h"
-#include "types/sdl_handle_defs.h"
+
 #include "rom/sprite.h"
+#include "rom/palette.h"
+#include "types/sdl_handle_defs.h"
 
 #include <fstream>
 #include "SDL3/SDL_stdinc.h"
 #include "SDL3/SDL_surface.h"
-#include "rom/palette.h"
-#include "rom/ssc_decompressor.h"
+
 
 namespace spintool
 {
