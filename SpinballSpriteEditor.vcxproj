@@ -204,6 +204,7 @@
     <ClCompile Include="src\rom\animated_object.cpp" />
     <ClCompile Include="src\rom\animation_sequence.cpp" />
     <ClCompile Include="src\rom\boogaloo_decompressor.cpp" />
+    <ClCompile Include="src\rom\collision_tile.cpp" />
     <ClCompile Include="src\rom\colour.cpp" />
     <ClCompile Include="src\rom\game_objects\game_object_flipper.cpp" />
     <ClCompile Include="src\rom\game_objects\game_object_ring.cpp" />
@@ -244,6 +245,7 @@
     <ClInclude Include="redist\rom\animation_sequence.h" />
     <ClInclude Include="redist\rom\boogaloo_decompressor.h" />
     <ClInclude Include="redist\rom\bounding_box.h" />
+    <ClInclude Include="redist\rom\collision_tile.h" />
     <ClInclude Include="redist\rom\colour.h" />
     <ClInclude Include="redist\rom\game_objects\game_object_flipper.h" />
     <ClInclude Include="redist\rom\game_objects\game_object_ring.h" />
