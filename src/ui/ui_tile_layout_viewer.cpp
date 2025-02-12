@@ -88,8 +88,8 @@ namespace spintool
 				request.tile_brushes_address = BGTilesetBrushes;
 				request.tile_brushes_address_end = BGTilesetLayouts;
 
-				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush::s_brush_width * rom::TileSet::s_tile_width);
-				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_brush_height * rom::TileSet::s_tile_height);
+				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4,4>::s_brush_width * rom::TileSet::s_tile_width);
+				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4,4>::s_brush_height * rom::TileSet::s_tile_height);
 
 				request.tile_layout_address = BGTilesetLayouts;
 				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
@@ -118,8 +118,8 @@ namespace spintool
 				request.tile_brushes_address = FGTilesetBrushes;
 				request.tile_brushes_address_end = FGTilesetLayouts;
 
-				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush::s_brush_width * rom::TileSet::s_tile_width);
-				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_brush_height * rom::TileSet::s_tile_height);
+				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4,4>::s_brush_width * rom::TileSet::s_tile_width);
+				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4,4>::s_brush_height * rom::TileSet::s_tile_height);
 
 				request.tile_layout_address = FGTilesetLayouts;
 				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
@@ -129,10 +129,14 @@ namespace spintool
 
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
-			ImGui::SameLine();
 
 			bool preview_options = ImGui::Button("Preview Options Menu");
+			ImGui::SameLine();
+			bool preview_intro = ImGui::Button("Preview Intro Cutscene");
+
 			bool export_options = ImGui::Button("Export Options Menu");
+			ImGui::SameLine();
+			bool export_intro = ImGui::Button("Export Intro Cutscene");
 			if (preview_options || export_options)
 			{
 				RenderTileLayoutRequest request;
@@ -154,8 +158,7 @@ namespace spintool
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
-			bool preview_intro = ImGui::Button("Preview Intro Cutscene");
-			bool export_intro = ImGui::Button("Export Intro Cutscene");
+			
 			if (preview_intro || export_intro)
 			{
 				RenderTileLayoutRequest request;
@@ -170,6 +173,7 @@ namespace spintool
 				request.tile_layout_height = 0xC;
 
 				request.is_chroma_keyed = false;
+				request.show_brush_previews = false;
 				request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
 				LevelPaletteSet = m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
@@ -258,8 +262,8 @@ namespace spintool
 				}
 			}
 
-			constexpr size_t brush_width = rom::TileBrush::s_brush_width * rom::TileSet::s_tile_width;
-			constexpr size_t brush_height = rom::TileBrush::s_brush_height * rom::TileSet::s_tile_height;
+			const size_t brush_width =  rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width;
+			const size_t brush_height = rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height;
 
 			const bool will_be_rendering_preview = s_tile_layout_render_requests.empty() == false;
 			SDLSurfaceHandle layout_preview_surface;
@@ -276,24 +280,22 @@ namespace spintool
 				if (request.compression_algorithm == CompressionAlgorithm::SSC)
 				{
 					m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
+					m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				}
 				else if (request.compression_algorithm == CompressionAlgorithm::BOOGALOO)
 				{
 					m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
+					m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_tileset, request.tile_layout_address, request.tile_layout_address_end);
 				}
-				m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				std::shared_ptr<const rom::Sprite> tileset_sprite = m_tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
-
-				constexpr size_t tiles_per_tile_brush = 16;
-				constexpr size_t tiles_per_brush_row = 4;
 
 				std::vector<rom::Sprite> brushes;
 				m_tile_brushes_previews.clear();
 
 				for (size_t brush_index = 0; brush_index < m_tile_layout->tile_brushes.size(); ++brush_index)
 				{
-					rom::TileBrush& brush = m_tile_layout->tile_brushes[brush_index];
+					rom::TileBrushBase& brush = *m_tile_layout->tile_brushes[brush_index].get();
 					rom::Sprite& brush_sprite = brushes.emplace_back();
 					for (size_t i = 0; i < brush.tiles.size(); ++i)
 					{
@@ -307,8 +309,8 @@ namespace spintool
 
 						const size_t current_brush_offset = i;
 
-						sprite_tile->x_offset = static_cast<Sint16>((current_brush_offset % tiles_per_brush_row) * rom::TileSet::s_tile_width);
-						sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % tiles_per_brush_row)) / tiles_per_brush_row) * rom::TileSet::s_tile_height;
+						sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % brush.BrushWidth()) * rom::TileSet::s_tile_width;
+						sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % brush.BrushWidth())) / brush.BrushWidth()) * rom::TileSet::s_tile_height;
 
 						sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
 						sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;

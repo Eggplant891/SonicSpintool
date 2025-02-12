@@ -8,6 +8,7 @@
 namespace spintool::rom
 {
 	class SpinballROM;
+	struct TileSet;
 }
 
 namespace spintool::rom
@@ -23,15 +24,35 @@ namespace spintool::rom
 
 	};
 
-	struct TileBrush
+	class TileBrushBase
 	{
-		constexpr static const size_t s_brush_width = 4;
-		constexpr static const size_t s_brush_height = 4;
-		constexpr static const size_t s_brush_total_tiles = s_brush_width * s_brush_height;
+	public:
+		virtual size_t BrushWidth() = 0;
+		virtual size_t BrushHeight() = 0;
+		size_t TotalTiles()
+		{
+			return BrushWidth() * BrushHeight();
+		}
 
 		ROMData rom_data;
-		std::array <TileInstance, TileBrush::s_brush_total_tiles> tiles;
+		std::vector<TileInstance> tiles;
 	};
+
+	template<size_t width, size_t height>
+	class TileBrush : public TileBrushBase
+	{
+	public:
+		size_t BrushWidth() override { return s_brush_width; }
+		size_t BrushHeight() override { return s_brush_height; }
+
+		constexpr static const size_t s_brush_width = width;
+		constexpr static const size_t s_brush_height = height;
+		constexpr static const size_t s_brush_total_tiles = width * height;
+	};
+
+	template class TileBrush<1, 1>;
+	template class TileBrush<4, 4>;
+	template class TileBrush<8, 8>;
 
 	struct TileBrushInstance
 	{
@@ -48,11 +69,12 @@ namespace spintool::rom
 		int layout_width = 0;
 		int layout_height = 0;
 
-		std::vector<TileBrush> tile_brushes;
+		std::vector<std::unique_ptr<TileBrushBase>> tile_brushes;
 		std::vector<TileBrushInstance> tile_brush_instances;
 
 		std::vector<TileInstance> tile_instances;
 
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t brushes_end, size_t layout_offset, size_t layout_end);
+		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, size_t layout_offset, size_t layout_end);
 	};
 }
