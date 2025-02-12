@@ -291,6 +291,8 @@ namespace spintool
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
 
 				std::vector<rom::Sprite> brushes;
+				brushes.reserve(m_tile_layout->tile_brushes.size());
+				m_tile_brushes_previews.reserve(brushes.size());
 				m_tile_brushes_previews.clear();
 
 				for (size_t brush_index = 0; brush_index < m_tile_layout->tile_brushes.size(); ++brush_index)
@@ -349,10 +351,10 @@ namespace spintool
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
 					}
 
-					int x_off = static_cast<int>((i % request.tile_layout_width) * brush_width);
-					int y_off = static_cast<int>(((i-(i % request.tile_layout_width)) / request.tile_layout_width) * brush_height);
+					const int x_off = static_cast<int>((i % request.tile_layout_width) * brush_width);
+					const int y_off = static_cast<int>(((i - (i % request.tile_layout_width)) / request.tile_layout_width) * brush_height);
 
-					SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
+					const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
 					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
 				}
