@@ -59,7 +59,7 @@ namespace spintool::rom
 		bool is_flipped_vertically = false;
 		bool is_flipped_horizontally = false;
 		int palette_line = 0; // 2 bit value. 0x0 -> 0x3
-		int tile_brush_index = 0;
+		Uint16 tile_brush_index = 0;
 	};
 
 	struct TileLayout
