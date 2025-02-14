@@ -46,7 +46,7 @@ namespace spintool::rom
 			brush_instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
 			static Uint8 first_byte_mask = 0x03;
 			static Uint8 second_byte_mask = 0xFF;
-			brush_instance.tile_brush_index = ((first_byte & 0x03) << 8) | (second_byte & 0xFF);
+			brush_instance.tile_brush_index = (static_cast<Uint16>(first_byte & 0x03) << 8) | static_cast<Uint16>(second_byte & 0xFF);
 			new_layout->tile_brush_instances.emplace_back(brush_instance);
 		}
 		return new_layout;
@@ -84,11 +84,11 @@ namespace spintool::rom
 			++current_byte;
 
 			TileBrushInstance brush_instance;
+			//brush_instance.is_high_priority = (0x80 & first_byte) != 0;
+			brush_instance.palette_line = ((0x40 | 0x20) & first_byte) >> 5;
 			brush_instance.is_flipped_vertically = (0x10 & first_byte) != 0;
 			brush_instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
-			static Uint8 first_byte_mask = 0x03;
-			static Uint8 second_byte_mask = 0xFF;
-			brush_instance.tile_brush_index = ((first_byte & 0x03) << 8) | (second_byte & 0xFF);
+			brush_instance.tile_brush_index = (static_cast<Uint16>((0x01 | 0x02 | 0x04) & first_byte) << 8) | second_byte;
 			new_layout->tile_brush_instances.emplace_back(brush_instance);
 		}
 		return new_layout;
