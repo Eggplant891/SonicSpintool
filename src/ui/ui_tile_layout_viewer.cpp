@@ -87,6 +87,9 @@ namespace spintool
 				request.tile_brushes_address = BGTilesetBrushes;
 				request.tile_brushes_address_end = BGTilesetLayouts;
 
+				request.tile_brush_width = 4;
+				request.tile_brush_height = 4;
+
 				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4,4>::s_brush_width * rom::TileSet::s_tile_width);
 				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4,4>::s_brush_height * rom::TileSet::s_tile_height);
 
@@ -116,6 +119,9 @@ namespace spintool
 				request.tileset_address = FGTilesetOffsets;
 				request.tile_brushes_address = FGTilesetBrushes;
 				request.tile_brushes_address_end = FGTilesetLayouts;
+
+				request.tile_brush_width = 4;
+				request.tile_brush_height = 4;
 
 				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4,4>::s_brush_width * rom::TileSet::s_tile_width);
 				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4,4>::s_brush_height * rom::TileSet::s_tile_height);
@@ -160,6 +166,9 @@ namespace spintool
 				request.tile_layout_address = 0x000BE1BC;
 				request.tile_layout_address_end = 0x000BE248;
 
+				request.tile_brush_width = 4;
+				request.tile_brush_height = 4;
+
 				request.tile_layout_width = 0xA;
 				request.tile_layout_height = 0x7;
 
@@ -178,8 +187,6 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_brushes_address = 0x000A1A7;
-					request.tile_brushes_address_end = 0x000A1B00;
 					request.tile_layout_address = 0x000A1B90;
 					request.tile_layout_address_end = 0x000A2168;
 
@@ -187,7 +194,7 @@ namespace spintool
 					request.tile_brush_height = 1;
 
 					request.tile_layout_width = 0x22;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 0x22);
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -206,16 +213,14 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_brushes_address = 0x000A1B00;
-					request.tile_brushes_address_end = 0x000A1b8C;
 					request.tile_layout_address = 0x000A2510 + 2;
-					request.tile_layout_address_end = 0x000A30BC-4;
+					request.tile_layout_address_end = 0x000A3010 + 2;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
-					request.tile_layout_width = 64;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 64);
+					request.tile_layout_width = 0x40;
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width); // 2C
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -234,23 +239,20 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x0009D102 + 2;
-					request.tile_brushes_address = 0x000A1B00;
-					request.tile_brushes_address_end = 0x000A1b8C;
-					request.tile_layout_address = 0x0009c82e+2;
-					request.tile_layout_address_end = 0x0009d102-4;
+					request.tile_layout_address = 0x0009c82e + 2;
+					request.tile_layout_address_end = 0x0009d0ee + 2;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
 					request.tile_layout_width = 0x28;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 0x28);
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					//std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
 					LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -262,16 +264,14 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x0009D102 + 2;
-					request.tile_brushes_address = 0x000A1B00;
-					request.tile_brushes_address_end = 0x000A1b8C;
 					request.tile_layout_address = 0x0009c05a + 2;
-					request.tile_layout_address_end = 0x0009c82d - 4;
+					request.tile_layout_address_end = 0x0009c82d;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
 					request.tile_layout_width = 0x28;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 0x22);
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -290,8 +290,6 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_brushes_address = 0x000A1B00;
-					request.tile_brushes_address_end = 0x000A1b8C;
 					request.tile_layout_address = 0x000a14f8 + 2;
 					request.tile_layout_address_end = 0x000a14f8 + (0xC * 0x4 * 2) + 2;
 
@@ -299,7 +297,7 @@ namespace spintool
 					request.tile_brush_height = 1;
 
 					request.tile_layout_width = 0xC;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 0xE);
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -317,8 +315,6 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000C77B0;
-					request.tile_brushes_address = 0x000A1B00;
-					request.tile_brushes_address_end = 0x000C734D;
 					request.tile_layout_address = 0x000C7350 - 2;
 					request.tile_layout_address_end = 0x000c77b0 - 2;
 
@@ -326,7 +322,7 @@ namespace spintool
 					request.tile_brush_height = 1;
 
 					request.tile_layout_width = 20;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 0x22);
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -339,7 +335,6 @@ namespace spintool
 					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 
 					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
-					//LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -350,8 +345,6 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000C77B0;
-					request.tile_brushes_address = 0x000A1B00;
-					request.tile_brushes_address_end = 0x000C734D;
 					request.tile_layout_address = 0x000C6EF0-2;
 					request.tile_layout_address_end = 0x000C734D+2;
 
@@ -359,7 +352,7 @@ namespace spintool
 					request.tile_brush_height = 1;
 
 					request.tile_layout_width = 20;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / 0x22);
+					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -371,7 +364,6 @@ namespace spintool
 					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
 					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
-					//LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -477,7 +469,6 @@ namespace spintool
 				else if (request.compression_algorithm == CompressionAlgorithm::BOOGALOO)
 				{
 					m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					//m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 					m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_tileset, request.tile_layout_address, request.tile_layout_address_end);
 				}
 				std::shared_ptr<const rom::Sprite> tileset_sprite = m_tileset->CreateSpriteFromTile(0);
