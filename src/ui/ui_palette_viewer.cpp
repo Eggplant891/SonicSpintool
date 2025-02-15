@@ -15,7 +15,7 @@ namespace spintool
 		DrawPaletteName(palette, palette_index);
 		ImGui::SameLine();
 		ImGui::Dummy(ImVec2{ 0,0 });
-		DrawPaletteSwatchPreview(palette, palette_index);
+		DrawPaletteSwatchPreview(palette);
 
 		return selection_changed;
 	}
@@ -25,7 +25,7 @@ namespace spintool
 		ImGui::Text("Palette %02X (0x%04X)", palette_index, palette.offset);
 	}
 
-	void DrawPaletteSwatchEditor(rom::Palette& palette, int palette_index)
+	void DrawPaletteSwatchEditor(rom::Palette& palette)
 	{
 		ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, 0);
 		for (rom::Swatch& swatch : palette.palette_swatches)
@@ -43,7 +43,7 @@ namespace spintool
 		ImGui::PopStyleVar();
 	}
 
-	void DrawPaletteSwatchPreview(const rom::Palette& palette, int palette_index)
+	void DrawPaletteSwatchPreview(const rom::Palette& palette)
 	{
 		ImGui::NewLine();
 		ImGui::PushStyleVarX(ImGuiStyleVar_ItemSpacing, 0);
@@ -101,7 +101,7 @@ namespace spintool
 					DrawPaletteName(*palette, palette_index);
 					ImGui::SameLine();
 					ImGui::Dummy(ImVec2{ 0,0 });
-					DrawPaletteSwatchEditor(*palette, palette_index);
+					DrawPaletteSwatchEditor(*palette);
 					++palette_index;
 				}
 			}

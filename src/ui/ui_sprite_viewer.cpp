@@ -54,7 +54,7 @@ namespace spintool
 					tile_tex.texture.reset();
 				}
 			}
-			DrawPaletteSwatchPreview(m_selected_palette, m_chosen_palette_index);
+			DrawPaletteSwatchPreview(m_selected_palette);
 
 			char name_buffer[128];
 			int i = 0;

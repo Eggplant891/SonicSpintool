@@ -33,7 +33,7 @@ namespace spintool
 			update_preview = true;
 		}
 		ImGui::SameLine();
-		DrawPaletteSwatchPreview(*m_owning_ui.GetPalettes().at(m_selected_palette_index), m_selected_palette_index);
+		DrawPaletteSwatchPreview(*m_owning_ui.GetPalettes().at(m_selected_palette_index));
 		m_selected_palette = *m_owning_ui.GetPalettes().at(m_selected_palette_index);
 
 		if (m_imported_image == nullptr)

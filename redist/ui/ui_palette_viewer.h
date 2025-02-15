@@ -27,8 +27,8 @@ namespace spintool
 
 	bool DrawPaletteSelectorWithPreview(int& palette_index, const EditorUI& owning_ui);
 	void DrawPaletteName(const rom::Palette& palette, int palette_index);
-	void DrawPaletteSwatchEditor(rom::Palette& palette, int palette_index);
-	void DrawPaletteSwatchPreview(const rom::Palette& palette, int palette_index);
+	void DrawPaletteSwatchEditor(rom::Palette& palette);
+	void DrawPaletteSwatchPreview(const rom::Palette& palette);
 	bool DrawPaletteSelector(int& chosen_palette, const EditorUI& owning_ui);
 
 	class EditorPaletteViewer : public EditorWindowBase
