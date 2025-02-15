@@ -68,4 +68,16 @@ namespace spintool::rom
 		return palette_set;
 	}
 
+	bool PaletteSet::operator==(const PaletteSet& rhs)
+	{
+		for (size_t i = 0; i < palette_lines.size(); ++i)
+		{
+			if (palette_lines[i] != nullptr && palette_lines[i].get() != rhs.palette_lines[i].get())
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 }
