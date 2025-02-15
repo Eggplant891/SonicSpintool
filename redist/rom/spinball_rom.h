@@ -39,5 +39,7 @@ namespace spintool::rom
 		// Hardcoded resources
 		std::shared_ptr<rom::PaletteSet> GetOptionsScreenPaletteSet() const;
 		std::shared_ptr<rom::PaletteSet> GetIntroCutscenePaletteSet() const;
+		std::shared_ptr<rom::PaletteSet> GetMainMenuPaletteSet() const;
+		std::shared_ptr<rom::PaletteSet> GetSegaLogoIntroPaletteSet() const;
 	};
 }

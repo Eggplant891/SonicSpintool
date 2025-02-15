@@ -198,6 +198,44 @@ namespace spintool
 		return palette_set;
 	}
 
+	std::shared_ptr<rom::PaletteSet> rom::SpinballROM::GetMainMenuPaletteSet() const
+	{
+		static std::shared_ptr<rom::PaletteSet> palette_set = [this]()
+			{
+				auto out_set = std::make_shared<rom::PaletteSet>();
+				out_set->palette_lines =
+				{
+					rom::Palette::LoadFromROM(*this,0x0009bd3a),
+					rom::Palette::LoadFromROM(*this,0x0009bd5a),
+					rom::Palette::LoadFromROM(*this,0x0009bd7a),
+					rom::Palette::LoadFromROM(*this,0x0009bd9a)
+				};
+				return std::move(out_set);
+			}();
+
+
+		return palette_set;
+	}
+
+	std::shared_ptr<rom::PaletteSet> rom::SpinballROM::GetSegaLogoIntroPaletteSet() const
+	{
+		static std::shared_ptr<rom::PaletteSet> palette_set = [this]()
+			{
+				auto out_set = std::make_shared<rom::PaletteSet>();
+				out_set->palette_lines =
+				{
+					rom::Palette::LoadFromROM(*this,0x000993FA),
+					rom::Palette::LoadFromROM(*this,0x0009941A),
+					rom::Palette::LoadFromROM(*this,0x0009943A),
+					rom::Palette::LoadFromROM(*this,0x0009945A)
+				};
+				return std::move(out_set);
+			}();
+
+
+		return palette_set;
+	}
+
 	Uint32 rom::SpinballROM::ReadUint32(size_t offset) const
 	{
 		if (offset + 4 < m_buffer.size())
