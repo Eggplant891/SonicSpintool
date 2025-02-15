@@ -29,12 +29,14 @@ namespace spintool
 		size_t tile_brushes_address_end = 0;
 		size_t tile_layout_address = 0;
 		std::optional<size_t> tile_layout_address_end;
+		std::optional<Uint16> palette_line;
 		unsigned int tile_layout_width = 0;
 		unsigned int tile_layout_height = 0;
 		int tile_brush_width = 0;
 		int tile_brush_height = 0;
 		bool is_chroma_keyed = false;
 		bool show_brush_previews = true;
+		bool draw_mirrored_layout = false;
 	};
 	struct TileBrushPreview
 	{

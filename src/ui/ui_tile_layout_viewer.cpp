@@ -137,27 +137,36 @@ namespace spintool
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
-			bool preview_options = ImGui::Button("Preview Options Menu");
-			ImGui::SameLine();
 			bool preview_intro_bg = ImGui::Button("Preview Intro Cutscene BG");
 			ImGui::SameLine();
 			bool preview_intro_fg = ImGui::Button("Preview Intro Cutscene FG");
 			ImGui::SameLine();
+			bool preview_intro_ship = ImGui::Button("Preview Intro Cutscene Robotnik Ship");
+			ImGui::SameLine();
+			bool preview_intro_water = ImGui::Button("Preview Intro Cutscene Water");
+			
 			bool preview_menu_bg = ImGui::Button("Preview Main Menu BG");
 			ImGui::SameLine();
 			bool preview_menu_fg = ImGui::Button("Preview Main Menu FG");
 			ImGui::SameLine();
+			bool preview_menu_combined = ImGui::Button("Preview Main Menu Combined");
+			
 			bool preview_bonus_bg = ImGui::Button("Preview Bonus BG");
 			ImGui::SameLine();
 			bool preview_bonus_fg = ImGui::Button("Preview Bonus FG");
 			ImGui::SameLine();
+			bool preview_bonus_combined = ImGui::Button("Preview Bonus Combined");
+			
 			bool preview_sega_logo = ImGui::Button("Preview Sega Logo");
-
+			ImGui::SameLine();
+			bool preview_options = ImGui::Button("Preview Options Menu");
+			ImGui::SameLine();
 			bool export_options = ImGui::Button("Export Options Menu");
 			ImGui::SameLine();
 			bool export_intro_bg = ImGui::Button("Export Intro Cutscene BG");
 			ImGui::SameLine();
 			bool export_intro_fg = ImGui::Button("Export Intro Cutscene FG");
+
 			if (preview_options || export_options)
 			{
 				RenderTileLayoutRequest request;
@@ -183,6 +192,29 @@ namespace spintool
 			}
 
 
+			if (preview_intro_bg || export_intro_bg)
+			{
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x000A3124 + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2510);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A2512);
+					request.tile_layout_address = 0x000A2510;
+					request.palette_line = 1;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.is_chroma_keyed = false;
+					request.show_brush_previews = false;
+					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					s_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+			}
+
 			if (preview_intro_fg || export_intro_fg)
 			{
 				{
@@ -194,16 +226,19 @@ namespace spintool
 					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
 					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
 					request.tile_layout_address = 0x000A1B8C;
+					request.palette_line = 1;
 
 					// Robotnik ship
 					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
 					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
 					// request.tile_layout_address = 0x000a30bc;
+					// request.palette_line = 1;
 
 					// Water
 					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
 					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
 					// request.tile_layout_address = 0x000a220c;
+					// request.palette_line = 0;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -213,21 +248,23 @@ namespace spintool
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
-					LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
+
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
-			if (preview_intro_bg || export_intro_bg)
+			if (preview_intro_fg || export_intro_fg)
 			{
 				{
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2510);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A2512);
-					request.tile_layout_address = 0x000A2510;
+
+					// Veg-o Fortress
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
+					request.tile_layout_address = 0x000A1B8C;
+					request.palette_line = 1;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -237,13 +274,70 @@ namespace spintool
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
-					LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
+
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
-			if (preview_menu_bg)
+			if (preview_intro_ship)
+			{
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x000A3124 + 2;
+
+					// Robotnik ship
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
+					request.tile_layout_address = 0x000a30bc;
+					request.palette_line = 1;
+
+					// Water
+					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
+					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
+					// request.tile_layout_address = 0x000a220c;
+					// request.palette_line = 0;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.is_chroma_keyed = false;
+					request.show_brush_previews = false;
+					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+
+					s_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+			}
+
+			if (preview_intro_water)
+			{
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x000A3124 + 2;
+
+					// Water
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
+					request.tile_layout_address = 0x000a220c;
+					request.palette_line = 0;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.is_chroma_keyed = false;
+					request.show_brush_previews = false;
+					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+
+					s_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+			}
+
+			if (preview_menu_bg || preview_menu_combined)
 			{
 				{
 					RenderTileLayoutRequest request;
@@ -251,6 +345,7 @@ namespace spintool
 					request.tileset_address = 0x0009D102 + 2;
 					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C82E);
 					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C830);
+					request.palette_line = 1;
 
 					request.tile_layout_address = 0x0009C82E;
 
@@ -261,14 +356,12 @@ namespace spintool
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
-					LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
+					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
-			if (preview_menu_fg)
+			if (preview_menu_fg || preview_menu_combined)
 			{
 				{
 					RenderTileLayoutRequest request;
@@ -277,17 +370,16 @@ namespace spintool
 					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C05A);
 					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C05C);
 					request.tile_layout_address = 0x0009C05A;
+					request.palette_line = 0;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
-					request.is_chroma_keyed = false;
+					request.is_chroma_keyed = preview_menu_combined;
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines), std::end(LevelPaletteSet.palette_lines));
-					LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
+					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -309,20 +401,20 @@ namespace spintool
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					LevelPaletteSet.palette_lines[0]->palette_swatches[0].packed_value = rom::Swatch::Pack(0, 1.0f, 1.0f);
+					LevelPaletteSet = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
-			if (preview_bonus_bg)
+			if (preview_bonus_bg || preview_bonus_combined)
 			{
 				{
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000C77B0;
 					request.tile_layout_address = 0x000C7350 - 4;
-					request.tile_layout_address_end = 0x000c77b0 - 2;
+					request.tile_layout_address_end = 0x000c77b0 - 4;
+					request.palette_line = 0;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -332,6 +424,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
+					request.draw_mirrored_layout = true;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
 					LevelPaletteSet = rom::PaletteSet{};
@@ -340,19 +433,19 @@ namespace spintool
 					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
 					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 
-					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
-			if (preview_bonus_fg)
+			if (preview_bonus_fg || preview_bonus_combined)
 			{
 				{
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000C77B0;
-					request.tile_layout_address = 0x000C6EF0 - 2;
-					request.tile_layout_address_end = 0x000C734D + 2;
+					request.tile_layout_address = 0x000C6EF0 - 4;
+					request.tile_layout_address_end = 0x000C734D;
+					request.palette_line = 1;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -360,8 +453,9 @@ namespace spintool
 					request.tile_layout_width = 0x14;
 					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
-					request.is_chroma_keyed = false;
+					request.is_chroma_keyed = preview_bonus_combined;
 					request.show_brush_previews = false;
+					request.draw_mirrored_layout = true;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
 					LevelPaletteSet = rom::PaletteSet{};
@@ -369,7 +463,7 @@ namespace spintool
 					LevelPaletteSet.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
 					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
 					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
-					std::rotate(std::begin(LevelPaletteSet.palette_lines), std::begin(LevelPaletteSet.palette_lines) + 1, std::end(LevelPaletteSet.palette_lines));
+
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -459,6 +553,7 @@ namespace spintool
 			SDLSurfaceHandle layout_preview_surface;
 			if (will_be_rendering_preview)
 			{
+				bool will_require_mirror = false;
 				int largest_width = std::numeric_limits<int>::min();
 				int largest_height = std::numeric_limits<int>::min();
 
@@ -466,6 +561,12 @@ namespace spintool
 				{
 					largest_width = std::max<int>(request.tile_layout_width * request.tile_brush_width, largest_width);
 					largest_height = std::max<int>(request.tile_layout_height * request.tile_brush_height, largest_height);
+					will_require_mirror |= request.draw_mirrored_layout;
+				}
+
+				if (will_require_mirror)
+				{
+					largest_width *= 2;
 				}
 
 				const RenderTileLayoutRequest& request = s_tile_layout_render_requests.front();
@@ -519,13 +620,13 @@ namespace spintool
 						sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
 						sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
 
-						sprite_tile->blit_settings.palette = LevelPaletteSet.palette_lines.at(tile.palette_line);
+						sprite_tile->blit_settings.palette = tile.palette_line == 0 && request.palette_line.has_value() ? LevelPaletteSet.palette_lines.at(*request.palette_line) : LevelPaletteSet.palette_lines.at(tile.palette_line);
 						brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
 					}
 					brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
 					SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-					SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 255, 255, 0));
-					SDL_ClearSurface(new_surface.get(), 0.0f, 255.0f, 255.0f, 255.0f);
+					SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
+					SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
 					brush_sprite.RenderToSurface(new_surface.get());
 					SDL_Surface* the_surface = new_surface.get();
 					m_tile_brushes_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
@@ -556,6 +657,36 @@ namespace spintool
 					const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
 					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+				}
+
+				if (request.draw_mirrored_layout)
+				{
+					for (size_t i = 0; i < m_tile_layout->tile_brush_instances.size(); ++i)
+					{
+						const auto tile_brush_index = m_tile_layout->tile_brush_instances[i].tile_brush_index;
+						if (tile_brush_index >= m_tile_brushes_previews.size())
+						{
+							break;
+						}
+
+						SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_tile_brushes_previews[tile_brush_index].surface.get()) };
+						if (m_tile_layout->tile_brush_instances[i].is_flipped_horizontally == false)
+						{
+							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
+						}
+
+						if (m_tile_layout->tile_brush_instances[i].is_flipped_vertically)
+						{
+							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
+						}
+
+						const int x_off = ((request.tile_layout_width * 2 * brush_width)- brush_width) - static_cast<int>((i % request.tile_layout_width) * brush_width);
+						const int y_off = static_cast<int>(((i - (i % request.tile_layout_width)) / request.tile_layout_width) * brush_height);
+
+						const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
+						SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
+						SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+					}
 				}
 
 				if (request.show_brush_previews == false)
@@ -659,7 +790,7 @@ namespace spintool
 				ImGui::TreePop();
 			}
 
-			if (ImGui::TreeNode("Brush Previews"))
+			if (m_tile_brushes_previews.empty() == false && ImGui::TreeNode("Brush Previews"))
 			{
 				size_t i = 0;
 				for (const TileBrushPreview& preview_brush : m_tile_brushes_previews)
