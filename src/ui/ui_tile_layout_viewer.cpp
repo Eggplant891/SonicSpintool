@@ -189,9 +189,21 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
+
+					// Veg-o Fortress
 					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
 					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
 					request.tile_layout_address = 0x000A1B8C;
+
+					// Robotnik ship
+					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
+					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
+					// request.tile_layout_address = 0x000a30bc;
+
+					// Water
+					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
+					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
+					// request.tile_layout_address = 0x000a220c;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
