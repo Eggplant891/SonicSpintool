@@ -156,6 +156,9 @@ namespace spintool
 			bool preview_bonus_fg = ImGui::Button("Preview Bonus FG");
 			ImGui::SameLine();
 			bool preview_bonus_combined = ImGui::Button("Preview Bonus Combined");
+			ImGui::SameLine();
+			static bool preview_bonus_alt_palette = false;
+			ImGui::Checkbox("Alt palette", &preview_bonus_alt_palette);
 			
 			bool preview_sega_logo = ImGui::Button("Preview Sega Logo");
 			ImGui::SameLine();
@@ -414,7 +417,7 @@ namespace spintool
 					request.tileset_address = 0x000C77B0;
 					request.tile_layout_address = 0x000C7350 - 4;
 					request.tile_layout_address_end = 0x000c77b0 - 4;
-					request.palette_line = 0;
+					request.palette_line = preview_bonus_alt_palette ? 1 : 0;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -445,7 +448,7 @@ namespace spintool
 					request.tileset_address = 0x000C77B0;
 					request.tile_layout_address = 0x000C6EF0 - 4;
 					request.tile_layout_address_end = 0x000C734D;
-					request.palette_line = 1;
+					request.palette_line = preview_bonus_alt_palette ? 0 : 1;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
