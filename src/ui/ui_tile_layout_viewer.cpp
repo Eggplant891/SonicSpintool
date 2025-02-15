@@ -12,6 +12,8 @@
 #include "imgui.h"
 #include <memory>
 #include <cassert>
+#include <limits>
+#include <algorithm>
 
 
 namespace spintool
@@ -187,14 +189,12 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_layout_address = 0x000A1B90;
-					request.tile_layout_address_end = 0x000A2168;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
+					request.tile_layout_address = 0x000A1B8C;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0x22;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -213,14 +213,12 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_layout_address = 0x000A2510 + 2;
-					request.tile_layout_address_end = 0x000A3010 + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2510);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A2512);
+					request.tile_layout_address = 0x000A2510;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0x40;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width); // 2C
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -239,14 +237,13 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x0009D102 + 2;
-					request.tile_layout_address = 0x0009c82e + 2;
-					request.tile_layout_address_end = 0x0009d0ee + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C82E);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C830);
+
+					request.tile_layout_address = 0x0009C82E;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0x28;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -265,14 +262,12 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x0009D102 + 2;
-					request.tile_layout_address = 0x0009c05a + 2;
-					request.tile_layout_address_end = 0x0009c82d;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C05A);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C05C);
+					request.tile_layout_address = 0x0009C05A;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0x28;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -291,14 +286,12 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-					request.tile_layout_address = 0x000a14f8 + 2;
-					request.tile_layout_address_end = 0x000a14f8 + (0xC * 0x4 * 2) + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A14F8);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A14FA);
+					request.tile_layout_address = 0x000A14F8;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0xC;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -316,14 +309,14 @@ namespace spintool
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000C77B0;
-					request.tile_layout_address = 0x000C7350 - 2;
+					request.tile_layout_address = 0x000C7350 - 4;
 					request.tile_layout_address_end = 0x000c77b0 - 2;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
-					request.tile_layout_width = 20;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
+					request.tile_layout_width = 0x14;
+					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -352,8 +345,8 @@ namespace spintool
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
-					request.tile_layout_width = 20;
-					request.tile_layout_height = static_cast<unsigned int>(((request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
+					request.tile_layout_width = 0x14;
+					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
@@ -454,8 +447,17 @@ namespace spintool
 			SDLSurfaceHandle layout_preview_surface;
 			if (will_be_rendering_preview)
 			{
+				int largest_width = std::numeric_limits<int>::min();
+				int largest_height = std::numeric_limits<int>::min();
+
+				for (const auto& request : s_tile_layout_render_requests)
+				{
+					largest_width = std::max<int>(request.tile_layout_width * request.tile_brush_width, largest_width);
+					largest_height = std::max<int>(request.tile_layout_height * request.tile_brush_height, largest_height);
+				}
+
 				const RenderTileLayoutRequest& request = s_tile_layout_render_requests.front();
-				layout_preview_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width * request.tile_layout_width, rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height * request.tile_layout_height, SDL_PIXELFORMAT_RGBA32) };
+				layout_preview_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
 				SDL_ClearSurface(layout_preview_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 			}
 

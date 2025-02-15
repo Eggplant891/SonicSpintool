@@ -4,10 +4,15 @@
 
 namespace spintool::rom
 {
-	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t brushes_end, size_t layout_offset, size_t layout_end)
+	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t brushes_end, size_t layout_offset, std::optional<size_t> layout_end)
 	{
 		const Uint8* start_byte = &src_rom.m_buffer[brushes_offset];
 		const Uint8* current_byte = start_byte;
+
+		if (layout_end.has_value() == false)
+		{
+			return nullptr;
+		}
 
 		auto new_layout = std::make_shared<TileLayout>();
 
@@ -34,7 +39,7 @@ namespace spintool::rom
 		}
 
 		current_byte = &src_rom.m_buffer[layout_offset];
-		for (size_t i = 0; i < (layout_end - layout_offset) / 2; ++i)
+		for (size_t i = 0; i < (*layout_end - layout_offset) / 2; ++i)
 		{
 			const Uint8 first_byte = *current_byte;
 			++current_byte;
@@ -52,7 +57,7 @@ namespace spintool::rom
 		return new_layout;
 	}
 
-	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, size_t layout_offset, size_t layout_end)
+	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, size_t layout_offset, std::optional<size_t> layout_end)
 	{
 
 		auto new_layout = std::make_shared<TileLayout>();
@@ -68,15 +73,16 @@ namespace spintool::rom
 		}
 
 		const Uint8* current_byte = &src_rom.m_buffer[layout_offset];
-		const Uint8 width = *current_byte;
-		++current_byte;
-		const Uint8 height = *current_byte;
-		++current_byte;
+		const Uint16 width = src_rom.ReadUint16(layout_offset);
+		const Uint16 height = src_rom.ReadUint16(layout_offset+2);
+		current_byte += 4;
 
 		new_layout->layout_width = width;
 		new_layout->layout_height = height;
 
-		for (size_t i = 0; i < (layout_end - layout_offset) / 2; ++i)
+		const auto end_address = layout_end.value_or(layout_offset + (width * 2 * height));
+
+		for (size_t i = 0; i < (end_address - layout_offset) / 2; ++i)
 		{
 			const Uint8 first_byte = *current_byte;
 			++current_byte;
