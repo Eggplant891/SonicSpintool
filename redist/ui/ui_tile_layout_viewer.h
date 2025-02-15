@@ -6,6 +6,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <string>
 
 namespace spintool::rom
 {
@@ -34,6 +35,8 @@ namespace spintool
 		unsigned int tile_layout_height = 0;
 		int tile_brush_width = 0;
 		int tile_brush_height = 0;
+		std::string layout_type_name;
+		std::string layout_layout_name;
 		bool is_chroma_keyed = false;
 		bool show_brush_previews = true;
 		bool draw_mirrored_layout = false;

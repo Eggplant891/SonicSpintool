@@ -36,21 +36,18 @@ namespace spintool
 			static SDLSurfaceHandle LevelRingSpriteSurface;
 			static SDLPaletteHandle LevelRingPalette;
 			static rom::PaletteSet LevelPaletteSet;
+			static bool export_result = false;
 
 			static int level_index = 0;
 			ImGui::SliderInt("###Level Index", &level_index, 0, 3);
 
 			bool render_both = ImGui::Button("Preview Level");
 			ImGui::SameLine();
-			bool export_both = ImGui::Button("Export level");
-
 			bool render_bg = ImGui::Button("Preview level BG");
 			ImGui::SameLine();
-			bool export_bg = ImGui::Button("Export level BG");
-
 			bool render_fg = ImGui::Button("Preview level FG");
 			ImGui::SameLine();
-			bool export_fg = ImGui::Button("Export level FG");
+			ImGui::Checkbox("Export", &export_result);
 
 			bool render_flippers = false;
 			bool render_rings = false;
@@ -63,15 +60,7 @@ namespace spintool
 				render_rings = true;
 			}
 
-			if (export_both)
-			{
-				export_fg = true;
-				export_bg = true;
-				render_flippers = true;
-				render_rings = true;
-			}
-
-			if (render_bg || export_bg)
+			if (render_bg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
 				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(0x000bfbf0 + (4 * level_index));
@@ -100,11 +89,15 @@ namespace spintool
 
 				request.is_chroma_keyed = false;
 				request.compression_algorithm = CompressionAlgorithm::SSC;
+				char levelname_buffer[32];
+				sprintf_s(levelname_buffer, "level_%d", level_index);
+				request.layout_type_name = levelname_buffer;
+				request.layout_layout_name = "bg";
 
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
-			if (render_fg || export_fg)
+			if (render_fg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
 				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(0x000bfbe0 + (4 * level_index));
@@ -133,6 +126,11 @@ namespace spintool
 
 				request.is_chroma_keyed = true;
 				request.compression_algorithm = CompressionAlgorithm::SSC;
+
+				char levelname_buffer[32];
+				sprintf_s(levelname_buffer, "level_%d", level_index);
+				request.layout_type_name = levelname_buffer;
+				request.layout_layout_name = "fg";
 
 				s_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -163,14 +161,8 @@ namespace spintool
 			bool preview_sega_logo = ImGui::Button("Preview Sega Logo");
 			ImGui::SameLine();
 			bool preview_options = ImGui::Button("Preview Options Menu");
-			ImGui::SameLine();
-			bool export_options = ImGui::Button("Export Options Menu");
-			ImGui::SameLine();
-			bool export_intro_bg = ImGui::Button("Export Intro Cutscene BG");
-			ImGui::SameLine();
-			bool export_intro_fg = ImGui::Button("Export Intro Cutscene FG");
 
-			if (preview_options || export_options)
+			if (preview_options)
 			{
 				RenderTileLayoutRequest request;
 
@@ -195,7 +187,7 @@ namespace spintool
 			}
 
 
-			if (preview_intro_bg || export_intro_bg)
+			if (preview_intro_bg)
 			{
 				{
 					RenderTileLayoutRequest request;
@@ -213,50 +205,15 @@ namespace spintool
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "bg";
+
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
-			if (preview_intro_fg || export_intro_fg)
-			{
-				{
-					RenderTileLayoutRequest request;
-
-					request.tileset_address = 0x000A3124 + 2;
-
-					// Veg-o Fortress
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
-					request.tile_layout_address = 0x000A1B8C;
-					request.palette_line = 1;
-
-					// Robotnik ship
-					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
-					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
-					// request.tile_layout_address = 0x000a30bc;
-					// request.palette_line = 1;
-
-					// Water
-					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
-					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
-					// request.tile_layout_address = 0x000a220c;
-					// request.palette_line = 0;
-
-					request.tile_brush_width = 1;
-					request.tile_brush_height = 1;
-
-					request.is_chroma_keyed = false;
-					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
-
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-
-					s_tile_layout_render_requests.emplace_back(std::move(request));
-				}
-			}
-
-			if (preview_intro_fg || export_intro_fg)
+			if (preview_intro_fg)
 			{
 				{
 					RenderTileLayoutRequest request;
@@ -275,6 +232,9 @@ namespace spintool
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "veg_o_fortress";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
@@ -295,18 +255,15 @@ namespace spintool
 					request.tile_layout_address = 0x000a30bc;
 					request.palette_line = 1;
 
-					// Water
-					// request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
-					// request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
-					// request.tile_layout_address = 0x000a220c;
-					// request.palette_line = 0;
-
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "robotnik_ship";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
@@ -334,6 +291,9 @@ namespace spintool
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "water";
+
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
 					s_tile_layout_render_requests.emplace_back(std::move(request));
@@ -359,6 +319,9 @@ namespace spintool
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "bg";
+
 					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -382,6 +345,9 @@ namespace spintool
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
 
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "fg";
+
 					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -403,6 +369,9 @@ namespace spintool
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "sega_logo";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
 					s_tile_layout_render_requests.emplace_back(std::move(request));
@@ -436,6 +405,9 @@ namespace spintool
 					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
 					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 
+					request.layout_type_name = "bonus";
+					request.layout_layout_name = "bg";
+
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -466,6 +438,9 @@ namespace spintool
 					LevelPaletteSet.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
 					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
 					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
+
+					request.layout_type_name = "bonus";
+					request.layout_layout_name = "fg";
 
 					s_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -553,6 +528,15 @@ namespace spintool
 			}
 
 			const bool will_be_rendering_preview = s_tile_layout_render_requests.empty() == false;
+			const bool export_combined = s_tile_layout_render_requests.size() > 1;
+
+			char combined_buffer[128];
+			if (export_combined)
+			{
+				sprintf_s(combined_buffer, "%s_combined", s_tile_layout_render_requests.front().layout_type_name.c_str());
+			}
+			const std::string combined_layout_name = export_combined ? s_tile_layout_render_requests.front().layout_layout_name : "";
+			const std::string combined_type_name = export_combined ? combined_buffer : "";
 			SDLSurfaceHandle layout_preview_surface;
 			if (will_be_rendering_preview)
 			{
@@ -697,27 +681,11 @@ namespace spintool
 					m_tile_brushes_previews.clear();
 				}
 
-				if (export_bg)
+				if (export_result && export_combined == false)
 				{
 					static char path_buffer[4096];
-
-					sprintf_s(path_buffer, "spinball_level_%X02_BG.png", level_index);
+					sprintf_s(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
 					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
-				}
-
-				if (export_fg)
-				{
-					static char path_buffer[4096];
-
-					sprintf_s(path_buffer, "spinball_level_%X02_FG.png", level_index);
-					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
-				}
-
-				if (export_options)
-				{
-					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append("spinball_level_OPTIONS.png");
 					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
 				}
 
@@ -757,11 +725,11 @@ namespace spintool
 				}
 			}
 
-			if (export_both)
+			if (export_result && export_combined)
 			{
 				static char path_buffer[4096];
 
-				sprintf_s(path_buffer, "spinball_level_%X02_FullLayout.png", level_index);
+				sprintf_s(path_buffer, "spinball_%s.png", combined_type_name.c_str());
 				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 				assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
 			}
