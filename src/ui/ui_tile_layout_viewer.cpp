@@ -226,6 +226,13 @@ namespace spintool
 					request.tile_layout_address = 0x000A1B8C;
 					request.palette_line = 1;
 
+					// Veg-o Fortress empty topsection
+					//request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2168);
+					//request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A216A);
+					//request.tile_layout_address = 0x000A2168;
+					//request.palette_line = 1;
+
+
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
 
@@ -529,6 +536,11 @@ namespace spintool
 
 			const bool will_be_rendering_preview = s_tile_layout_render_requests.empty() == false;
 			const bool export_combined = s_tile_layout_render_requests.size() > 1;
+			static std::optional<RenderTileLayoutRequest> current_preview_data;
+			if (will_be_rendering_preview && export_combined == false)
+			{
+				current_preview_data = s_tile_layout_render_requests.front();
+			}
 
 			char combined_buffer[128];
 			if (export_combined)
@@ -573,6 +585,12 @@ namespace spintool
 				{
 					m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
 					m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_tileset, request.tile_layout_address, request.tile_layout_address_end);
+				}
+
+				if (export_combined == false)
+				{
+					current_preview_data->tile_layout_address = m_tile_layout->rom_data.rom_offset;
+					current_preview_data->tile_layout_address_end = m_tile_layout->rom_data.rom_offset_end;
 				}
 				std::shared_ptr<const rom::Sprite> tileset_sprite = m_tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
@@ -741,16 +759,18 @@ namespace spintool
 
 			constexpr size_t preview_brushes_per_row = 32;
 			constexpr const float zoom = 1.0f;
-
-			//if (ImGui::TreeNode("ROM Data Info"))
-			//{
-			//	ImGui::Text("Tileset Compressed Data:", tileset_address);
-			//	ImGui::Text("Tileset Brushes: 0x%08X => 0x%08X", tile_brushes_address, tile_brushes_address_end);
-			//	ImGui::Text("Tile Layout: 0x%08X => 0x%08X", tile_layout_address, tile_layout_address_end);
-			//	ImGui::Text("Width: %d", tile_layout_width);
-			//	ImGui::Text("Height: %d", tile_layout_height);
-			//	ImGui::TreePop();
-			//}
+			if (current_preview_data && ImGui::TreeNode("ROM Info"))
+			{
+				const auto address_end = current_preview_data->tile_layout_address_end.value_or(current_preview_data->tile_layout_address + (current_preview_data->tile_layout_width * 2) * current_preview_data->tile_layout_height);
+				ImGui::Text("Tileset Compressed Data: 0x%08X", current_preview_data->tileset_address);
+				ImGui::Text("Tileset Brushes: 0x%08X => 0x%08X", current_preview_data->tile_brushes_address, current_preview_data->tile_brushes_address_end);
+				ImGui::Text("Tile Layout: 0x%08X => 0x%08X", current_preview_data->tile_layout_address, address_end);
+				ImGui::Text("Layout size: %d", address_end - current_preview_data->tile_layout_address);
+				ImGui::Text("Width: %d", current_preview_data->tile_layout_width);
+				ImGui::Text("Height: %d", current_preview_data->tile_layout_height);
+				ImGui::Text("Num tiles: %d", current_preview_data->tile_layout_width * current_preview_data->tile_layout_height);
+				ImGui::TreePop();
+			}
 
 			if (ImGui::TreeNode("Palette Set"))
 			{

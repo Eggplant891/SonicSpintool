@@ -54,6 +54,8 @@ namespace spintool::rom
 			brush_instance.tile_brush_index = (static_cast<Uint16>(first_byte & 0x03) << 8) | static_cast<Uint16>(second_byte & 0xFF);
 			new_layout->tile_brush_instances.emplace_back(brush_instance);
 		}
+
+		new_layout->rom_data.SetROMData(layout_offset, *layout_end);
 		return new_layout;
 	}
 
@@ -80,7 +82,7 @@ namespace spintool::rom
 		new_layout->layout_width = width;
 		new_layout->layout_height = height;
 
-		const auto end_address = layout_end.value_or(layout_offset + (width * 2 * height));
+		const auto end_address = layout_end.value_or(layout_offset + 4 + (width * 2 * height));
 
 		for (size_t i = 0; i < (end_address - layout_offset) / 2; ++i)
 		{
@@ -97,6 +99,9 @@ namespace spintool::rom
 			brush_instance.tile_brush_index = (static_cast<Uint16>((0x01 | 0x02 | 0x04) & first_byte) << 8) | second_byte;
 			new_layout->tile_brush_instances.emplace_back(brush_instance);
 		}
+
+		new_layout->rom_data.SetROMData(layout_offset, end_address);
+
 		return new_layout;
 	}
 }
