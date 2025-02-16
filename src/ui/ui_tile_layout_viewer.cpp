@@ -14,6 +14,7 @@
 #include <cassert>
 #include <limits>
 #include <algorithm>
+#include "rom/rom_asset_definitions.h"
 
 
 namespace spintool
@@ -63,14 +64,15 @@ namespace spintool
 			if (render_bg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(0x000bfbf0 + (4 * level_index));
-				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(0x000bfc10 + (4 * level_index));
-				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(0x000bfc30 + (4 * level_index));
+				const rom::LevelDataOffsets level_data_offsets{ level_index };
+				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tileset);
+				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_layout);
+				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
 
-				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), 0x000bfc50 + (8 * level_index));
+				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(0x000bfc70 + (4 * level_index));
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(0x000bfc72 + (4 * level_index));
+				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
+				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
 
 				RenderTileLayoutRequest request;
 

@@ -199,6 +199,7 @@
     <ClCompile Include="external\imgui\imgui_draw.cpp" />
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="rom_asset_definitions.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\rom\animated_object.cpp" />
@@ -250,6 +251,7 @@
     <ClInclude Include="redist\rom\game_objects\game_object_flipper.h" />
     <ClInclude Include="redist\rom\game_objects\game_object_ring.h" />
     <ClInclude Include="redist\rom\palette.h" />
+    <ClInclude Include="redist\rom\rom_asset_definitions.h" />
     <ClInclude Include="redist\rom\rom_data.h" />
     <ClInclude Include="redist\rom\spinball_rom.h" />
     <ClInclude Include="redist\rom\sprite.h" />
@@ -260,6 +262,7 @@
     <ClInclude Include="redist\sdl_handle_defs.h" />
     <ClInclude Include="redist\types\blit_settings.h" />
     <ClInclude Include="redist\types\decompression_result.h" />
+    <ClInclude Include="redist\types\rom_ptr.h" />
     <ClInclude Include="redist\ui\ui_animation_navigator.h" />
     <ClInclude Include="redist\ui\ui_editor.h" />
     <ClInclude Include="redist\ui\ui_editor_window.h" />
