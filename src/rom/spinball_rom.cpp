@@ -238,7 +238,7 @@ namespace spintool
 
 	Uint32 rom::SpinballROM::ReadUint32(size_t offset) const
 	{
-		if (offset + 4 < m_buffer.size())
+		if (offset + 4 <= m_buffer.size())
 		{
 			Uint32 out_offset = (static_cast<Uint32>(m_buffer[offset]) << 24) | (static_cast<Uint32>(m_buffer[offset+1]) << 16) | (static_cast<Uint32>(m_buffer[offset+2]) << 8) | (static_cast<Uint32>(m_buffer[offset+3]));
 			return out_offset;
@@ -248,9 +248,19 @@ namespace spintool
 
 	Uint16 rom::SpinballROM::ReadUint16(size_t offset) const
 	{
-		if (offset + 2 < m_buffer.size())
+		if (offset + 2 <= m_buffer.size())
 		{
 			Uint16 out_offset = (static_cast<Uint16>(m_buffer[offset]) << 8) | (static_cast<Uint16>(m_buffer[offset + 1]));
+			return out_offset;
+		}
+		return 0;
+	}
+
+	Uint8 rom::SpinballROM::ReadUint8(size_t offset) const
+	{
+		if (offset < m_buffer.size())
+		{
+			Uint8 out_offset = static_cast<Uint16>(m_buffer[offset]);
 			return out_offset;
 		}
 		return 0;

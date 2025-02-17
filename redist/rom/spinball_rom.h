@@ -30,6 +30,7 @@ namespace spintool::rom
 		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const;
 		void BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 
+		Uint8 ReadUint8(size_t offset) const;
 		Uint16 ReadUint16(size_t offset) const;
 		Uint32 ReadUint32(size_t offset) const;
 

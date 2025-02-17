@@ -1,14 +1,20 @@
 #pragma once
 
 #include "types/rom_ptr.h"
+#include <utility>
 
 namespace spintool::rom
 {
 	const Ptr32 PaletteRows = 0x00000DFC;
 
+	struct ArrayOffset
+	{
+		Uint32 offset = 0;
+		Uint16 count = 0;
+	};
+
 	struct LevelDataTableOffsets
 	{
-
 		Ptr32 foreground_tileset = 0x000BFBE0;
 		Ptr32 background_tileset = 0x000BFBF0;
 		Ptr32 foreground_tile_layout = 0x000BFC00;
@@ -44,12 +50,27 @@ namespace spintool::rom
 		Ptr32 animations = 0x000C150C;
 		Ptr32 ring_count = 0x000C151C;
 		Ptr32 rom_level_data_BG_tile_vdp_offset = 0x000D8D04;
+
+		ArrayOffset ring_instances[4] = {
+			{ 0x000C3854, 0x3A }, // Toxic Caves
+			{ 0x000C1D70, 0x43 }, // Lava Powerhouse
+			{ 0x000C60B2, 0x51 }, // The Machine
+			{ 0x000C49CC, 0x3E }  // Showdown
+		};
+
+		ArrayOffset object_instances[4] = {
+			{ 0x000C39B0, 0xAD }, // Toxic Caves
+			{ 0x000C1F02, 0xD3 }, // Lava Powerhouse
+			{ 0x000C6298, 0x9E }, // The Machine
+			{ 0x000C4B40, 0xBA }  // Showdown
+		};
 	};
 
 	struct LevelDataOffsets
 	{
 		LevelDataOffsets(const int level_index);
 
+		LevelDataTableOffsets table_offsets;
 		Ptr32 foreground_tileset = 0;
 		Ptr32 background_tileset = 0;
 		Ptr32 foreground_tile_layout = 0;
@@ -71,7 +92,7 @@ namespace spintool::rom
 		Ptr32 collision_type2_animation_id = 0;
 		Ptr32 collision_type3_animation_id = 0;
 		Ptr32 collision_bumper_animation_id = 0;
-		Ptr32 teleporter_animation_id = 0;
+		Ptr32 teleporter_animation = 0;
 		Ptr32 teleporter_y_offset = 0;
 		Ptr32 player_start_position_x = 0;
 		Ptr32 player_start_position_y = 0;
@@ -84,39 +105,35 @@ namespace spintool::rom
 		Ptr32 level_name = 0;
 		Ptr32 animations = 0;
 		Ptr32 ring_count = 0;
+		ArrayOffset ring_instances;
+		ArrayOffset object_instances;
 		Ptr32 rom_level_data_BG_tile_vdp_offset = 0;
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////
 
-	Ptr32 RingAnimationFrameIDs = 0x000D3B2A; // Uint8[4]
-	Ptr32 RingAnimationFrameXOffsets = 0x000D3B44; // Uint16[4]
-
-	Ptr32 OSDTileset = 0x0007DA22;
-
-	Ptr32 BonusLevelBGTileLayout = 0x000C6EF0;
-	Ptr32 BonusLevelBGTileset = 0x000C77B0;
-	Ptr32 BonusLevelTilesetTrappedAlive = 0x000CC710;
-
-	Ptr32 OptionsMenuPaletteSet = 0x0000115C;
-	Ptr32 OptionsMenuTileset = 0x000BDD2E;
-	Ptr32 OptionsMenuTileLayout = 0x000BE1BC;
-
-	Ptr32 IntroCutscenesTileset = 0x000A3124 + 2;
-	Ptr32 MainMenuTileset = 0x0009D102 + 2;
-
-	Ptr32 SegaLogoPaletteSet = 0x000993FA;
-	Ptr32 SegaLogoTileLayout = 0x000A14F8;
-
-	Ptr32 MainMenuPaletteSet = 0x0009BD3A;
-	Ptr32 MainMenuTileLayoutGiantBumper = 0x0009C05A;
-	Ptr32 MainMenuTileLayoutBG = 0x0009C82E;
-
-	Ptr32 IntroCutscenePaletteSet = 0x000A1388;
-	Ptr32 IntroCutsceneTileLayoutVegOFortress = 0x000A1B8C;
-	Ptr32 IntroCutsceneTileLayoutVegOFortressEmptyTopSection = 0x000A2168;
-	Ptr32 IntroCutsceneTileLayoutOcean = 0x000A220C;
-	Ptr32 IntroCutsceneTileLayoutSky = 0x000A2510;
-	Ptr32 IntroCutsceneTileLayoutRobotnikShip = 0x000A30BC;
+	extern Ptr32 RingAnimationFrameIDs;
+	extern Ptr32 RingAnimationFrameXOffsets;
+	extern Ptr32 OSDTileset;
+	extern Ptr32 BonusLevelBGTileLayout;
+	extern Ptr32 BonusLevelBGTileset;
+	extern Ptr32 BonusLevelTilesetTrappedAlive;
+	extern Ptr32 OptionsMenuPaletteSet;
+	extern Ptr32 OptionsMenuTileset;
+	extern Ptr32 OptionsMenuTileBrushes;
+	extern Ptr32 OptionsMenuTileLayout;
+	extern Ptr32 IntroCutscenesTileset;
+	extern Ptr32 MainMenuTileset;
+	extern Ptr32 SegaLogoPaletteSet;
+	extern Ptr32 SegaLogoTileLayout;
+	extern Ptr32 MainMenuPaletteSet;
+	extern Ptr32 MainMenuTileLayoutGiantBumper;
+	extern Ptr32 MainMenuTileLayoutBG;
+	extern Ptr32 IntroCutscenePaletteSet;
+	extern Ptr32 IntroCutsceneTileLayoutVegOFortress;
+	extern Ptr32 IntroCutsceneTileLayoutVegOFortressEmptyTopSection;
+	extern Ptr32 IntroCutsceneTileLayoutOcean;
+	extern Ptr32 IntroCutsceneTileLayoutSky;
+	extern Ptr32 IntroCutsceneTileLayoutRobotnikShip;
 
 }

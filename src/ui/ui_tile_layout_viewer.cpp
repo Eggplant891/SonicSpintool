@@ -2,11 +2,13 @@
 
 #include "ui/ui_editor.h"
 
+#include "rom/rom_asset_definitions.h"
 #include "rom/sprite.h"
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
+#include "rom/game_objects/game_object_definition.h"
 
 #include "SDL3/SDL_image.h"
 #include "imgui.h"
@@ -14,7 +16,6 @@
 #include <cassert>
 #include <limits>
 #include <algorithm>
-#include "rom/rom_asset_definitions.h"
 
 
 namespace spintool
@@ -31,16 +32,24 @@ namespace spintool
 			static std::vector<RenderTileLayoutRequest> s_tile_layout_render_requests;
 			static std::vector<rom::FlipperInstance> s_flipper_instances;
 			static std::vector<rom::RingInstance> s_ring_instances;
+			static std::vector<rom::GameObjectDefinition> s_game_obj_instances;
 			bool render_preview = false;
 			static SDLSurfaceHandle LevelFlipperSpriteSurface;
 			static SDLPaletteHandle LevelFlipperPalette;
 			static SDLSurfaceHandle LevelRingSpriteSurface;
 			static SDLPaletteHandle LevelRingPalette;
+			static SDLSurfaceHandle LevelGameObjSpriteSurface;
+			static SDLPaletteHandle LevelGameObjPalette;
 			static rom::PaletteSet LevelPaletteSet;
 			static bool export_result = false;
 
 			static int level_index = 0;
-			ImGui::SliderInt("###Level Index", &level_index, 0, 3);
+			static rom::LevelDataOffsets level_data_offsets{ level_index };
+			
+			if (ImGui::SliderInt("###Level Index", &level_index, 0, 3))
+			{
+				level_data_offsets = rom::LevelDataOffsets{level_index};
+			}
 
 			bool render_both = ImGui::Button("Preview Level");
 			ImGui::SameLine();
@@ -64,7 +73,6 @@ namespace spintool
 			if (render_bg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const rom::LevelDataOffsets level_data_offsets{ level_index };
 				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tileset);
 				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_layout);
 				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
@@ -102,14 +110,15 @@ namespace spintool
 			if (render_fg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(0x000bfbe0 + (4 * level_index));
-				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(0x000bfc00 + (4 * level_index));
-				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(0x000bfc20 + (4 * level_index));
+				const rom::LevelDataOffsets level_data_offsets{ level_index };
+				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
+				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
+				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
 
-				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), 0x000bfc50 + (8 * level_index));
+				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(0x000bfc70 + (4 * level_index));
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(0x000bfc72 + (4 * level_index));
+				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
+				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
 
 				RenderTileLayoutRequest request;
 
@@ -168,10 +177,10 @@ namespace spintool
 			{
 				RenderTileLayoutRequest request;
 
-				request.tileset_address = 0x000BDD2E;
-				request.tile_brushes_address = 0x000BDFBC;
+				request.tileset_address = rom::OptionsMenuTileset;
+				request.tile_brushes_address = rom::OptionsMenuTileBrushes;
 				request.tile_brushes_address_end = 0x000BE1BC;
-				request.tile_layout_address = 0x000BE1BC;
+				request.tile_layout_address = rom::OptionsMenuTileLayout;
 				request.tile_layout_address_end = 0x000BE248;
 
 				request.tile_brush_width = 4;
@@ -194,10 +203,10 @@ namespace spintool
 				{
 					RenderTileLayoutRequest request;
 
-					request.tileset_address = 0x000A3124 + 2;
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2510);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A2512);
-					request.tile_layout_address = 0x000A2510;
+					request.tileset_address = rom::IntroCutscenesTileset;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky + sizeof(Uint16));
+					request.tile_layout_address = rom::IntroCutsceneTileLayoutSky;
 					request.palette_line = 1;
 
 					request.tile_brush_width = 1;
@@ -500,21 +509,6 @@ namespace spintool
 			if (render_rings)
 			{
 				const static size_t ring_sprite_offset = 0x0000F6D8;
-				const static size_t level_rings_count[4] =
-				{
-					0x3A,
-					0x43,
-					0x51,
-					0x3E
-				};
-
-				const static size_t rings_positions_table_offset[4] =
-				{
-					0x000C3854,
-					0x000C1D70,
-					0x000C60B2,
-					0x000C49CC
-				};
 
 				std::shared_ptr<const rom::Sprite> LevelRingSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
 				LevelRingSpriteSurface = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
@@ -525,14 +519,40 @@ namespace spintool
 				LevelRingSprite->RenderToSurface(LevelRingSpriteSurface.get());
 
 				s_ring_instances.clear();
-				s_ring_instances.reserve(level_rings_count[level_index]);
+				s_ring_instances.reserve(level_data_offsets.ring_instances.count);
 
-				size_t current_table_offset = rings_positions_table_offset[level_index];
-
-				for (size_t i = 0; i < level_rings_count[level_index]; ++i)
 				{
-					s_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-					current_table_offset = s_ring_instances.back().rom_data.rom_offset_end;
+					size_t current_table_offset = level_data_offsets.ring_instances.offset;
+
+					for (size_t i = 0; i < level_data_offsets.ring_instances.count; ++i)
+					{
+						s_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						current_table_offset = s_ring_instances.back().rom_data.rom_offset_end;
+					}
+				}
+				/////////////
+
+				const static size_t game_obj_sprite_offset = 0x0000F6D8;
+
+				std::shared_ptr<const rom::Sprite> LevelGameObjSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), game_obj_sprite_offset);
+				LevelGameObjSpriteSurface = SDLSurfaceHandle{ SDL_CreateSurface(LevelGameObjSprite->GetBoundingBox().Width(), LevelGameObjSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+				LevelGameObjPalette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
+				SDL_SetSurfacePalette(LevelGameObjSpriteSurface.get(), LevelGameObjPalette.get());
+				SDL_ClearSurface(LevelGameObjSpriteSurface.get(), 255, 255, 255, 255);
+				SDL_SetSurfaceColorKey(LevelGameObjSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelGameObjSpriteSurface->format), nullptr, 255, 0, 0, 255));
+				//LevelGameObjSprite->RenderToSurface(LevelGameObjSpriteSurface.get());
+
+				s_game_obj_instances.clear();
+				s_game_obj_instances.reserve(level_data_offsets.object_instances.count);
+
+				{
+					size_t current_table_offset = level_data_offsets.object_instances.offset;
+
+					for (size_t i = 0; i < level_data_offsets.object_instances.count; ++i)
+					{
+						s_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						current_table_offset = s_game_obj_instances.back().rom_data.rom_offset_end;
+					}
 				}
 			}
 
@@ -742,6 +762,41 @@ namespace spintool
 					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+				}
+
+				
+				static rom::Colour bbox_colours[]
+				{
+					{255,255,255,255},
+					{255,255,0,0},
+					{255,0,255,0},
+					{255,16,0,255},
+					{255,255,255,0},
+					{255,255,0,255},
+					{255,0,255,255},
+					{255,128,128,128},
+					{255,64,192,128},
+					{255,192,32,210},
+					{255,128,128,255},
+					{255,128,128,255},
+				};
+
+
+				for (size_t i = 0; i < s_game_obj_instances.size(); ++i)
+				{
+					const rom::GameObjectDefinition& game_obj = s_game_obj_instances[i];
+
+					SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(LevelGameObjSpriteSurface.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
+
+					auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
+					SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
+					SDL_ClearSurface(cutting_surface.get(), 255.0f, 0.0f, 0.0f, 255.0f);
+					const SDL_Rect cutting_target_rect{ 2,2,temp_surface->w - 4, temp_surface->h - 4 };
+					SDL_BlitSurfaceScaled(cutting_surface.get(), nullptr, temp_surface.get(), &cutting_target_rect, SDL_SCALEMODE_NEAREST);
+
+					SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width/2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
+					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
+					SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
 				}
 			}
 
