@@ -1,0 +1,38 @@
+#include "rom/game_objects/game_object_definition.h"
+
+#include "rom/spinball_rom.h"
+
+namespace spintool::rom
+{
+	GameObjectDefinition GameObjectDefinition::LoadFromROM(const rom::SpinballROM& rom, size_t offset)
+	{
+		GameObjectDefinition new_instance;
+
+		size_t current_offset = offset;
+
+		new_instance.type_id = rom.ReadUint8(current_offset);
+		current_offset += 1;
+		new_instance.instance_id = rom.ReadUint8(current_offset);;
+		current_offset += 1;
+		new_instance.unknown_1 = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_instance.x_pos = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_instance.y_pos = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_instance.collision_width = rom.ReadUint8(current_offset);
+		current_offset += 1;
+		new_instance.collision_height = rom.ReadUint8(current_offset);
+		current_offset += 1;
+		new_instance.animation_definition = rom.ReadUint32(current_offset);
+		current_offset += 4;
+		new_instance.animation_ptr = rom.ReadUint32(current_offset);
+		current_offset += 4;
+		new_instance.unknown_2 = rom.ReadUint16(current_offset);
+		current_offset += 2;
+
+		new_instance.rom_data.SetROMData(offset, current_offset);
+		return new_instance;
+	}
+
+}
