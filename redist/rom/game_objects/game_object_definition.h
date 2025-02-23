@@ -16,7 +16,8 @@ namespace spintool::rom
 
 		Uint8 type_id = 0;
 		Uint8 instance_id = 0;
-		Uint16 unknown_1 = 0;
+		bool flip_x = 0;
+		bool flip_y = 0;
 		Uint16 x_pos = 0;
 		Uint16 y_pos = 0;
 		Uint8 collision_width = 0;

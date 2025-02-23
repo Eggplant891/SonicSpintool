@@ -12,10 +12,12 @@ namespace spintool::rom
 
 		new_instance.type_id = rom.ReadUint8(current_offset);
 		current_offset += 1;
-		new_instance.instance_id = rom.ReadUint8(current_offset);;
+		new_instance.instance_id = rom.ReadUint8(current_offset);
 		current_offset += 1;
-		new_instance.unknown_1 = rom.ReadUint16(current_offset);
-		current_offset += 2;
+		new_instance.flip_y = rom.ReadUint8(current_offset) > 0;
+		current_offset += 1;
+		new_instance.flip_x = rom.ReadUint8(current_offset) > 0;
+		current_offset += 1;
 		new_instance.x_pos = rom.ReadUint16(current_offset);
 		current_offset += 2;
 		new_instance.y_pos = rom.ReadUint16(current_offset);
