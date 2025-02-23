@@ -11,6 +11,7 @@
 #include <filesystem>
 #include "rom/tile_layout.h"
 #include "rom/tileset.h"
+#include "types/rom_ptr.h"
 
 namespace spintool
 {
@@ -152,6 +153,31 @@ namespace spintool
 			ImGui::SameLine();
 			ImGui::SetNextItemWidth(128);
 			ImGui::InputInt("###num_sprites_to_find", &num_searches, 1, 16, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
+
+			if (ImGui::Button("Show Toxic Caves Sprites"))
+			{
+				//const static rom::Ptr32 toxic_caves_sprite_table = 0x12B0C;
+				const static rom::Ptr32 toxic_caves_sprite_table = 0xE47A;
+				//const static rom::Ptr32 toxic_caves_sprite_table = 0x318ee;
+				const static rom::Ptr32 toxic_caves_sprite_table_begin = toxic_caves_sprite_table + 4;
+				const Uint16 num_sprites = m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table);
+				std::vector<rom::Ptr32> sprite_offsets;
+				sprite_offsets.reserve(num_sprites);
+
+				for (size_t i = 0; i < num_sprites; ++i)
+				{
+					sprite_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table_begin + (i*2)));
+				}
+
+				for (rom::Ptr32 offset : sprite_offsets)
+				{
+					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), toxic_caves_sprite_table + offset))
+					{
+						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
+						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
+					}
+				}
+			}
 
 			if (ImGui::Button("Show current sprite"))
 			{
