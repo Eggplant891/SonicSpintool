@@ -5,6 +5,11 @@
 
 namespace spintool
 {
+	struct UIAnimationSequence
+	{
+		std::shared_ptr<const rom::AnimationSequence> anim_sequence;
+		size_t current_command = 0;
+	};
 	class EditorAnimationNavigator : public EditorWindowBase
 	{
 	public:
@@ -15,6 +20,7 @@ namespace spintool
 	private:
 		void LoadPlayerAnimationTables();
 
-		rom::AnimationTable m_player_animations;
+		void LoadToxicCavesAnimationTables();
+		std::vector<UIAnimationSequence> m_animations;
 	};
 }
