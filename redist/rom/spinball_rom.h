@@ -22,7 +22,7 @@ namespace spintool::rom
 	public:
 		bool LoadROMFromPath(const std::filesystem::path& path);
 		size_t GetOffsetForNextSprite(const rom::Sprite& current_sprite) const;
-		std::vector<std::shared_ptr<rom::Palette>> LoadPalettes(size_t num_palettes);
+		std::vector<std::shared_ptr<rom::Palette>> LoadPalettes(size_t num_palettes) const;
 
 		void SaveROM();
 
@@ -36,8 +36,10 @@ namespace spintool::rom
 
 		std::vector<unsigned char> m_buffer;
 		std::filesystem::path m_filepath;
+		std::vector<std::shared_ptr<rom::Palette>> m_palettes;
 
 		// Hardcoded resources
+		const std::vector<std::shared_ptr<spintool::rom::Palette>>& GetGlobalPalettes() const;
 		std::shared_ptr<rom::PaletteSet> GetOptionsScreenPaletteSet() const;
 		std::shared_ptr<rom::PaletteSet> GetIntroCutscenePaletteSet() const;
 		std::shared_ptr<rom::PaletteSet> GetMainMenuPaletteSet() const;

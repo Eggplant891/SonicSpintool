@@ -17,6 +17,8 @@ namespace spintool
 		std::ifstream input = std::ifstream{ path, std::ios::binary };
 		m_filepath = path;
 		m_buffer = std::vector<unsigned char>{ std::istreambuf_iterator<char>(input), {} };
+		m_palettes = LoadPalettes(48);
+
 		return m_buffer.empty() == false;
 	}
 
@@ -31,7 +33,7 @@ namespace spintool
 		return current_sprite.rom_data.rom_offset + current_sprite.GetSizeOf();
 	}
 
-	std::vector<std::shared_ptr<rom::Palette>> rom::SpinballROM::LoadPalettes(size_t num_palettes)
+	std::vector<std::shared_ptr<rom::Palette>> rom::SpinballROM::LoadPalettes(size_t num_palettes) const
 	{
 		constexpr size_t offset = 0xDFC; // Level Palettes
 		//constexpr size_t offset = 0x9BCDA; // Main menu palettes
@@ -265,4 +267,10 @@ namespace spintool
 		}
 		return 0;
 	}
+
+	const std::vector<std::shared_ptr<spintool::rom::Palette>>& rom::SpinballROM::GetGlobalPalettes() const
+	{
+		return m_palettes;
+	}
+
 }
