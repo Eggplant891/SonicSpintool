@@ -3,6 +3,7 @@
 #include "ui/ui_editor.h"
 
 #include "rom/rom_asset_definitions.h"
+#include "rom/animated_object.h"
 #include "rom/sprite.h"
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
@@ -16,6 +17,7 @@
 #include <cassert>
 #include <limits>
 #include <algorithm>
+#include <iterator>
 
 
 namespace spintool
@@ -33,6 +35,17 @@ namespace spintool
 			static std::vector<rom::FlipperInstance> s_flipper_instances;
 			static std::vector<rom::RingInstance> s_ring_instances;
 			static std::vector<rom::GameObjectDefinition> s_game_obj_instances;
+			static std::vector<rom::AnimObjectDefinition> s_anim_obj_instances;
+
+			struct AnimSpriteEntry
+			{
+				rom::Ptr32 sprite_table = 0;
+				std::shared_ptr<const rom::AnimationSequence> anim_sequence;
+				size_t anim_command_used_for_surface = 0;
+				SDLSurfaceHandle sprite_surface;
+			};
+			static std::vector<AnimSpriteEntry> s_anim_sprite_instances;
+
 			bool render_preview = false;
 			static SDLSurfaceHandle LevelFlipperSpriteSurface;
 			static SDLPaletteHandle LevelFlipperPalette;
@@ -543,6 +556,7 @@ namespace spintool
 				//LevelGameObjSprite->RenderToSurface(LevelGameObjSpriteSurface.get());
 
 				s_game_obj_instances.clear();
+				s_anim_sprite_instances.clear();
 				s_game_obj_instances.reserve(level_data_offsets.object_instances.count);
 
 				{
@@ -551,6 +565,43 @@ namespace spintool
 					for (size_t i = 0; i < level_data_offsets.object_instances.count; ++i)
 					{
 						s_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						const rom::Ptr32 anim_def_offset = s_game_obj_instances.back().animation_definition;
+						rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
+
+						auto found_sprite = std::find_if(std::begin(s_anim_sprite_instances), std::end(s_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
+							{
+								return anim_obj.sprite_table == entry.sprite_table && anim_obj.starting_animation == entry.anim_sequence->rom_data.rom_offset;
+							});
+
+						if (found_sprite == std::end(s_anim_sprite_instances))
+						{
+							AnimSpriteEntry entry;
+							entry.sprite_table = m_owning_ui.GetROM().ReadUint32(anim_obj.sprite_table);
+							entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), anim_obj.starting_animation, entry.sprite_table);
+
+							const auto& command_sequence = entry.anim_sequence->command_sequence;
+							const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+								{
+									return command.ui_frame_sprite != nullptr;
+								});
+
+							if (first_frame_with_sprite != std::end(command_sequence))
+							{
+								entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
+								const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
+								auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+								LevelRingPalette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
+								SDL_SetSurfacePalette(new_sprite_surface.get(), LevelRingPalette.get());
+								SDL_ClearSurface(new_sprite_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_sprite_surface->format), nullptr, 0, 0, 0, 0));
+								first_frame_sprite->RenderToSurface(new_sprite_surface.get());
+
+								entry.sprite_surface = std::move(new_sprite_surface);
+							}
+
+
+							s_anim_sprite_instances.emplace_back(std::move(entry));
+						}
 						current_table_offset = s_game_obj_instances.back().rom_data.rom_offset_end;
 					}
 				}
@@ -786,17 +837,51 @@ namespace spintool
 				{
 					const rom::GameObjectDefinition& game_obj = s_game_obj_instances[i];
 
-					SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(LevelGameObjSpriteSurface.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
 
-					auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
-					SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
-					SDL_ClearSurface(cutting_surface.get(), 255.0f, 0.0f, 0.0f, 255.0f);
-					const SDL_Rect cutting_target_rect{ 2,2,temp_surface->w - 4, temp_surface->h - 4 };
-					SDL_BlitSurfaceScaled(cutting_surface.get(), nullptr, temp_surface.get(), &cutting_target_rect, SDL_SCALEMODE_NEAREST);
+					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), s_game_obj_instances[i].animation_definition);
 
-					SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width/2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
-					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
-					SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
+					auto anim_entry = std::find_if(std::begin(s_anim_sprite_instances), std::end(s_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
+						{
+							return entry.anim_sequence->rom_data.rom_offset == anim_obj.starting_animation;
+						});
+
+					if (anim_entry != std::end(s_anim_sprite_instances) && anim_entry->sprite_surface != nullptr)
+					{
+						const rom::AnimationCommand& command_sprite_came_from = anim_entry->anim_sequence->command_sequence.at(anim_entry->anim_command_used_for_surface);
+						auto origin_offset = command_sprite_came_from.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds();
+
+						SDLSurfaceHandle temp_sprite_surface{ SDL_ScaleSurface(anim_entry->sprite_surface.get(), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.x), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.y), SDL_SCALEMODE_NEAREST) };
+						SDL_Rect sprite_target_rect{ game_obj.x_pos - origin_offset.x, game_obj.y_pos - origin_offset.y, anim_entry->sprite_surface->w, anim_entry->sprite_surface->h };
+
+						if (game_obj.flip_x)
+						{
+							SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_HORIZONTAL);
+							//sprite_target_rect.x = game_obj.x_pos + (anim_entry->sprite_surface->w - origin_offset.x);
+						}
+
+						if (game_obj.flip_y)
+						{
+							SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_VERTICAL);
+							//sprite_target_rect.y = game_obj.y_pos + (anim_entry->sprite_surface->h - origin_offset.y);
+						}
+
+						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_sprite_surface->format), nullptr, 0, 0, 0, 255));
+						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
+					}
+					else
+					{
+						SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(LevelGameObjSpriteSurface.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
+
+						auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
+						SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
+						SDL_ClearSurface(cutting_surface.get(), 255.0f, 0.0f, 0.0f, 255.0f);
+						const SDL_Rect cutting_target_rect{ 2,2,temp_surface->w - 4, temp_surface->h - 4 };
+						SDL_BlitSurfaceScaled(cutting_surface.get(), nullptr, temp_surface.get(), &cutting_target_rect, SDL_SCALEMODE_NEAREST);
+
+						SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width / 2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
+						SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
+						SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
+					}
 				}
 			}
 
