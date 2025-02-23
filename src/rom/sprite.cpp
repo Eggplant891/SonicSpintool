@@ -63,7 +63,15 @@ namespace spintool::rom
 			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, (current_byte - rom_data_start) + offset);
 		}
 
-		if (new_sprite->num_tiles == 0 || new_sprite->GetBoundingBox().Width() == 0 || new_sprite->GetBoundingBox().Height() == 0 || new_sprite->GetBoundingBox().Width() > 512 || new_sprite->GetBoundingBox().Height() > 512)
+		if (new_sprite->num_tiles == 0)
+		{
+			return nullptr;
+		}
+
+		if (std::any_of(std::begin(new_sprite->sprite_tiles), std::end(new_sprite->sprite_tiles), [](const std::shared_ptr<rom::SpriteTile>& tile)
+			{
+				return tile->x_size == 0 || tile->x_size > 32 || tile->y_size == 0 || tile->y_size > 32;
+			}))
 		{
 			return nullptr;
 		}
