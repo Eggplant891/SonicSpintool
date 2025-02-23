@@ -144,11 +144,21 @@ namespace spintool
 		return RenderToTexture(new_surface.get());
 	}
 
-	SDLTextureHandle Renderer::RenderToTexture(const rom::Sprite& sprite)
+	SDLTextureHandle Renderer::RenderToTexture(const rom::Sprite& sprite, bool flip_x, bool flip_y)
 	{
 		auto sprite_atlas_surface = SDL_CreateSurface(sprite.GetBoundingBox().Width(), sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8);
 		SDL_SetSurfacePalette(sprite_atlas_surface, s_current_palette.get());
 		sprite.RenderToSurface(sprite_atlas_surface);
+		if (flip_x)
+		{
+			SDL_FlipSurface(sprite_atlas_surface, SDL_FLIP_HORIZONTAL);
+		}
+
+		if (flip_y)
+		{
+			SDL_FlipSurface(sprite_atlas_surface, SDL_FLIP_VERTICAL);
+		}
+
 		return RenderToTexture(sprite_atlas_surface);
 	}
 

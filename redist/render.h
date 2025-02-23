@@ -29,7 +29,7 @@ namespace spintool
 		static SDLPaletteHandle CreateSDLPaletteForSet(const rom::PaletteSet& palette_set);
 		static void SetPalette(const SDLPaletteHandle& palette);
 
-		static SDLTextureHandle RenderToTexture(const rom::Sprite& sprite);
+		static SDLTextureHandle RenderToTexture(const rom::Sprite& sprite, bool flip_x = false, bool flip_y = false);
 		static SDLTextureHandle RenderToTexture(const rom::SpriteTile& sprite_tile);
 		static SDLTextureHandle RenderToTexture(SDL_Surface* surface);
 		static SDLTextureHandle RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions);
