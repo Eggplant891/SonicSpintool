@@ -30,6 +30,7 @@ namespace spintool
 		std::vector<UISpriteTileTexture> tile_textures;
 
 		void DrawForImGui(const float zoom = 1.0f) const;
-		SDLTextureHandle RenderTextureForPalette(const UIPalette& palette) const;
+		void DrawForImGuiWithOffset(const float zoom /*= 1.0f*/) const;
+		SDLTextureHandle RenderTextureForPalette(const UIPalette& palette, bool flip_x = false, bool flip_y = false) const;
 	};
 }
