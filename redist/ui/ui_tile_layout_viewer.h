@@ -7,6 +7,11 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include "imgui.h"
+
+namespace spintool { namespace rom { struct Sprite; } }
+
+namespace spintool { struct UISpriteTexture; }
 
 namespace spintool::rom
 {
@@ -22,6 +27,7 @@ namespace spintool
 		SSC,
 		BOOGALOO
 	};
+
 	struct RenderTileLayoutRequest
 	{
 		CompressionAlgorithm compression_algorithm = CompressionAlgorithm::NONE;
@@ -41,11 +47,25 @@ namespace spintool
 		bool show_brush_previews = true;
 		bool draw_mirrored_layout = false;
 	};
+
 	struct TileBrushPreview
 	{
 		SDLSurfaceHandle surface;
 		SDLTextureHandle texture;
 	};
+
+	struct UIGameObject
+	{
+		ImVec2 pos = { 0,0 };
+		ImVec2 dimensions = { 0,0 };
+
+		int sprite_table_address = 0;
+		int palette_index = 0;
+
+		std::shared_ptr<UISpriteTexture> ui_sprite;
+		SDLPaletteHandle palette;
+	};
+
 	class EditorTileLayoutViewer : public EditorWindowBase
 	{
 	public:
@@ -57,5 +77,6 @@ namespace spintool
 		std::vector<TileBrushPreview> m_tile_brushes_previews;
 		std::shared_ptr<const rom::TileSet> m_tileset;
 		std::shared_ptr<rom::TileLayout> m_tile_layout;
+		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
 	};
 }

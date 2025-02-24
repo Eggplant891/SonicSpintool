@@ -43,6 +43,7 @@ namespace spintool
 				std::shared_ptr<const rom::AnimationSequence> anim_sequence;
 				size_t anim_command_used_for_surface = 0;
 				SDLSurfaceHandle sprite_surface;
+				SDLPaletteHandle palette;
 			};
 			static std::vector<AnimSpriteEntry> s_anim_sprite_instances;
 
@@ -555,6 +556,7 @@ namespace spintool
 				SDL_SetSurfaceColorKey(LevelGameObjSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelGameObjSpriteSurface->format), nullptr, 255, 0, 0, 255));
 				//LevelGameObjSprite->RenderToSurface(LevelGameObjSpriteSurface.get());
 
+				m_preview_game_objects.clear();
 				s_game_obj_instances.clear();
 				s_anim_sprite_instances.clear();
 				s_game_obj_instances.reserve(level_data_offsets.object_instances.count);
@@ -590,8 +592,8 @@ namespace spintool
 								entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
 								const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
 								auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-								LevelRingPalette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
-								SDL_SetSurfacePalette(new_sprite_surface.get(), LevelRingPalette.get());
+								entry.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines.at(anim_obj.palette_index % 4).get());
+								SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
 								SDL_ClearSurface(new_sprite_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_sprite_surface->format), nullptr, 0, 0, 0, 0));
 								first_frame_sprite->RenderToSurface(new_sprite_surface.get());
@@ -847,6 +849,7 @@ namespace spintool
 
 					if (anim_entry != std::end(s_anim_sprite_instances) && anim_entry->sprite_surface != nullptr)
 					{
+						const AnimSpriteEntry& animSpriteEntry = *anim_entry;
 						const rom::AnimationCommand& command_sprite_came_from = anim_entry->anim_sequence->command_sequence.at(anim_entry->anim_command_used_for_surface);
 						auto origin_offset = command_sprite_came_from.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds();
 
@@ -867,6 +870,13 @@ namespace spintool
 
 						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_sprite_surface->format), nullptr, 0, 0, 0, 255));
 						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
+
+						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+						new_obj->pos = ImVec2{ static_cast<float>(sprite_target_rect.x), static_cast<float>(sprite_target_rect.y) };
+						new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
+						new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
+						new_obj->sprite_table_address = animSpriteEntry.sprite_table;
+						m_preview_game_objects.emplace_back(std::move(new_obj));
 					}
 					else
 					{
@@ -948,7 +958,25 @@ namespace spintool
 			}
 			if (m_tile_layout_preview != nullptr)
 			{
+				ImVec2 origin = ImGui::GetCursorPos();
 				ImGui::Image((ImTextureID)m_tile_layout_preview.get(), ImVec2(static_cast<float>(m_tile_layout_preview->w) * zoom, static_cast<float>(m_tile_layout_preview->h) * zoom));
+
+				for (const std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
+				{
+					ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
+					ImGui::Dummy(game_obj->dimensions);
+					if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+					{
+						ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+
+						if (ImGui::BeginTooltip())
+						{
+							ImGui::Text("Sprite Table: 0x%04X");
+							ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+							ImGui::EndTooltip();
+						}
+					}
+				}
 			}
 		}
 		ImGui::End();
