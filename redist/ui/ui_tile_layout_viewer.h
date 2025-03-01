@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include "imgui.h"
+#include "rom/game_objects/game_object_definition.h"
 
 namespace spintool { namespace rom { struct Sprite; } }
 
@@ -56,6 +57,7 @@ namespace spintool
 
 	struct UIGameObject
 	{
+		rom::GameObjectDefinition obj_definition;
 		ImVec2 pos = { 0,0 };
 		ImVec2 dimensions = { 0,0 };
 

@@ -34,6 +34,10 @@ namespace spintool::rom
 		Uint16 ReadUint16(size_t offset) const;
 		Uint32 ReadUint32(size_t offset) const;
 
+		size_t WriteUint8(size_t offset, Uint8 value);
+		size_t WriteUint16(size_t offset, Uint16 value);
+		size_t WriteUint32(size_t offset, Uint32 value);
+
 		std::vector<unsigned char> m_buffer;
 		std::filesystem::path m_filepath;
 		std::vector<std::shared_ptr<rom::Palette>> m_palettes;

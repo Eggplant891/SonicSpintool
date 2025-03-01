@@ -273,4 +273,37 @@ namespace spintool
 		return m_palettes;
 	}
 
+	size_t rom::SpinballROM::WriteUint8(size_t offset, Uint8 value)
+	{
+		if (offset + 1 <= m_buffer.size())
+		{
+			m_buffer[offset] = value;
+		}
+		return offset + 1;
+	}
+
+	size_t rom::SpinballROM::WriteUint16(size_t offset, Uint16 value)
+	{
+		if ((offset + 2) <= m_buffer.size())
+		{
+			m_buffer[offset] = (value & 0x0000FF00) >> 8;
+			m_buffer[offset+1] = (value & 0x000000FF);
+		}
+
+		return offset + 2;
+	}
+
+	size_t rom::SpinballROM::WriteUint32(size_t offset, Uint32 value)
+	{
+		if ((offset + 4) <= m_buffer.size())
+		{
+			m_buffer[offset] = (value & 0xFF000000) >> 24;
+			m_buffer[offset + 1] = (value & 0x00FF0000) >> 16;
+			m_buffer[offset + 2] = (value & 0x0000FF00) >> 8;
+			m_buffer[offset + 3] = (value & 0x000000FF);
+
+		}
+		return offset + 4;
+	}
+
 }

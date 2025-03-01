@@ -872,6 +872,7 @@ namespace spintool
 						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
 
 						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+						new_obj->obj_definition = game_obj;
 						new_obj->pos = ImVec2{ static_cast<float>(sprite_target_rect.x), static_cast<float>(sprite_target_rect.y) };
 						new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
 						new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
@@ -956,26 +957,54 @@ namespace spintool
 				}
 				ImGui::TreePop();
 			}
+
 			if (m_tile_layout_preview != nullptr)
 			{
+				static UIGameObject* selected_game_obj = nullptr;
 				ImVec2 origin = ImGui::GetCursorPos();
 				ImGui::Image((ImTextureID)m_tile_layout_preview.get(), ImVec2(static_cast<float>(m_tile_layout_preview->w) * zoom, static_cast<float>(m_tile_layout_preview->h) * zoom));
 
-				for (const std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
+				for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
 				{
 					ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
 					ImGui::Dummy(game_obj->dimensions);
-					if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+					if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 					{
+						selected_game_obj = nullptr;
 						ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
-						if (ImGui::BeginTooltip())
+						if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+						{
+							ImGui::OpenPopup("obj_popup");
+							selected_game_obj = game_obj.get();
+						}
+						else if (ImGui::BeginTooltip())
 						{
 							ImGui::Text("Sprite Table: 0x%04X");
 							ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
 							ImGui::EndTooltip();
 						}
 					}
+				}
+
+				if (selected_game_obj == nullptr)
+				{
+					ImGui::CloseCurrentPopup();
+				}
+
+				if (ImGui::BeginPopup("obj_popup"))
+				{
+					auto origin_offset = selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds();
+					int pos[2] = { static_cast<int>(selected_game_obj->pos.x + origin_offset.x), static_cast<int>(selected_game_obj->pos.y + origin_offset.y) };
+					if (ImGui::InputInt2("Object Pos", pos, ImGuiInputTextFlags_EnterReturnsTrue))
+					{
+						selected_game_obj->obj_definition.x_pos = pos[0];
+						selected_game_obj->obj_definition.y_pos = pos[1];
+						selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
+						selected_game_obj = nullptr;
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndPopup();
 				}
 			}
 		}

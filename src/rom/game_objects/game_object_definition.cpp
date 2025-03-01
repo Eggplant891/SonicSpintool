@@ -37,4 +37,23 @@ namespace spintool::rom
 		return new_instance;
 	}
 
+	size_t GameObjectDefinition::SaveToROM(rom::SpinballROM& writeable_rom)
+	{
+		size_t current_offset = rom_data.rom_offset;
+
+		current_offset = writeable_rom.WriteUint8(current_offset, type_id);
+		current_offset = writeable_rom.WriteUint8(current_offset, instance_id);
+		current_offset = writeable_rom.WriteUint8(current_offset, flip_y);
+		current_offset = writeable_rom.WriteUint8(current_offset, flip_x);
+		current_offset = writeable_rom.WriteUint16(current_offset, x_pos);
+		current_offset = writeable_rom.WriteUint16(current_offset, y_pos);
+		current_offset = writeable_rom.WriteUint8(current_offset, collision_width);
+		current_offset = writeable_rom.WriteUint8(current_offset, collision_height);
+		current_offset = writeable_rom.WriteUint32(current_offset, animation_definition);
+		current_offset = writeable_rom.WriteUint32(current_offset, animation_ptr);
+		current_offset = writeable_rom.WriteUint16(current_offset, unknown_2);
+		
+		return current_offset;
+	}
+
 }
