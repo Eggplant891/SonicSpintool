@@ -909,6 +909,9 @@ namespace spintool
 
 			constexpr const float zoom = 1.0f;
 
+			static int selected_collision_tile_index = -1;
+			ImGui::SliderInt("Collision Tile", &selected_collision_tile_index, -1, 0x100 - 1);
+
 			if (ImGui::BeginChild("Preview info Area"))
 			{
 				constexpr size_t preview_brushes_per_row = 32;
@@ -983,53 +986,46 @@ namespace spintool
 					ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_fg->w) * zoom, static_cast<float>(m_tile_layout_preview_fg->h) * zoom));
 
 					// Visualise collision vectors
-
 					constexpr Uint32 num_collision_data = 0x100;
-					const rom::Ptr32 toxic_caves_collision_data = m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_tiles);
-					auto current_offset = toxic_caves_collision_data;
+					constexpr int tile_width = 128;
+					constexpr int num_tiles_x = 16;
+					constexpr int size_of_preview_collision_boxes = 4;
+					constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
+
+					const rom::Ptr32 terrain_collision_data = m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain);
+					const rom::Ptr32 anim_obj_collision_data = 0x000c326e; // m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_anim_objs);
+
 					std::vector<Uint16> collision_data_offsets;
 					collision_data_offsets.reserve(num_collision_data);
 
+					std::vector<Uint16> anim_obj_collision_data_offsets;
+					anim_obj_collision_data_offsets.reserve(num_collision_data);
+
 					for (rom::Ptr32 i = 0; i < num_collision_data; ++i)
 					{
-						collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_collision_data + (i * 2)));
+						collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(terrain_collision_data + (i * 2)));
+						anim_obj_collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(anim_obj_collision_data + (i * 2)));
 					}
 
-					constexpr int num_segments = 4;
-					constexpr int size_of_segments = 128 / num_segments;
+					// Terrain Collision
 
-					//BoundingBox bbox;
-					//bbox.min.x = collision_tile_origin_x;
-					//bbox.min.y = collision_tile_origin_y;
-					//bbox.max.x = collision_tile_origin_x + tile_width;
-					//bbox.max.y = collision_tile_origin_y + tile_width;
-					//
-					//ImGui::GetWindowDrawList()->AddRect(
-					//	ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) },
-					//	ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) },
-					//	ImGui::GetColorU32(ImVec4{ 32,32,32,255 }), 0, ImDrawFlags_None, 1.0f);
-					//
-					//for (int i = 0; i < num_segments; ++i)
-					//{
-					//	ImGui::GetWindowDrawList()->AddRect(
-					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) },
-					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x + (i * size_of_segments)), static_cast<float>(screen_origin.y + bbox.max.y) },
-					//		ImGui::GetColorU32(ImVec4{ 16,16,16,255 }), 0, ImDrawFlags_None, 1.0f);
-					//
-					//	ImGui::GetWindowDrawList()->AddRect(
-					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) },
-					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.min.y + (i * size_of_segments)) },
-					//		ImGui::GetColorU32(ImVec4{ 16,16,16,255 }), 0, ImDrawFlags_None, 1.0f);
-					//}
+					const rom::Ptr32 collision_index_start = selected_collision_tile_index != -1 ? selected_collision_tile_index : 0;
+					const rom::Ptr32 collision_index_end = selected_collision_tile_index != -1 ? selected_collision_tile_index + 1 : static_cast<rom::Ptr32>(collision_data_offsets.size()-1);
 
-					for (rom::Ptr32 i = 0; i < collision_data_offsets.size() - 1; ++i)
+					if(selected_collision_tile_index != -1)
 					{
-						const rom::Ptr32 start_offset = toxic_caves_collision_data + (collision_data_offsets[i] * 2);
-						const rom::Ptr32 end_offset = toxic_caves_collision_data + (collision_data_offsets[i + 1] * 2);
-						const Uint32 num_bytes = end_offset - start_offset;
+						const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % num_tiles_x) * tile_width;
+						const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / num_tiles_x) * tile_width;
 
-						constexpr int tile_width = 128;
-						constexpr int num_tiles_x = 16;
+						ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) }, ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + tile_width), static_cast<float>(screen_origin.y + collision_tile_origin_y + tile_width) }, ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
+					}
+
+					for (rom::Ptr32 i = collision_index_start; i < collision_index_end; ++i)
+					{
+						const rom::Ptr32 start_offset = terrain_collision_data + (collision_data_offsets[i] * 2);
+						const rom::Ptr32 data_start_offset = start_offset + 2;
+						const rom::Ptr32 end_offset = terrain_collision_data + (collision_data_offsets[i + 1] * 2);
+						const Uint32 num_bytes = end_offset - start_offset;
 
 						const int collision_tile_origin_x = (static_cast<int>(i) % num_tiles_x) * tile_width;
 						const int collision_tile_origin_y = (static_cast<int>(i) / num_tiles_x) * tile_width;
@@ -1040,28 +1036,150 @@ namespace spintool
 						bbox.max.x = collision_tile_origin_x + tile_width;
 						bbox.max.y = collision_tile_origin_y + tile_width;
 
-						const Uint32 num_shorts = num_bytes / 4;
+						const Uint16 num_objects = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset));
 
-						constexpr int size_of_preview_collision_boxes = 4;
-						constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
-						for (rom::Ptr32 s = 0; s < num_shorts; ++s)
+
+						for (Uint16 s = 0; s < num_objects; ++s)
 						{
-							rom::Ptr32 short_offset = s * 4;
-							BoundingBox bbox;
-							bbox.min.x = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 2) - half_size_of_preview_collision_boxes);
-							bbox.min.y = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 0) - half_size_of_preview_collision_boxes);
+							rom::Ptr32 short_offset = s * 12;
 
-							//int offset_for_max = 8;
-							//if (m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 4) & 0x8000)
-							//{
-							//	offset_for_max = -offset_for_max;
-							//}
+							BoundingBox bbox2;
+							bbox2.min.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 0);
+							bbox2.min.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 2);
+							bbox2.max.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 4);
+							bbox2.max.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 6);
 
-							bbox.max.x = (bbox.min.x) + size_of_preview_collision_boxes;//m_owning_ui.GetROM().ReadUint8(start_offset + short_offset + 4);
-							bbox.max.y = (bbox.min.y) + size_of_preview_collision_boxes;//m_owning_ui.GetROM().ReadUint8(start_offset + short_offset + 6);
 
-							//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,0,255 }), 2.0f);
-							ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,0,255 }), 0, ImDrawFlags_None, 1.0f);
+							const Uint16 object_type_flags = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 8);
+							const Uint16 extra_info = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 10);
+
+							enum class CollisionObjectType
+							{
+								Spline,
+								BBox
+							};
+
+							const bool is_bbox = (object_type_flags & 0x8000);
+							const bool is_teleporter = (object_type_flags & 0x1000);
+							const bool is_unknown = !is_bbox && !is_teleporter && object_type_flags != 0;
+
+							ImVec4 colour{ 192,192,0,255 };
+							if (is_bbox)
+							{
+								colour = ImVec4(255, 0, 255, 255);
+							}
+
+							if (is_teleporter)
+							{
+								colour = ImVec4(0, 255, 255, 255);
+							}
+
+							if (is_unknown)
+							{
+								colour = ImVec4(128, 128, 255, 255);
+							}
+
+							if (is_bbox)
+							{
+								ImGui::GetWindowDrawList()->AddCircle(
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
+									static_cast<float>(bbox2.max.x), ImGui::GetColorU32(colour), 16, 1.0f);
+
+									ImGui::GetWindowDrawList()->AddRect(
+										ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x - 2), static_cast<float>(screen_origin.y + bbox2.min.y - 2) },
+										ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x + 3), static_cast<float>(screen_origin.y + bbox2.min.y + 3) },
+									ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 1.0f);
+							}
+							else
+							{
+								ImGui::GetWindowDrawList()->AddLine(
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.max.x), static_cast<float>(screen_origin.y + bbox2.max.y) },
+									ImGui::GetColorU32(colour), 2.0f);
+							}
+						}
+					}
+
+					// Anim Obj Collision
+					const rom::Ptr32 start = selected_collision_tile_index != -1 ? selected_collision_tile_index : 0;
+					const rom::Ptr32 end = selected_collision_tile_index != -1 ? selected_collision_tile_index + 1 : static_cast<rom::Ptr32>(anim_obj_collision_data_offsets.size() - 1);
+					for (rom::Ptr32 i = start; i < end; ++i)
+					{
+						const rom::Ptr32 start_offset = anim_obj_collision_data + (anim_obj_collision_data_offsets[i] * 2);
+						const rom::Ptr32 data_start_offset = start_offset + 2;
+						const rom::Ptr32 end_offset = anim_obj_collision_data + (anim_obj_collision_data_offsets[i + 1] * 2);
+						const Uint32 num_bytes = end_offset - start_offset;
+
+						const int collision_tile_origin_x = (static_cast<int>(i) % num_tiles_x) * tile_width;
+						const int collision_tile_origin_y = (static_cast<int>(i) / num_tiles_x) * tile_width;
+
+						BoundingBox bbox;
+						bbox.min.x = collision_tile_origin_x;
+						bbox.min.y = collision_tile_origin_y;
+						bbox.max.x = collision_tile_origin_x + tile_width;
+						bbox.max.y = collision_tile_origin_y + tile_width;
+
+						const Uint16 num_objects = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset));
+
+
+						for (Uint16 s = 0; s < num_objects; ++s)
+						{
+							rom::Ptr32 short_offset = s * 12;
+
+							BoundingBox bbox2;
+							bbox2.min.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 0);
+							bbox2.min.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 2);
+							bbox2.max.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 4);
+							bbox2.max.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 6);
+
+
+							const Uint16 object_type_flags = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 8);
+							const Uint16 extra_info = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 10);
+
+							enum class CollisionObjectType
+							{
+								Spline,
+								BBox
+							};
+
+							const bool is_bbox = (object_type_flags & 0x8000);
+							const bool is_teleporter = (object_type_flags & 0x1000);
+							const bool is_unknown = !is_bbox && !is_teleporter && object_type_flags != 0;
+
+							ImVec4 colour{ 192,192,0,255 };
+							if (is_bbox)
+							{
+								colour = ImVec4(255, 0, 255, 255);
+							}
+
+							if (is_teleporter)
+							{
+								colour = ImVec4(0, 255, 255, 255);
+							}
+
+							if (is_unknown)
+							{
+								colour = ImVec4(128, 128, 255, 255);
+							}
+
+							if (is_bbox)
+							{
+								ImGui::GetWindowDrawList()->AddCircle(
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
+									static_cast<float>(bbox2.max.x), ImGui::GetColorU32(colour), 16, 1.0f);
+
+								ImGui::GetWindowDrawList()->AddRect(
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x - 2), static_cast<float>(screen_origin.y + bbox2.min.y - 2) },
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x + 3), static_cast<float>(screen_origin.y + bbox2.min.y + 3) },
+									ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 1.0f);
+							}
+							else
+							{
+								ImGui::GetWindowDrawList()->AddLine(
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x + bbox2.max.x), static_cast<float>(screen_origin.y + bbox2.min.x + bbox2.max.y) },
+									ImGui::GetColorU32(colour), 2.0f);
+							}
 						}
 					}
 

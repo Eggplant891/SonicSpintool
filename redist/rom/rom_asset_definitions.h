@@ -21,7 +21,7 @@ namespace spintool::rom
 		Ptr32 background_tile_layout = 0x000BFC10;
 		Ptr32 foreground_tile_brushes = 0x000BFC20;
 		Ptr32 background_tile_brushes = 0x000BFC30;
-		Ptr32 collision_tiles = 0x000BFC40;
+		Ptr32 collision_data_terrain = 0x000BFC40;
 		Ptr32 palette_set = 0x000BFC50;
 		Ptr32 tile_layout_width = 0x000BFC70;
 		Ptr32 tile_layout_height = 0x000BFC72;
@@ -29,6 +29,7 @@ namespace spintool::rom
 		Ptr32 camera_start_position_y = 0x000BFC80;
 		Ptr32 music_id = 0x000BFC90;
 		Ptr32 game_over_timer = 0x000BFC98 ;
+		Ptr32 collision_data_anim_objs = 0x000BFD14;
 		Ptr32 switch_hit_msg_id = 0x000C06BA ;
 		Ptr32 bumper_hit_msg_id = 0x000C06C2 ;
 		Ptr32 collision_type0_animation_id = 0x000C06CE;
@@ -77,7 +78,7 @@ namespace spintool::rom
 		Ptr32 background_tile_layout = 0;
 		Ptr32 foreground_tile_brushes = 0;
 		Ptr32 background_tile_brushes = 0;
-		Ptr32 collision_tiles = 0;
+		Ptr32 collision_data_terrain = 0;
 		Ptr32 palette_set = 0;
 		Ptr32 tile_layout_width = 0;
 		Ptr32 tile_layout_height = 0;
@@ -85,6 +86,7 @@ namespace spintool::rom
 		Ptr32 camera_start_position_y = 0;
 		Ptr32 music_id = 0;
 		Ptr32 game_over_timer = 0;
+		Ptr32 collision_data_anim_objs = 0;
 		Ptr32 switch_hit_msg_id = 0;
 		Ptr32 bumper_hit_msg_id = 0;
 		Ptr32 collision_type0_animation_id = 0;
