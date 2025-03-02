@@ -656,7 +656,7 @@ namespace spintool
 
 				std::vector<rom::Sprite> brushes;
 				brushes.reserve(m_tile_layout->tile_brushes.size());
-				m_tile_brushes_previews.reserve(brushes.size());
+				m_tile_brushes_previews.reserve(brushes.capacity());
 				m_tile_brushes_previews.clear();
 
 				const int brush_width = static_cast<int>(request.tile_brush_width * rom::TileSet::s_tile_width);
