@@ -7,9 +7,6 @@
 #include "rom/sprite.h"
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
-#include "rom/game_objects/game_object_flipper.h"
-#include "rom/game_objects/game_object_ring.h"
-#include "rom/game_objects/game_object_definition.h"
 
 #include "SDL3/SDL_image.h"
 #include "imgui.h"
@@ -31,22 +28,6 @@ namespace spintool
 
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar))
 		{
-			static std::vector<RenderTileLayoutRequest> s_tile_layout_render_requests;
-			static std::vector<rom::FlipperInstance> s_flipper_instances;
-			static std::vector<rom::RingInstance> s_ring_instances;
-			static std::vector<rom::GameObjectDefinition> s_game_obj_instances;
-			static std::vector<rom::AnimObjectDefinition> s_anim_obj_instances;
-
-			struct AnimSpriteEntry
-			{
-				rom::Ptr32 sprite_table = 0;
-				std::shared_ptr<const rom::AnimationSequence> anim_sequence;
-				size_t anim_command_used_for_surface = 0;
-				SDLSurfaceHandle sprite_surface;
-				SDLPaletteHandle palette;
-			};
-			static std::vector<AnimSpriteEntry> s_anim_sprite_instances;
-
 			bool render_preview = false;
 			static SDLSurfaceHandle LevelFlipperSpriteSurface;
 			static SDLPaletteHandle LevelFlipperPalette;
@@ -118,7 +99,7 @@ namespace spintool
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "bg";
 
-				s_tile_layout_render_requests.emplace_back(std::move(request));
+				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
 			if (render_fg)
@@ -157,7 +138,7 @@ namespace spintool
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "fg";
 
-				s_tile_layout_render_requests.emplace_back(std::move(request));
+				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
 			bool preview_intro_bg = ImGui::Button("Preview Intro Cutscene BG");
@@ -208,7 +189,7 @@ namespace spintool
 
 				LevelPaletteSet = *m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
 
-				s_tile_layout_render_requests.emplace_back(std::move(request));
+				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
 
@@ -234,7 +215,7 @@ namespace spintool
 					request.layout_layout_name = "bg";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -270,7 +251,7 @@ namespace spintool
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -299,7 +280,7 @@ namespace spintool
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -328,7 +309,7 @@ namespace spintool
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -355,7 +336,7 @@ namespace spintool
 					request.layout_layout_name = "bg";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -381,7 +362,7 @@ namespace spintool
 					request.layout_layout_name = "fg";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -406,7 +387,7 @@ namespace spintool
 					request.layout_layout_name = "sega_logo";
 
 					LevelPaletteSet = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -440,7 +421,7 @@ namespace spintool
 					request.layout_type_name = "bonus";
 					request.layout_layout_name = "bg";
 
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -474,7 +455,7 @@ namespace spintool
 					request.layout_type_name = "bonus";
 					request.layout_layout_name = "fg";
 
-					s_tile_layout_render_requests.emplace_back(std::move(request));
+					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
 
@@ -508,15 +489,15 @@ namespace spintool
 				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * level_index));
 				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * level_index));
 
-				s_flipper_instances.clear();
-				s_flipper_instances.reserve(num_flippers);
+				m_flipper_instances.clear();
+				m_flipper_instances.reserve(num_flippers);
 
 				size_t current_table_offset = flippers_table_begin;
 
 				for (size_t i = 0; i < num_flippers; ++i)
 				{
-					s_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-					current_table_offset = s_flipper_instances.back().rom_data.rom_offset_end;
+					m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+					current_table_offset = m_flipper_instances.back().rom_data.rom_offset_end;
 				}
 			}
 
@@ -532,16 +513,16 @@ namespace spintool
 				SDL_SetSurfaceColorKey(LevelRingSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelRingSpriteSurface->format), nullptr, 0, 0, 0, 0));
 				LevelRingSprite->RenderToSurface(LevelRingSpriteSurface.get());
 
-				s_ring_instances.clear();
-				s_ring_instances.reserve(level_data_offsets.ring_instances.count);
+				m_ring_instances.clear();
+				m_ring_instances.reserve(level_data_offsets.ring_instances.count);
 
 				{
 					size_t current_table_offset = level_data_offsets.ring_instances.offset;
 
 					for (size_t i = 0; i < level_data_offsets.ring_instances.count; ++i)
 					{
-						s_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-						current_table_offset = s_ring_instances.back().rom_data.rom_offset_end;
+						m_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						current_table_offset = m_ring_instances.back().rom_data.rom_offset_end;
 					}
 				}
 				/////////////
@@ -557,25 +538,25 @@ namespace spintool
 				//LevelGameObjSprite->RenderToSurface(LevelGameObjSpriteSurface.get());
 
 				m_preview_game_objects.clear();
-				s_game_obj_instances.clear();
-				s_anim_sprite_instances.clear();
-				s_game_obj_instances.reserve(level_data_offsets.object_instances.count);
+				m_game_obj_instances.clear();
+				m_anim_sprite_instances.clear();
+				m_game_obj_instances.reserve(level_data_offsets.object_instances.count);
 
 				{
 					size_t current_table_offset = level_data_offsets.object_instances.offset;
 
 					for (size_t i = 0; i < level_data_offsets.object_instances.count; ++i)
 					{
-						s_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-						const rom::Ptr32 anim_def_offset = s_game_obj_instances.back().animation_definition;
+						m_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						const rom::Ptr32 anim_def_offset = m_game_obj_instances.back().animation_definition;
 						rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
 
-						auto found_sprite = std::find_if(std::begin(s_anim_sprite_instances), std::end(s_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
+						auto found_sprite = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
 							{
 								return anim_obj.sprite_table == entry.sprite_table && anim_obj.starting_animation == entry.anim_sequence->rom_data.rom_offset;
 							});
 
-						if (found_sprite == std::end(s_anim_sprite_instances))
+						if (found_sprite == std::end(m_anim_sprite_instances))
 						{
 							AnimSpriteEntry entry;
 							entry.sprite_table = m_owning_ui.GetROM().ReadUint32(anim_obj.sprite_table);
@@ -602,27 +583,27 @@ namespace spintool
 							}
 
 
-							s_anim_sprite_instances.emplace_back(std::move(entry));
+							m_anim_sprite_instances.emplace_back(std::move(entry));
 						}
-						current_table_offset = s_game_obj_instances.back().rom_data.rom_offset_end;
+						current_table_offset = m_game_obj_instances.back().rom_data.rom_offset_end;
 					}
 				}
 			}
 
-			const bool will_be_rendering_preview = s_tile_layout_render_requests.empty() == false;
-			const bool export_combined = s_tile_layout_render_requests.size() > 1;
+			const bool will_be_rendering_preview = m_tile_layout_render_requests.empty() == false;
+			const bool export_combined = m_tile_layout_render_requests.size() > 1;
 			static std::optional<RenderTileLayoutRequest> current_preview_data;
 			if (will_be_rendering_preview && export_combined == false)
 			{
-				current_preview_data = s_tile_layout_render_requests.front();
+				current_preview_data = m_tile_layout_render_requests.front();
 			}
 
 			char combined_buffer[128];
 			if (export_combined)
 			{
-				sprintf_s(combined_buffer, "%s_combined", s_tile_layout_render_requests.front().layout_type_name.c_str());
+				sprintf_s(combined_buffer, "%s_combined", m_tile_layout_render_requests.front().layout_type_name.c_str());
 			}
-			const std::string combined_layout_name = export_combined ? s_tile_layout_render_requests.front().layout_layout_name : "";
+			const std::string combined_layout_name = export_combined ? m_tile_layout_render_requests.front().layout_layout_name : "";
 			const std::string combined_type_name = export_combined ? combined_buffer : "";
 			SDLSurfaceHandle layout_preview_surface;
 			if (will_be_rendering_preview)
@@ -631,7 +612,7 @@ namespace spintool
 				int largest_width = std::numeric_limits<int>::min();
 				int largest_height = std::numeric_limits<int>::min();
 
-				for (const auto& request : s_tile_layout_render_requests)
+				for (const auto& request : m_tile_layout_render_requests)
 				{
 					largest_width = std::max<int>(request.tile_layout_width * request.tile_brush_width, largest_width);
 					largest_height = std::max<int>(request.tile_layout_height * request.tile_brush_height, largest_height);
@@ -643,14 +624,14 @@ namespace spintool
 					largest_width *= 2;
 				}
 
-				const RenderTileLayoutRequest& request = s_tile_layout_render_requests.front();
+				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
 				layout_preview_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
 				SDL_ClearSurface(layout_preview_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 			}
 
-			while (s_tile_layout_render_requests.empty() == false)
+			while (m_tile_layout_render_requests.empty() == false)
 			{
-				const RenderTileLayoutRequest& request = s_tile_layout_render_requests.front();
+				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
 				if (request.compression_algorithm == CompressionAlgorithm::SSC)
 				{
 					m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
@@ -782,14 +763,14 @@ namespace spintool
 					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
 				}
 
-				s_tile_layout_render_requests.erase(std::begin(s_tile_layout_render_requests));
+				m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
 			}
 
 			if (render_flippers)
 			{
-				for (size_t i = 0; i < s_flipper_instances.size(); ++i)
+				for (size_t i = 0; i < m_flipper_instances.size(); ++i)
 				{
-					const rom::FlipperInstance& flipper = s_flipper_instances[i];
+					const rom::FlipperInstance& flipper = m_flipper_instances[i];
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(LevelFlipperSpriteSurface.get()) };
 					int x_off = -24;
@@ -807,9 +788,9 @@ namespace spintool
 
 			if (render_rings)
 			{
-				for (size_t i = 0; i < s_ring_instances.size(); ++i)
+				for (size_t i = 0; i < m_ring_instances.size(); ++i)
 				{
-					const rom::RingInstance& ring = s_ring_instances[i];
+					const rom::RingInstance& ring = m_ring_instances[i];
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(LevelRingSpriteSurface.get()) };
 					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
@@ -834,17 +815,17 @@ namespace spintool
 				};
 				static rom::Colour collision_box_colour = { 0, 255, 255, 255 };
 
-				for (size_t i = 0; i < s_game_obj_instances.size(); ++i)
+				for (size_t i = 0; i < m_game_obj_instances.size(); ++i)
 				{
-					const rom::GameObjectDefinition& game_obj = s_game_obj_instances[i];
-					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), s_game_obj_instances[i].animation_definition);
+					const rom::GameObjectDefinition& game_obj = m_game_obj_instances[i];
+					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_game_obj_instances[i].animation_definition);
 
-					auto anim_entry = std::find_if(std::begin(s_anim_sprite_instances), std::end(s_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
+					auto anim_entry = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
 						{
 							return entry.anim_sequence->rom_data.rom_offset == anim_obj.starting_animation;
 						});
 
-					if (anim_entry != std::end(s_anim_sprite_instances) && anim_entry->sprite_surface != nullptr)
+					if (anim_entry != std::end(m_anim_sprite_instances) && anim_entry->sprite_surface != nullptr)
 					{
 						const AnimSpriteEntry& animSpriteEntry = *anim_entry;
 						const rom::AnimationCommand& command_sprite_came_from = anim_entry->anim_sequence->command_sequence.at(anim_entry->anim_command_used_for_surface);
@@ -1049,10 +1030,9 @@ namespace spintool
 				{
 					ImGui::CloseCurrentPopup();
 				}
-
-				if (ImGui::BeginPopup("obj_popup"))
+				else if (ImGui::BeginPopup("obj_popup"))
 				{
-					auto origin_offset = selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds();
+					const auto origin_offset = selected_game_obj->ui_sprite != nullptr ? selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{0,0};
 					int pos[2] = { static_cast<int>(selected_game_obj->pos.x + origin_offset.x), static_cast<int>(selected_game_obj->pos.y + origin_offset.y) };
 					if (ImGui::InputInt2("Object Pos", pos, ImGuiInputTextFlags_EnterReturnsTrue))
 					{

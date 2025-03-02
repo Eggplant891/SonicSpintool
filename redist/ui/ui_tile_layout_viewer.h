@@ -3,21 +3,29 @@
 #include "ui/ui_editor_window.h"
 #include "types/sdl_handle_defs.h"
 
+#include "rom/game_objects/game_object_definition.h"
+#include "rom/game_objects/game_object_flipper.h"
+#include "rom/game_objects/game_object_ring.h"
+#include "rom/animated_object.h"
+
+#include "imgui.h"
+
 #include <vector>
 #include <memory>
 #include <optional>
 #include <string>
-#include "imgui.h"
-#include "rom/game_objects/game_object_definition.h"
 
-namespace spintool { namespace rom { struct Sprite; } }
-
-namespace spintool { struct UISpriteTexture; }
+namespace spintool
+{
+	struct UISpriteTexture;
+}
 
 namespace spintool::rom
 {
 	struct TileLayout;
 	struct TileSet;
+	struct AnimationSequence;
+	struct Sprite;
 }
 
 namespace spintool
@@ -74,11 +82,27 @@ namespace spintool
 		using EditorWindowBase::EditorWindowBase;
 		void Update() override;
 
+		struct AnimSpriteEntry
+		{
+			rom::Ptr32 sprite_table = 0;
+			std::shared_ptr<const rom::AnimationSequence> anim_sequence;
+			size_t anim_command_used_for_surface = 0;
+			SDLSurfaceHandle sprite_surface;
+			SDLPaletteHandle palette;
+		};
+
 	private:
 		SDLTextureHandle m_tile_layout_preview;
 		std::vector<TileBrushPreview> m_tile_brushes_previews;
 		std::shared_ptr<const rom::TileSet> m_tileset;
 		std::shared_ptr<rom::TileLayout> m_tile_layout;
+		std::vector<RenderTileLayoutRequest> m_tile_layout_render_requests;
+		std::vector<rom::FlipperInstance> m_flipper_instances;
+		std::vector<rom::RingInstance> m_ring_instances;
+		std::vector<rom::GameObjectDefinition> m_game_obj_instances;
+		std::vector<rom::AnimObjectDefinition> m_anim_obj_instances;
+
+		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
 	};
 }
