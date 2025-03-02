@@ -92,7 +92,8 @@ namespace spintool
 		};
 
 	private:
-		SDLTextureHandle m_tile_layout_preview;
+		SDLTextureHandle m_tile_layout_preview_bg;
+		SDLTextureHandle m_tile_layout_preview_fg;
 		std::vector<TileBrushPreview> m_tile_brushes_previews;
 		std::shared_ptr<const rom::TileSet> m_tileset;
 		std::shared_ptr<rom::TileLayout> m_tile_layout;

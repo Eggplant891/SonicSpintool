@@ -610,7 +610,8 @@ namespace spintool
 			}
 			const std::string combined_layout_name = export_combined ? m_tile_layout_render_requests.front().layout_layout_name : "";
 			const std::string combined_type_name = export_combined ? combined_buffer : "";
-			SDLSurfaceHandle layout_preview_surface;
+			SDLSurfaceHandle layout_preview_bg_surface;
+			SDLSurfaceHandle layout_preview_fg_surface;
 			if (will_be_rendering_preview)
 			{
 				bool will_require_mirror = false;
@@ -630,8 +631,11 @@ namespace spintool
 				}
 
 				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
-				layout_preview_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
-				SDL_ClearSurface(layout_preview_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+				layout_preview_bg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
+				SDL_ClearSurface(layout_preview_bg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+
+				layout_preview_fg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
+				SDL_ClearSurface(layout_preview_fg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 			}
 
 			while (m_tile_layout_render_requests.empty() == false)
@@ -722,7 +726,7 @@ namespace spintool
 
 					const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
 					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
 				}
 
 				if (request.draw_mirrored_layout)
@@ -751,7 +755,7 @@ namespace spintool
 
 						const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
 						SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-						SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+						SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
 					}
 				}
 
@@ -765,7 +769,7 @@ namespace spintool
 					static char path_buffer[4096];
 					sprintf_s(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
 					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-					assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
+					assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
 				}
 
 				m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
@@ -787,7 +791,7 @@ namespace spintool
 
 					SDL_Rect target_rect{ flipper.x_pos + x_off, flipper.y_pos - 31, 44, 31 };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 				}
 			}
 
@@ -800,7 +804,7 @@ namespace spintool
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(RingPreview.sprite.get()) };
 					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
+					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 				}
 				
 				static rom::Colour bbox_colours[]
@@ -852,7 +856,7 @@ namespace spintool
 						}
 
 						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_sprite_surface->format), nullptr, 0, 0, 0, 255));
-						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
+						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_bg_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
 
 						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
 						new_obj->obj_definition = game_obj;
@@ -874,7 +878,7 @@ namespace spintool
 
 						SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width / 2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
 						SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
-						SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
+						SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
 					}
 				}
 			}
@@ -885,18 +889,29 @@ namespace spintool
 
 				sprintf_s(path_buffer, "spinball_%s.png", combined_type_name.c_str());
 				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-				assert(IMG_SavePNG(layout_preview_surface.get(), export_path.generic_u8string().c_str()));
+				if (export_combined)
+				{
+					SDLSurfaceHandle combined{ SDL_DuplicateSurface(layout_preview_bg_surface.get()) };
+					SDL_BlitSurface(layout_preview_fg_surface.get(), nullptr, combined.get(), nullptr);
+					assert(IMG_SavePNG(combined.get(), export_path.generic_u8string().c_str()));
+				}
+				else
+				{
+					assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
+				}
 			}
 
 			if (will_be_rendering_preview)
 			{
-				m_tile_layout_preview = Renderer::RenderToTexture(layout_preview_surface.get());
+				m_tile_layout_preview_bg = Renderer::RenderToTexture(layout_preview_bg_surface.get());
+				m_tile_layout_preview_fg = Renderer::RenderToTexture(layout_preview_fg_surface.get());
 			}
 
-			if (ImGui::BeginChild("Preview Area"))
+			constexpr const float zoom = 1.0f;
+
+			if (ImGui::BeginChild("Preview info Area"))
 			{
 				constexpr size_t preview_brushes_per_row = 32;
-				constexpr const float zoom = 1.0f;
 				if (current_preview_data && ImGui::TreeNode("ROM Info"))
 				{
 					const auto address_end = current_preview_data->tile_layout_address_end.value_or(current_preview_data->tile_layout_address + (current_preview_data->tile_layout_width * 2) * current_preview_data->tile_layout_height);
@@ -930,13 +945,13 @@ namespace spintool
 					}
 					ImGui::EndDisabled();
 					ImGui::SameLine();
-					ImGui::BeginDisabled((current_page + 1)* num_previews_per_page >= m_tile_brushes_previews.size());
+					ImGui::BeginDisabled((current_page + 1) * num_previews_per_page >= m_tile_brushes_previews.size());
 					if (ImGui::Button("Next Page"))
 					{
 						current_page = std::min<int>((static_cast<int>(m_tile_brushes_previews.size()) / num_previews_per_page), current_page + 1);
 					}
 					ImGui::EndDisabled();
-					for (size_t i = current_page * num_previews_per_page; i < std::min<size_t>((current_page+1) * num_previews_per_page, m_tile_brushes_previews.size()); ++i)
+					for (size_t i = current_page * num_previews_per_page; i < std::min<size_t>((current_page + 1) * num_previews_per_page, m_tile_brushes_previews.size()); ++i)
 					{
 						TileBrushPreview& preview_brush = m_tile_brushes_previews[i];
 						if (preview_brush.texture != nullptr)
@@ -957,12 +972,15 @@ namespace spintool
 					ImGui::TreePop();
 				}
 
-				if (m_tile_layout_preview != nullptr)
+				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
 					static UIGameObject* selected_game_obj = nullptr;
 					const ImVec2 origin = ImGui::GetCursorPos();
 					const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
-					ImGui::Image((ImTextureID)m_tile_layout_preview.get(), ImVec2(static_cast<float>(m_tile_layout_preview->w) * zoom, static_cast<float>(m_tile_layout_preview->h) * zoom));
+					ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
+
+					ImGui::SetCursorPos(origin);
+					ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_fg->w) * zoom, static_cast<float>(m_tile_layout_preview_fg->h) * zoom));
 
 					// Visualise collision vectors
 
@@ -976,6 +994,33 @@ namespace spintool
 					{
 						collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_collision_data + (i * 2)));
 					}
+
+					constexpr int num_segments = 4;
+					constexpr int size_of_segments = 128 / num_segments;
+
+					//BoundingBox bbox;
+					//bbox.min.x = collision_tile_origin_x;
+					//bbox.min.y = collision_tile_origin_y;
+					//bbox.max.x = collision_tile_origin_x + tile_width;
+					//bbox.max.y = collision_tile_origin_y + tile_width;
+					//
+					//ImGui::GetWindowDrawList()->AddRect(
+					//	ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) },
+					//	ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) },
+					//	ImGui::GetColorU32(ImVec4{ 32,32,32,255 }), 0, ImDrawFlags_None, 1.0f);
+					//
+					//for (int i = 0; i < num_segments; ++i)
+					//{
+					//	ImGui::GetWindowDrawList()->AddRect(
+					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) },
+					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x + (i * size_of_segments)), static_cast<float>(screen_origin.y + bbox.max.y) },
+					//		ImGui::GetColorU32(ImVec4{ 16,16,16,255 }), 0, ImDrawFlags_None, 1.0f);
+					//
+					//	ImGui::GetWindowDrawList()->AddRect(
+					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) },
+					//		ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.min.y + (i * size_of_segments)) },
+					//		ImGui::GetColorU32(ImVec4{ 16,16,16,255 }), 0, ImDrawFlags_None, 1.0f);
+					//}
 
 					for (rom::Ptr32 i = 0; i < collision_data_offsets.size() - 1; ++i)
 					{
@@ -995,10 +1040,6 @@ namespace spintool
 						bbox.max.x = collision_tile_origin_x + tile_width;
 						bbox.max.y = collision_tile_origin_y + tile_width;
 
-						//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,192,255 }), 1.0f);
-						//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImGui::GetColorU32(ImVec4{ 192,192,192,255 }), 1.0f);
-						//ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 48,48,48,255 }), 0, ImDrawFlags_None, 1.0f);
-
 						const Uint32 num_shorts = num_bytes / 4;
 
 						constexpr int size_of_preview_collision_boxes = 4;
@@ -1007,8 +1048,8 @@ namespace spintool
 						{
 							rom::Ptr32 short_offset = s * 4;
 							BoundingBox bbox;
-							bbox.min.x = m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 2) - half_size_of_preview_collision_boxes;
-							bbox.min.y = m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 0) - half_size_of_preview_collision_boxes;
+							bbox.min.x = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 2) - half_size_of_preview_collision_boxes);
+							bbox.min.y = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 0) - half_size_of_preview_collision_boxes);
 
 							//int offset_for_max = 8;
 							//if (m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 4) & 0x8000)
