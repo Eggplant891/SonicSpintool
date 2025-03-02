@@ -29,7 +29,7 @@ namespace spintool::rom
 		Ptr32 camera_start_position_y = 0x000BFC80;
 		Ptr32 music_id = 0x000BFC90;
 		Ptr32 game_over_timer = 0x000BFC98 ;
-		Ptr32 collision_data_anim_objs = 0x000BFD14;
+		Ptr32 camera_activation_sector_anim_obj_ids = 0x000BFD14;
 		Ptr32 switch_hit_msg_id = 0x000C06BA ;
 		Ptr32 bumper_hit_msg_id = 0x000C06C2 ;
 		Ptr32 collision_type0_animation_id = 0x000C06CE;
@@ -51,6 +51,13 @@ namespace spintool::rom
 		Ptr32 animations = 0x000C150C;
 		Ptr32 ring_count = 0x000C151C;
 		Ptr32 rom_level_data_BG_tile_vdp_offset = 0x000D8D04;
+
+		ArrayOffset collision_tile_obj_ids[4] = {
+			{ 0x000C326E, 0x100 },
+			{ 0x000C1764, 0x100 },
+			{ 0x000C5B9C, 0x100 },
+			{ 0x0, 0x0 }
+		};
 
 		ArrayOffset ring_instances[4] = {
 			{ 0x000C3854, 0x3A }, // Toxic Caves
@@ -86,7 +93,7 @@ namespace spintool::rom
 		Ptr32 camera_start_position_y = 0;
 		Ptr32 music_id = 0;
 		Ptr32 game_over_timer = 0;
-		Ptr32 collision_data_anim_objs = 0;
+		Ptr32 camera_activation_sector_anim_obj_ids = 0;
 		Ptr32 switch_hit_msg_id = 0;
 		Ptr32 bumper_hit_msg_id = 0;
 		Ptr32 collision_type0_animation_id = 0;
@@ -107,6 +114,7 @@ namespace spintool::rom
 		Ptr32 level_name = 0;
 		Ptr32 animations = 0;
 		Ptr32 ring_count = 0;
+		ArrayOffset collision_tile_obj_ids;
 		ArrayOffset ring_instances;
 		ArrayOffset object_instances;
 		Ptr32 rom_level_data_BG_tile_vdp_offset = 0;
