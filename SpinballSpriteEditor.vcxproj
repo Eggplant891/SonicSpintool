@@ -199,7 +199,6 @@
     <ClCompile Include="external\imgui\imgui_draw.cpp" />
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
-    <ClCompile Include="rom_asset_definitions.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\rom\animated_object.cpp" />
@@ -211,6 +210,7 @@
     <ClCompile Include="src\rom\game_objects\game_object_flipper.cpp" />
     <ClCompile Include="src\rom\game_objects\game_object_ring.cpp" />
     <ClCompile Include="src\rom\palette.cpp" />
+    <ClCompile Include="src\rom\rom_asset_definitions.cpp" />
     <ClCompile Include="src\rom\rom_data.cpp" />
     <ClCompile Include="src\rom\spinball_rom.cpp" />
     <ClCompile Include="src\rom\sprite.cpp" />
