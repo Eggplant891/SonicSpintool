@@ -19,6 +19,12 @@
 
 namespace spintool
 {
+	struct SpriteObjectPreview
+	{
+		SDLSurfaceHandle sprite;
+		SDLPaletteHandle palette;
+	};
+
 	void EditorTileLayoutViewer::Update()
 	{
 		if (IsOpen() == false)
@@ -29,12 +35,10 @@ namespace spintool
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar))
 		{
 			bool render_preview = false;
-			static SDLSurfaceHandle LevelFlipperSpriteSurface;
-			static SDLPaletteHandle LevelFlipperPalette;
-			static SDLSurfaceHandle LevelRingSpriteSurface;
-			static SDLPaletteHandle LevelRingPalette;
-			static SDLSurfaceHandle LevelGameObjSpriteSurface;
-			static SDLPaletteHandle LevelGameObjPalette;
+			static SpriteObjectPreview FlipperPreview;
+			static SpriteObjectPreview RingPreview;
+			static SpriteObjectPreview GameObjectPreview;
+
 			static rom::PaletteSet LevelPaletteSet;
 			static bool export_result = false;
 
@@ -191,7 +195,6 @@ namespace spintool
 
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
-
 
 			if (preview_intro_bg)
 			{
@@ -478,13 +481,13 @@ namespace spintool
 					0x00035692
 				};
 
-				std::shared_ptr<const rom::Sprite> LevelFlipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[level_index]);
-				LevelFlipperSpriteSurface = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-				LevelFlipperPalette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[flipper_palette[level_index]]);
-				SDL_SetSurfacePalette(LevelFlipperSpriteSurface.get(), LevelFlipperPalette.get());
-				SDL_ClearSurface(LevelFlipperSpriteSurface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-				SDL_SetSurfaceColorKey(LevelFlipperSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelFlipperSpriteSurface->format), nullptr, 0, (Uint8)rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0]), 0, 0));
-				LevelFlipperSprite->RenderToSurface(LevelFlipperSpriteSurface.get());
+				std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[level_index]);
+				FlipperPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
+				FlipperPreview.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[flipper_palette[level_index]]);
+				SDL_SetSurfacePalette(FlipperPreview.sprite.get(), FlipperPreview.palette.get());
+				SDL_ClearSurface(FlipperPreview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+				SDL_SetSurfaceColorKey(FlipperPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(FlipperPreview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
+				flipperSprite->RenderToSurface(FlipperPreview.sprite.get());
 
 				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * level_index));
 				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * level_index));
@@ -506,12 +509,12 @@ namespace spintool
 				const static size_t ring_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> LevelRingSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
-				LevelRingSpriteSurface = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-				LevelRingPalette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
-				SDL_SetSurfacePalette(LevelRingSpriteSurface.get(), LevelRingPalette.get());
-				SDL_ClearSurface(LevelRingSpriteSurface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-				SDL_SetSurfaceColorKey(LevelRingSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelRingSpriteSurface->format), nullptr, 0, 0, 0, 0));
-				LevelRingSprite->RenderToSurface(LevelRingSpriteSurface.get());
+				RingPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+				RingPreview.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
+				SDL_SetSurfacePalette(RingPreview.sprite.get(), RingPreview.palette.get());
+				SDL_ClearSurface(RingPreview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+				SDL_SetSurfaceColorKey(RingPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(RingPreview.sprite->format), nullptr, 0, 0, 0, 0));
+				LevelRingSprite->RenderToSurface(RingPreview.sprite.get());
 
 				m_ring_instances.clear();
 				m_ring_instances.reserve(level_data_offsets.ring_instances.count);
@@ -530,12 +533,12 @@ namespace spintool
 				const static size_t game_obj_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> LevelGameObjSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), game_obj_sprite_offset);
-				LevelGameObjSpriteSurface = SDLSurfaceHandle{ SDL_CreateSurface(LevelGameObjSprite->GetBoundingBox().Width(), LevelGameObjSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-				LevelGameObjPalette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
-				SDL_SetSurfacePalette(LevelGameObjSpriteSurface.get(), LevelGameObjPalette.get());
-				SDL_ClearSurface(LevelGameObjSpriteSurface.get(), 255, 255, 255, 255);
-				SDL_SetSurfaceColorKey(LevelGameObjSpriteSurface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(LevelGameObjSpriteSurface->format), nullptr, 255, 0, 0, 255));
-				//LevelGameObjSprite->RenderToSurface(LevelGameObjSpriteSurface.get());
+				GameObjectPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelGameObjSprite->GetBoundingBox().Width(), LevelGameObjSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+				GameObjectPreview.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
+				SDL_SetSurfacePalette(GameObjectPreview.sprite.get(), GameObjectPreview.palette.get());
+				SDL_ClearSurface(GameObjectPreview.sprite.get(), 255, 255, 255, 255);
+				SDL_SetSurfaceColorKey(GameObjectPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(GameObjectPreview.sprite->format), nullptr, 255, 0, 0, 255));
+				//LevelGameObjSprite->RenderToSurface(GameObjectPreview.sprite.get());
 
 				m_preview_game_objects.clear();
 				m_game_obj_instances.clear();
@@ -772,7 +775,7 @@ namespace spintool
 				{
 					const rom::FlipperInstance& flipper = m_flipper_instances[i];
 
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(LevelFlipperSpriteSurface.get()) };
+					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(FlipperPreview.sprite.get()) };
 					int x_off = -24;
 					if (flipper.is_x_flipped)
 					{
@@ -792,7 +795,7 @@ namespace spintool
 				{
 					const rom::RingInstance& ring = m_ring_instances[i];
 
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(LevelRingSpriteSurface.get()) };
+					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(RingPreview.sprite.get()) };
 					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_surface.get(), &target_rect);
@@ -859,7 +862,7 @@ namespace spintool
 					}
 					else
 					{
-						SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(LevelGameObjSpriteSurface.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
+						SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(GameObjectPreview.sprite.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
 
 						auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
 						SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
