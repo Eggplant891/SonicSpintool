@@ -75,6 +75,7 @@ namespace spintool
 				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tileset);
 				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_layout);
 				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
+				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
 
 				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
 
@@ -85,7 +86,7 @@ namespace spintool
 
 				request.tileset_address = BGTilesetOffsets;
 				request.tile_brushes_address = BGTilesetBrushes;
-				request.tile_brushes_address_end = BGTilesetLayouts;
+				request.tile_brushes_address_end = FGTilesetLayouts;
 
 				request.tile_brush_width = 4;
 				request.tile_brush_height = 4;
@@ -113,6 +114,7 @@ namespace spintool
 				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
 				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
 				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
+				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
 
 				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
 
@@ -123,7 +125,7 @@ namespace spintool
 
 				request.tileset_address = FGTilesetOffsets;
 				request.tile_brushes_address = FGTilesetBrushes;
-				request.tile_brushes_address_end = FGTilesetLayouts;
+				request.tile_brushes_address_end = BGTilesetBrushes;
 
 				request.tile_brush_width = 4;
 				request.tile_brush_height = 4;
@@ -917,11 +919,26 @@ namespace spintool
 					ImGui::TreePop();
 				}
 
+				static int current_page = 0;
 				if (m_tile_brushes_previews.empty() == false && ImGui::TreeNode("Brush Previews"))
 				{
-					size_t i = 0;
-					for (const TileBrushPreview& preview_brush : m_tile_brushes_previews)
+					constexpr size_t num_previews_per_page = 16 * 8;
+					ImGui::BeginDisabled((current_page - 1) < 0);
+					if (ImGui::Button("Previous Page"))
 					{
+						current_page = std::max(0, current_page - 1);
+					}
+					ImGui::EndDisabled();
+					ImGui::SameLine();
+					ImGui::BeginDisabled((current_page + 1)* num_previews_per_page >= m_tile_brushes_previews.size());
+					if (ImGui::Button("Next Page"))
+					{
+						current_page = std::min<int>((static_cast<int>(m_tile_brushes_previews.size()) / num_previews_per_page), current_page + 1);
+					}
+					ImGui::EndDisabled();
+					for (size_t i = current_page * num_previews_per_page; i < std::min<size_t>((current_page+1) * num_previews_per_page, m_tile_brushes_previews.size()); ++i)
+					{
+						TileBrushPreview& preview_brush = m_tile_brushes_previews[i];
 						if (preview_brush.texture != nullptr)
 						{
 							if (i % preview_brushes_per_row != 0)
@@ -935,7 +952,6 @@ namespace spintool
 								ImGui::Text("Tile Index: 0x%02X", i);
 								ImGui::EndTooltip();
 							}
-							++i;
 						}
 					}
 					ImGui::TreePop();
