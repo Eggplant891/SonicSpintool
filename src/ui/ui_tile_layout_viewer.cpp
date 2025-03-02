@@ -888,163 +888,167 @@ namespace spintool
 				m_tile_layout_preview = Renderer::RenderToTexture(layout_preview_surface.get());
 			}
 
-			constexpr size_t preview_brushes_per_row = 32;
-			constexpr const float zoom = 1.0f;
-			if (current_preview_data && ImGui::TreeNode("ROM Info"))
+			if (ImGui::BeginChild("Preview Area"))
 			{
-				const auto address_end = current_preview_data->tile_layout_address_end.value_or(current_preview_data->tile_layout_address + (current_preview_data->tile_layout_width * 2) * current_preview_data->tile_layout_height);
-				ImGui::Text("Tileset Compressed Data: 0x%08X", current_preview_data->tileset_address);
-				ImGui::Text("Tileset Brushes: 0x%08X => 0x%08X", current_preview_data->tile_brushes_address, current_preview_data->tile_brushes_address_end);
-				ImGui::Text("Tile Layout: 0x%08X => 0x%08X", current_preview_data->tile_layout_address, address_end);
-				ImGui::Text("Layout size: %d", address_end - current_preview_data->tile_layout_address);
-				ImGui::Text("Width: %d", current_preview_data->tile_layout_width);
-				ImGui::Text("Height: %d", current_preview_data->tile_layout_height);
-				ImGui::Text("Num tiles: %d", current_preview_data->tile_layout_width * current_preview_data->tile_layout_height);
-				ImGui::TreePop();
-			}
-
-			if (ImGui::TreeNode("Palette Set"))
-			{
-				for (const std::shared_ptr<rom::Palette>& palette : LevelPaletteSet.palette_lines)
+				constexpr size_t preview_brushes_per_row = 32;
+				constexpr const float zoom = 1.0f;
+				if (current_preview_data && ImGui::TreeNode("ROM Info"))
 				{
-					DrawPaletteSwatchPreview(*palette);
+					const auto address_end = current_preview_data->tile_layout_address_end.value_or(current_preview_data->tile_layout_address + (current_preview_data->tile_layout_width * 2) * current_preview_data->tile_layout_height);
+					ImGui::Text("Tileset Compressed Data: 0x%08X", current_preview_data->tileset_address);
+					ImGui::Text("Tileset Brushes: 0x%08X => 0x%08X", current_preview_data->tile_brushes_address, current_preview_data->tile_brushes_address_end);
+					ImGui::Text("Tile Layout: 0x%08X => 0x%08X", current_preview_data->tile_layout_address, address_end);
+					ImGui::Text("Layout size: %d", address_end - current_preview_data->tile_layout_address);
+					ImGui::Text("Width: %d", current_preview_data->tile_layout_width);
+					ImGui::Text("Height: %d", current_preview_data->tile_layout_height);
+					ImGui::Text("Num tiles: %d", current_preview_data->tile_layout_width * current_preview_data->tile_layout_height);
+					ImGui::TreePop();
 				}
-				ImGui::TreePop();
-			}
 
-			if (m_tile_brushes_previews.empty() == false && ImGui::TreeNode("Brush Previews"))
-			{
-				size_t i = 0;
-				for (const TileBrushPreview& preview_brush : m_tile_brushes_previews)
+				if (ImGui::TreeNode("Palette Set"))
 				{
-					if (preview_brush.texture != nullptr)
+					for (const std::shared_ptr<rom::Palette>& palette : LevelPaletteSet.palette_lines)
 					{
-						if (i % preview_brushes_per_row != 0)
-						{
-							ImGui::SameLine();
-						}
-
-						ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
-						if (ImGui::BeginItemTooltip())
-						{
-							ImGui::Text("Tile Index: 0x%02X", i);
-							ImGui::EndTooltip();
-						}
-						++i;
+						DrawPaletteSwatchPreview(*palette);
 					}
-				}
-				ImGui::TreePop();
-			}
-
-			if (m_tile_layout_preview != nullptr)
-			{
-				static UIGameObject* selected_game_obj = nullptr;
-				const ImVec2 origin = ImGui::GetCursorPos();
-				const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
-				ImGui::Image((ImTextureID)m_tile_layout_preview.get(), ImVec2(static_cast<float>(m_tile_layout_preview->w) * zoom, static_cast<float>(m_tile_layout_preview->h) * zoom));
-
-				// Visualise collision vectors
-
-				constexpr Uint32 num_collision_data = 0x100;
-				const rom::Ptr32 toxic_caves_collision_data = m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_tiles);
-				auto current_offset = toxic_caves_collision_data;
-				std::vector<Uint16> collision_data_offsets;
-				collision_data_offsets.reserve(num_collision_data);
-
-				for (rom::Ptr32 i = 0; i < num_collision_data; ++i)
-				{
-					collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_collision_data + (i * 2)));
+					ImGui::TreePop();
 				}
 
-				for (rom::Ptr32 i = 0; i < collision_data_offsets.size() - 1; ++i)
+				if (m_tile_brushes_previews.empty() == false && ImGui::TreeNode("Brush Previews"))
 				{
-					const rom::Ptr32 start_offset = toxic_caves_collision_data + (collision_data_offsets[i]*2);
-					const rom::Ptr32 end_offset = toxic_caves_collision_data + (collision_data_offsets[i + 1]*2);
-					const Uint32 num_bytes = end_offset - start_offset;
-
-					constexpr int tile_width = 128;
-					constexpr int num_tiles_x = 16;
-
-					const int collision_tile_origin_x = (static_cast<int>(i) % num_tiles_x) * tile_width;
-					const int collision_tile_origin_y = (static_cast<int>(i) / num_tiles_x) * tile_width;
-
-					BoundingBox bbox;
-					bbox.min.x = collision_tile_origin_x;
-					bbox.min.y = collision_tile_origin_y;
-					bbox.max.x = collision_tile_origin_x + tile_width;
-					bbox.max.y = collision_tile_origin_y + tile_width;
-
-					//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,192,255 }), 1.0f);
-					//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImGui::GetColorU32(ImVec4{ 192,192,192,255 }), 1.0f);
-					//ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 48,48,48,255 }), 0, ImDrawFlags_None, 1.0f);
-
-					const Uint32 num_shorts = num_bytes / 4;
-
-					constexpr int size_of_preview_collision_boxes = 4;
-					constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
-					for (rom::Ptr32 s = 0; s < num_shorts; ++s)
+					size_t i = 0;
+					for (const TileBrushPreview& preview_brush : m_tile_brushes_previews)
 					{
-						rom::Ptr32 short_offset = s * 4;
+						if (preview_brush.texture != nullptr)
+						{
+							if (i % preview_brushes_per_row != 0)
+							{
+								ImGui::SameLine();
+							}
+
+							ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
+							if (ImGui::BeginItemTooltip())
+							{
+								ImGui::Text("Tile Index: 0x%02X", i);
+								ImGui::EndTooltip();
+							}
+							++i;
+						}
+					}
+					ImGui::TreePop();
+				}
+
+				if (m_tile_layout_preview != nullptr)
+				{
+					static UIGameObject* selected_game_obj = nullptr;
+					const ImVec2 origin = ImGui::GetCursorPos();
+					const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
+					ImGui::Image((ImTextureID)m_tile_layout_preview.get(), ImVec2(static_cast<float>(m_tile_layout_preview->w) * zoom, static_cast<float>(m_tile_layout_preview->h) * zoom));
+
+					// Visualise collision vectors
+
+					constexpr Uint32 num_collision_data = 0x100;
+					const rom::Ptr32 toxic_caves_collision_data = m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_tiles);
+					auto current_offset = toxic_caves_collision_data;
+					std::vector<Uint16> collision_data_offsets;
+					collision_data_offsets.reserve(num_collision_data);
+
+					for (rom::Ptr32 i = 0; i < num_collision_data; ++i)
+					{
+						collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_collision_data + (i * 2)));
+					}
+
+					for (rom::Ptr32 i = 0; i < collision_data_offsets.size() - 1; ++i)
+					{
+						const rom::Ptr32 start_offset = toxic_caves_collision_data + (collision_data_offsets[i] * 2);
+						const rom::Ptr32 end_offset = toxic_caves_collision_data + (collision_data_offsets[i + 1] * 2);
+						const Uint32 num_bytes = end_offset - start_offset;
+
+						constexpr int tile_width = 128;
+						constexpr int num_tiles_x = 16;
+
+						const int collision_tile_origin_x = (static_cast<int>(i) % num_tiles_x) * tile_width;
+						const int collision_tile_origin_y = (static_cast<int>(i) / num_tiles_x) * tile_width;
+
 						BoundingBox bbox;
-						bbox.min.x = m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 2) - half_size_of_preview_collision_boxes;
-						bbox.min.y = m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 0) - half_size_of_preview_collision_boxes;
+						bbox.min.x = collision_tile_origin_x;
+						bbox.min.y = collision_tile_origin_y;
+						bbox.max.x = collision_tile_origin_x + tile_width;
+						bbox.max.y = collision_tile_origin_y + tile_width;
 
-						//int offset_for_max = 8;
-						//if (m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 4) & 0x8000)
-						//{
-						//	offset_for_max = -offset_for_max;
-						//}
+						//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,192,255 }), 1.0f);
+						//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImGui::GetColorU32(ImVec4{ 192,192,192,255 }), 1.0f);
+						//ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 48,48,48,255 }), 0, ImDrawFlags_None, 1.0f);
 
-						bbox.max.x = (bbox.min.x) + size_of_preview_collision_boxes;//m_owning_ui.GetROM().ReadUint8(start_offset + short_offset + 4);
-						bbox.max.y = (bbox.min.y) + size_of_preview_collision_boxes;//m_owning_ui.GetROM().ReadUint8(start_offset + short_offset + 6);
+						const Uint32 num_shorts = num_bytes / 4;
 
-						//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,0,255 }), 2.0f);
-						ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,0,255 }), 0, ImDrawFlags_None, 1.0f);
-					}
-				}
-
-				for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
-				{
-					ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
-					ImGui::Dummy(game_obj->dimensions);
-					if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
-					{
-						selected_game_obj = nullptr;
-						ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
-
-						if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+						constexpr int size_of_preview_collision_boxes = 4;
+						constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
+						for (rom::Ptr32 s = 0; s < num_shorts; ++s)
 						{
-							ImGui::OpenPopup("obj_popup");
-							selected_game_obj = game_obj.get();
-						}
-						else if (ImGui::BeginTooltip())
-						{
-							ImGui::Text("Sprite Table: 0x%04X");
-							ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
-							ImGui::EndTooltip();
+							rom::Ptr32 short_offset = s * 4;
+							BoundingBox bbox;
+							bbox.min.x = m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 2) - half_size_of_preview_collision_boxes;
+							bbox.min.y = m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 0) - half_size_of_preview_collision_boxes;
+
+							//int offset_for_max = 8;
+							//if (m_owning_ui.GetROM().ReadUint16(start_offset + short_offset + 4) & 0x8000)
+							//{
+							//	offset_for_max = -offset_for_max;
+							//}
+
+							bbox.max.x = (bbox.min.x) + size_of_preview_collision_boxes;//m_owning_ui.GetROM().ReadUint8(start_offset + short_offset + 4);
+							bbox.max.y = (bbox.min.y) + size_of_preview_collision_boxes;//m_owning_ui.GetROM().ReadUint8(start_offset + short_offset + 6);
+
+							//ImGui::GetWindowDrawList()->AddLine(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,0,255 }), 2.0f);
+							ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + bbox.min.x), static_cast<float>(screen_origin.y + bbox.min.y) }, ImVec2{ static_cast<float>(screen_origin.x + bbox.max.x), static_cast<float>(screen_origin.y + bbox.max.y) }, ImGui::GetColorU32(ImVec4{ 192,192,0,255 }), 0, ImDrawFlags_None, 1.0f);
 						}
 					}
-				}
 
-				if (selected_game_obj == nullptr)
-				{
-					ImGui::CloseCurrentPopup();
-				}
-				else if (ImGui::BeginPopup("obj_popup"))
-				{
-					const auto origin_offset = selected_game_obj->ui_sprite != nullptr ? selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{0,0};
-					int pos[2] = { static_cast<int>(selected_game_obj->pos.x + origin_offset.x), static_cast<int>(selected_game_obj->pos.y + origin_offset.y) };
-					if (ImGui::InputInt2("Object Pos", pos, ImGuiInputTextFlags_EnterReturnsTrue))
+					for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
 					{
-						selected_game_obj->obj_definition.x_pos = pos[0];
-						selected_game_obj->obj_definition.y_pos = pos[1];
-						selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
-						selected_game_obj = nullptr;
+						ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
+						ImGui::Dummy(game_obj->dimensions);
+						if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+						{
+							selected_game_obj = nullptr;
+							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+							{
+								ImGui::OpenPopup("obj_popup");
+								selected_game_obj = game_obj.get();
+							}
+							else if (ImGui::BeginTooltip())
+							{
+								ImGui::Text("Sprite Table: 0x%04X");
+								ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+								ImGui::EndTooltip();
+							}
+						}
+					}
+
+					if (selected_game_obj == nullptr)
+					{
 						ImGui::CloseCurrentPopup();
 					}
-					ImGui::EndPopup();
+					else if (ImGui::BeginPopup("obj_popup"))
+					{
+						const auto origin_offset = selected_game_obj->ui_sprite != nullptr ? selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
+						int pos[2] = { static_cast<int>(selected_game_obj->pos.x + origin_offset.x), static_cast<int>(selected_game_obj->pos.y + origin_offset.y) };
+						if (ImGui::InputInt2("Object Pos", pos, ImGuiInputTextFlags_EnterReturnsTrue))
+						{
+							selected_game_obj->obj_definition.x_pos = pos[0];
+							selected_game_obj->obj_definition.y_pos = pos[1];
+							selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
+							selected_game_obj = nullptr;
+							ImGui::CloseCurrentPopup();
+						}
+						ImGui::EndPopup();
+					}
 				}
 			}
+			ImGui::EndChild();
 		}
 		ImGui::End();
 	}
