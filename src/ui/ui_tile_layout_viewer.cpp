@@ -25,16 +25,30 @@ namespace spintool
 		SDLPaletteHandle palette;
 	};
 
+	struct LayerSettings
+	{
+		bool background = true;
+		bool foreground = true;
+		bool foreground_high_priority = true;
+		bool rings = true;
+		bool flippers = true;
+		bool invisible_objects = true;
+		bool visible_objects = true;
+		bool collision = true;
+	};
+
 	void EditorTileLayoutViewer::Update()
 	{
 		if (IsOpen() == false)
 		{
 			return;
 		}
-
-		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar))
+		ImGui::SetNextWindowPos(ImVec2{ 0,16 });
+		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
+		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoSavedSettings))
 		{
 			bool render_preview = false;
+			static LayerSettings layer_settings;
 			static SpriteObjectPreview FlipperPreview;
 			static SpriteObjectPreview RingPreview;
 			static SpriteObjectPreview GameObjectPreview;
@@ -44,19 +58,133 @@ namespace spintool
 
 			static int level_index = 0;
 			static rom::LevelDataOffsets level_data_offsets{ level_index };
-			
-			if (ImGui::SliderInt("###Level Index", &level_index, 0, 3))
-			{
-				level_data_offsets = rom::LevelDataOffsets{level_index};
-			}
+			static bool preview_bonus_alt_palette = false;
 
-			bool render_both = ImGui::Button("Preview Level");
-			ImGui::SameLine();
-			bool render_bg = ImGui::Button("Preview level BG");
-			ImGui::SameLine();
-			bool render_fg = ImGui::Button("Preview level FG");
-			ImGui::SameLine();
-			ImGui::Checkbox("Export", &export_result);
+			bool render_both = false;
+			bool render_bg = false;
+			bool render_fg = false;
+			bool preview_intro_bg = false;
+			bool preview_intro_fg = false;
+			bool preview_intro_ship = false;
+			bool preview_intro_water = false;
+			bool preview_menu_bg = false;
+			bool preview_menu_fg = false;
+			bool preview_menu_combined = false;
+			bool preview_bonus_bg = false;
+			bool preview_bonus_fg = false;
+			bool preview_bonus_combined = false;
+			bool preview_sega_logo = false;
+			bool preview_options = false;
+
+			if (ImGui::BeginMenuBar())
+			{
+				if (ImGui::BeginMenu("Levels"))
+				{
+					if (ImGui::Selectable("Toxic Caves"))
+					{
+						render_both = true;
+						level_index = 0;
+						level_data_offsets = { level_index };
+					}
+
+					if (ImGui::Selectable("Lava Powerhouse"))
+					{
+						render_both = true;
+						level_index = 1;
+						level_data_offsets = { level_index };
+					}
+
+					if (ImGui::Selectable("The Machine"))
+					{
+						render_both = true;
+						level_index = 2;
+						level_data_offsets = { level_index };
+					}
+
+					if (ImGui::Selectable("Showdown"))
+					{
+						render_both = true;
+						level_index = 3;
+						level_data_offsets = { level_index };
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Intro"))
+				{
+					if (ImGui::Selectable("Background"))
+					{
+						preview_intro_bg = true;
+					}
+					if (ImGui::Selectable("Foreground"))
+					{
+						preview_intro_fg = true;
+					}
+					if (ImGui::Selectable("Robotnik Ship"))
+					{
+						preview_intro_ship = true;
+					}
+					if (ImGui::Selectable("Water"))
+					{
+						preview_intro_water = true;
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Frontend"))
+				{
+					if (ImGui::Selectable("Background"))
+					{
+						preview_menu_bg = true;
+					}
+					if (ImGui::Selectable("Foreground"))
+					{
+						preview_menu_fg = true;
+					}
+					if (ImGui::Selectable("Combined"))
+					{
+						preview_menu_combined = true;
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Bonus"))
+				{
+					if (ImGui::Selectable("Background"))
+					{
+						preview_bonus_bg = true;
+					}
+					if (ImGui::Selectable("Foreground"))
+					{
+						preview_bonus_fg = true;
+					}
+					if (ImGui::Selectable("Combined"))
+					{
+						preview_bonus_combined = true;
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Other"))
+				{
+					if (ImGui::Selectable("Preview Sega Logo"))
+					{
+						preview_sega_logo = true;
+					}
+
+					if (ImGui::Selectable("Preview Options Menu"))
+					{
+						preview_options = true;
+					}
+					ImGui::EndMenu();
+				}
+
+				ImGui::SameLine();
+				ImGui::Checkbox("Export", &export_result);
+				ImGui::SameLine();
+				ImGui::Checkbox("Alt palette", &preview_bonus_alt_palette);
+				ImGui::EndMenuBar();
+			}
 
 			bool render_flippers = false;
 			bool render_rings = false;
@@ -146,33 +274,6 @@ namespace spintool
 
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
-
-			bool preview_intro_bg = ImGui::Button("Preview Intro Cutscene BG");
-			ImGui::SameLine();
-			bool preview_intro_fg = ImGui::Button("Preview Intro Cutscene FG");
-			ImGui::SameLine();
-			bool preview_intro_ship = ImGui::Button("Preview Intro Cutscene Robotnik Ship");
-			ImGui::SameLine();
-			bool preview_intro_water = ImGui::Button("Preview Intro Cutscene Water");
-			
-			bool preview_menu_bg = ImGui::Button("Preview Main Menu BG");
-			ImGui::SameLine();
-			bool preview_menu_fg = ImGui::Button("Preview Main Menu FG");
-			ImGui::SameLine();
-			bool preview_menu_combined = ImGui::Button("Preview Main Menu Combined");
-			
-			bool preview_bonus_bg = ImGui::Button("Preview Bonus BG");
-			ImGui::SameLine();
-			bool preview_bonus_fg = ImGui::Button("Preview Bonus FG");
-			ImGui::SameLine();
-			bool preview_bonus_combined = ImGui::Button("Preview Bonus Combined");
-			ImGui::SameLine();
-			static bool preview_bonus_alt_palette = false;
-			ImGui::Checkbox("Alt palette", &preview_bonus_alt_palette);
-			
-			bool preview_sega_logo = ImGui::Button("Preview Sega Logo");
-			ImGui::SameLine();
-			bool preview_options = ImGui::Button("Preview Options Menu");
 
 			if (preview_options)
 			{
@@ -932,7 +1033,10 @@ namespace spintool
 				{
 					for (const std::shared_ptr<rom::Palette>& palette : LevelPaletteSet.palette_lines)
 					{
-						DrawPaletteSwatchPreview(*palette);
+						if (palette != nullptr)
+						{
+							DrawPaletteSwatchPreview(*palette);
+						}
 					}
 					ImGui::TreePop();
 				}
