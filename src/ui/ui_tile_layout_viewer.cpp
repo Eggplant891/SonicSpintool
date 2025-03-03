@@ -763,8 +763,10 @@ namespace spintool
 
 				std::vector<rom::Sprite> brushes;
 				brushes.reserve(m_tile_layout->tile_brushes.size());
-				m_tile_brushes_previews.reserve(brushes.capacity());
-				m_tile_brushes_previews.clear();
+
+				auto& brush_previews = m_tile_brushes_preview_list.emplace_back();
+				brush_previews.reserve(brushes.capacity());
+				brush_previews.clear();
 
 				const int brush_width = static_cast<int>(request.tile_brush_width * rom::TileSet::s_tile_width);
 				const int brush_height = static_cast<int>(request.tile_brush_height * rom::TileSet::s_tile_height);
@@ -800,18 +802,18 @@ namespace spintool
 					SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
 					brush_sprite.RenderToSurface(new_surface.get());
 					SDL_Surface* the_surface = new_surface.get();
-					m_tile_brushes_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
+					brush_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
 				}
 
 				for (size_t i = 0; i < m_tile_layout->tile_brush_instances.size(); ++i)
 				{
 					const auto tile_brush_index = m_tile_layout->tile_brush_instances[i].tile_brush_index;
-					if (tile_brush_index >= m_tile_brushes_previews.size())
+					if (tile_brush_index >= brush_previews.size())
 					{
 						break;
 					}
 
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_tile_brushes_previews[tile_brush_index].surface.get()) };
+					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(brush_previews[tile_brush_index].surface.get()) };
 					if (m_tile_layout->tile_brush_instances[i].is_flipped_horizontally)
 					{
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
@@ -835,12 +837,12 @@ namespace spintool
 					for (size_t i = 0; i < m_tile_layout->tile_brush_instances.size(); ++i)
 					{
 						const auto tile_brush_index = m_tile_layout->tile_brush_instances[i].tile_brush_index;
-						if (tile_brush_index >= m_tile_brushes_previews.size())
+						if (tile_brush_index >= brush_previews.size())
 						{
 							break;
 						}
 
-						SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_tile_brushes_previews[tile_brush_index].surface.get()) };
+						SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(brush_previews[tile_brush_index].surface.get()) };
 						if (m_tile_layout->tile_brush_instances[i].is_flipped_horizontally == false)
 						{
 							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
@@ -862,7 +864,7 @@ namespace spintool
 
 				if (request.show_brush_previews == false)
 				{
-					m_tile_brushes_previews.clear();
+					brush_previews.clear();
 				}
 
 				if (export_result && export_combined == false)
@@ -1011,40 +1013,40 @@ namespace spintool
 			constexpr const float zoom = 1.0f;
 
 			static int selected_collision_tile_index = -1;
-			ImGui::SliderInt("Collision Tile", &selected_collision_tile_index, -1, 0x100 - 1);
+			ImGui::SliderInt("Collision Tile", &selected_collision_tile_index, -1, 0x0FF - 1);
 
-			if (ImGui::BeginChild("Preview info Area"))
+			constexpr size_t preview_brushes_per_row = 32;
+			if (current_preview_data && ImGui::TreeNode("ROM Info"))
 			{
-				constexpr size_t preview_brushes_per_row = 32;
-				if (current_preview_data && ImGui::TreeNode("ROM Info"))
-				{
-					const auto address_end = current_preview_data->tile_layout_address_end.value_or(current_preview_data->tile_layout_address + (current_preview_data->tile_layout_width * 2) * current_preview_data->tile_layout_height);
-					ImGui::Text("Tileset Compressed Data: 0x%08X", current_preview_data->tileset_address);
-					ImGui::Text("Tileset Brushes: 0x%08X => 0x%08X", current_preview_data->tile_brushes_address, current_preview_data->tile_brushes_address_end);
-					ImGui::Text("Tile Layout: 0x%08X => 0x%08X", current_preview_data->tile_layout_address, address_end);
-					ImGui::Text("Layout size: %d", address_end - current_preview_data->tile_layout_address);
-					ImGui::Text("Width: %d", current_preview_data->tile_layout_width);
-					ImGui::Text("Height: %d", current_preview_data->tile_layout_height);
-					ImGui::Text("Num tiles: %d", current_preview_data->tile_layout_width * current_preview_data->tile_layout_height);
-					ImGui::TreePop();
-				}
+				const auto address_end = current_preview_data->tile_layout_address_end.value_or(current_preview_data->tile_layout_address + (current_preview_data->tile_layout_width * 2) * current_preview_data->tile_layout_height);
+				ImGui::Text("Tileset Compressed Data: 0x%08X", current_preview_data->tileset_address);
+				ImGui::Text("Tileset Brushes: 0x%08X => 0x%08X", current_preview_data->tile_brushes_address, current_preview_data->tile_brushes_address_end);
+				ImGui::Text("Tile Layout: 0x%08X => 0x%08X", current_preview_data->tile_layout_address, address_end);
+				ImGui::Text("Layout size: %d", address_end - current_preview_data->tile_layout_address);
+				ImGui::Text("Width: %d", current_preview_data->tile_layout_width);
+				ImGui::Text("Height: %d", current_preview_data->tile_layout_height);
+				ImGui::Text("Num tiles: %d", current_preview_data->tile_layout_width * current_preview_data->tile_layout_height);
+				ImGui::TreePop();
+			}
 
-				if (ImGui::TreeNode("Palette Set"))
+			if (ImGui::TreeNode("Palette Set"))
+			{
+				for (const std::shared_ptr<rom::Palette>& palette : LevelPaletteSet.palette_lines)
 				{
-					for (const std::shared_ptr<rom::Palette>& palette : LevelPaletteSet.palette_lines)
+					if (palette != nullptr)
 					{
-						if (palette != nullptr)
-						{
-							DrawPaletteSwatchPreview(*palette);
-						}
+						DrawPaletteSwatchPreview(*palette);
 					}
-					ImGui::TreePop();
 				}
+				ImGui::TreePop();
+			}
 
-				static int current_page = 0;
-				if (m_tile_brushes_previews.empty() == false && ImGui::TreeNode("Brush Previews"))
+			static int current_page = 0;
+			if (m_tile_brushes_preview_list.empty() == false && ImGui::TreeNode("Brush Previews"))
+			{
+				constexpr size_t num_previews_per_page = 16 * 8;
+				for (auto& brush_previews : m_tile_brushes_preview_list)
 				{
-					constexpr size_t num_previews_per_page = 16 * 8;
 					ImGui::BeginDisabled((current_page - 1) < 0);
 					if (ImGui::Button("Previous Page"))
 					{
@@ -1052,15 +1054,15 @@ namespace spintool
 					}
 					ImGui::EndDisabled();
 					ImGui::SameLine();
-					ImGui::BeginDisabled((current_page + 1) * num_previews_per_page >= m_tile_brushes_previews.size());
+					ImGui::BeginDisabled((current_page + 1) * num_previews_per_page >= brush_previews.size());
 					if (ImGui::Button("Next Page"))
 					{
-						current_page = std::min<int>((static_cast<int>(m_tile_brushes_previews.size()) / num_previews_per_page), current_page + 1);
+						current_page = std::min<int>((static_cast<int>(brush_previews.size()) / num_previews_per_page), current_page + 1);
 					}
 					ImGui::EndDisabled();
-					for (size_t i = current_page * num_previews_per_page; i < std::min<size_t>((current_page + 1) * num_previews_per_page, m_tile_brushes_previews.size()); ++i)
+					for (size_t i = current_page * num_previews_per_page; i < std::min<size_t>((current_page + 1) * num_previews_per_page, brush_previews.size()); ++i)
 					{
-						TileBrushPreview& preview_brush = m_tile_brushes_previews[i];
+						TileBrushPreview& preview_brush = brush_previews[i];
 						if (preview_brush.texture != nullptr)
 						{
 							if (i % preview_brushes_per_row != 0)
@@ -1076,9 +1078,12 @@ namespace spintool
 							}
 						}
 					}
-					ImGui::TreePop();
 				}
+				ImGui::TreePop();
+			}
 
+			if (ImGui::BeginChild("Preview info Area"))
+			{
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
 					struct WorkingSpline
