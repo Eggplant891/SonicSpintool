@@ -977,7 +977,14 @@ namespace spintool
 
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
+					struct WorkingSpline
+					{
+						rom::Ptr32 offset;
+						BoundingBox bbox;
+					};
+
 					static UIGameObject* selected_game_obj = nullptr;
+					static std::optional<WorkingSpline> working_spline;
 					const ImVec2 origin = ImGui::GetCursorPos();
 					const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
 					ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
@@ -1044,7 +1051,6 @@ namespace spintool
 							bbox2.max.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 4);
 							bbox2.max.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 6);
 
-
 							const Uint16 object_type_flags = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 8);
 							const Uint16 extra_info = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 10);
 
@@ -1091,6 +1097,34 @@ namespace spintool
 									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
 									ImVec2{ static_cast<float>(screen_origin.x + bbox2.max.x), static_cast<float>(screen_origin.y + bbox2.max.y) },
 									ImGui::GetColorU32(colour), 2.0f);
+
+								ImGui::SetCursorPos(ImVec2{ origin.x + bbox2.min.x, origin.y + bbox2.min.y });
+								ImGui::Dummy(ImVec2{ static_cast<float>(bbox.Width()), static_cast<float>(bbox.Height())});
+
+								BoundingBox fixed_bbox;
+								fixed_bbox.min.x = std::min(bbox2.min.x, bbox2.max.x) - 1;
+								fixed_bbox.max.x = std::max(bbox2.min.x, bbox2.max.x) + 1;
+								fixed_bbox.min.y = std::min(bbox2.min.y, bbox2.max.y) - 1;
+								fixed_bbox.max.y = std::max(bbox2.min.y, bbox2.max.y) + 1;
+
+								if (ImGui::IsMouseHoveringRect(
+									ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) }))
+								{
+									ImGui::GetForegroundDrawList()->AddRect(
+										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
+										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) },
+										ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
+
+									if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+									{
+										ImGui::OpenPopup("spline_popup");
+										WorkingSpline new_spline;
+										new_spline.offset = data_start_offset + short_offset;
+										new_spline.bbox = bbox2;
+										working_spline.emplace(new_spline);
+									}
+								}
 							}
 						}
 					}
@@ -1177,16 +1211,16 @@ namespace spintool
 								ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
 								ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
 								ImGui::EndTooltip();
-
 							}
 						}
 					}
 
-					if (selected_game_obj == nullptr)
+					if (selected_game_obj == nullptr && working_spline.has_value() == false)
 					{
 						ImGui::CloseCurrentPopup();
 					}
-					else if (ImGui::BeginPopup("obj_popup"))
+					
+					if (ImGui::BeginPopup("obj_popup"))
 					{
 						const auto origin_offset = selected_game_obj->ui_sprite != nullptr ? selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
 						int pos[2] = { static_cast<int>(selected_game_obj->pos.x + origin_offset.x), static_cast<int>(selected_game_obj->pos.y + origin_offset.y) };
@@ -1197,6 +1231,45 @@ namespace spintool
 							selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
 							selected_game_obj = nullptr;
 							ImGui::CloseCurrentPopup();
+						}
+						ImGui::EndPopup();
+					}
+					
+					if (ImGui::BeginPopup("spline_popup"))
+					{
+						if (working_spline.has_value() == false)
+						{
+							ImGui::CloseCurrentPopup();
+						}
+						else
+						{
+							int spline_min[2] = { static_cast<int>(working_spline->bbox.min.x), static_cast<int>(working_spline->bbox.min.y) };
+							int spline_max[2] = { static_cast<int>(working_spline->bbox.max.x), static_cast<int>(working_spline->bbox.max.y) };
+
+							ImGui::InputInt2("Spline Min", spline_min);
+							ImGui::InputInt2("Spline Max", spline_max);
+
+							working_spline->bbox.min.x = spline_min[0];
+							working_spline->bbox.min.y = spline_min[1];
+							working_spline->bbox.max.x = spline_max[0];
+							working_spline->bbox.max.y = spline_max[1];
+
+							if (ImGui::Button("Confirm"))
+							{
+								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 0, spline_min[0]);
+								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 2, spline_min[1]);
+								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 4, spline_max[0]);
+								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 6, spline_max[1]);
+
+								working_spline.reset();
+								ImGui::CloseCurrentPopup();
+							}
+
+							if (ImGui::Button("Cancel"))
+							{
+								working_spline.reset();
+								ImGui::CloseCurrentPopup();
+							}
 						}
 						ImGui::EndPopup();
 					}
