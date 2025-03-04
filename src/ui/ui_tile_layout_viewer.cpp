@@ -719,6 +719,8 @@ namespace spintool
 				int largest_width = std::numeric_limits<int>::min();
 				int largest_height = std::numeric_limits<int>::min();
 
+				m_tile_brushes_preview_list.clear();
+
 				for (const auto& request : m_tile_layout_render_requests)
 				{
 					largest_width = std::max<int>(request.tile_layout_width * request.tile_brush_width, largest_width);
