@@ -6,7 +6,7 @@
 
 namespace spintool::rom
 {
-	TilesetEntry TileSet::LoadFromROM(const SpinballROM& src_rom, size_t rom_offset)
+	TilesetEntry TileSet::LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
 
@@ -14,7 +14,7 @@ namespace spintool::rom
 		new_tileset->uncompressed_data.clear();
 
 		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
-		new_tileset->uncompressed_size = results.uncompressed_data.size();
+		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
@@ -22,7 +22,7 @@ namespace spintool::rom
 		return { new_tileset, results };
 	}
 
-	TilesetEntry TileSet::LoadFromROMSecondCompression(const SpinballROM& src_rom, size_t rom_offset)
+	TilesetEntry TileSet::LoadFromROMSecondCompression(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
 
@@ -37,7 +37,7 @@ namespace spintool::rom
 			results.error_msg = "Decompression Results Mismatch";
 		}
 
-		new_tileset->uncompressed_size = results.uncompressed_data.size();
+		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
 		// Seems to be necessary to remove the first 2 bytes to make it renderable. Possible these specify dimensions or other data.
@@ -49,9 +49,9 @@ namespace spintool::rom
 		return { new_tileset, results };
 	}
 
-	std::shared_ptr<rom::SpriteTile> TileSet::CreateSpriteTileFromTile(const size_t tile_index) const
+	std::shared_ptr<rom::SpriteTile> TileSet::CreateSpriteTileFromTile(const Uint32 tile_index) const
 	{
-		const size_t relative_offset = tile_index * s_tile_total_bytes;
+		const Uint32 relative_offset = tile_index * s_tile_total_bytes;
 
 		if (uncompressed_data.empty() || relative_offset >= uncompressed_data.size())
 		{
@@ -64,13 +64,13 @@ namespace spintool::rom
 
 		const int num_tiles_per_row = 16;
 		const int tile_spacing = 0;
-		size_t current_x_offset = 0;
-		size_t current_y_offset = 0;
+		Uint32 current_x_offset = 0;
+		Uint32 current_y_offset = 0;
 
 
 		if (tile_index != 0)
 		{
-			const size_t x_offset = tile_index % num_tiles_per_row;
+			const Uint32 x_offset = tile_index % num_tiles_per_row;
 			if (x_offset == 0)
 			{
 				current_x_offset = 0;
@@ -103,12 +103,12 @@ namespace spintool::rom
 			++current_byte;
 		}
 
-		sprite_tile->tile_rom_data.SetROMData(rom_data.rom_offset + relative_offset, rom_data.rom_offset + relative_offset + (current_byte - tile_start_byte));
+		sprite_tile->tile_rom_data.SetROMData(rom_data.rom_offset + relative_offset, rom_data.rom_offset + relative_offset + static_cast<Uint32>(current_byte - tile_start_byte));
 
 		return sprite_tile;
 	}
 
-	std::shared_ptr<const Sprite> TileSet::CreateSpriteFromTile(const size_t relative_offset) const
+	std::shared_ptr<const Sprite> TileSet::CreateSpriteFromTile(const Uint32 relative_offset) const
 	{
 		if (relative_offset >= uncompressed_data.size() || relative_offset + s_tile_total_bytes >= uncompressed_data.size())
 		{
@@ -119,17 +119,17 @@ namespace spintool::rom
 
 		const Uint8* tileset_start_byte = &uncompressed_data[relative_offset];
 		const Uint8* current_byte = tileset_start_byte;
-		const size_t num_tiles_to_wrangle = num_tiles <= (uncompressed_data.size() / s_tile_total_pixels) ? num_tiles : (uncompressed_data.size() / s_tile_total_pixels);
+		const Uint32 num_tiles_to_wrangle = num_tiles <= (static_cast<Uint32>(uncompressed_data.size()) / s_tile_total_pixels) ? num_tiles : (static_cast<Uint32>(uncompressed_data.size()) / s_tile_total_pixels);
 
 		new_sprite->rom_data.rom_offset = rom_data.rom_offset;
 		new_sprite->num_tiles = static_cast<Uint16>(num_tiles_to_wrangle);
 
-		for (int i = 0; i < num_tiles_to_wrangle; ++i)
+		for (Uint32 i = 0; i < num_tiles_to_wrangle; ++i)
 		{
 			new_sprite->sprite_tiles.emplace_back(TileSet::CreateSpriteTileFromTile(i));
 			current_byte += new_sprite->sprite_tiles.back()->tile_rom_data.real_size;
 		}
-		new_sprite->rom_data.SetROMData(rom_data.rom_offset + relative_offset, rom_data.rom_offset + (current_byte - &uncompressed_data[relative_offset]));
+		new_sprite->rom_data.SetROMData(rom_data.rom_offset + relative_offset, rom_data.rom_offset + static_cast<Uint32>(current_byte - &uncompressed_data[relative_offset]));
 
 		return new_sprite;
 	}

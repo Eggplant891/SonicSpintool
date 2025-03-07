@@ -29,9 +29,9 @@ namespace spintool
 		int m_arbitrary_texture_width = 128;
 		int m_arbitrary_texture_height = 128;
 
-		size_t m_starting_offset = 0;
-		size_t m_selected_sprite_rom_offset = 0;
-		size_t m_offset = 0x14D2;
+		Uint32 m_starting_offset = 0;
+		Uint32 m_selected_sprite_rom_offset = 0;
+		Uint32 m_offset = 0x14D2;
 		int m_chosen_palette = 0;
 		float m_zoom = 2.0f;
 

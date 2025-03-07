@@ -4,7 +4,7 @@
 
 namespace spintool::rom
 {
-	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, size_t brushes_offset, size_t brushes_end, size_t layout_offset, std::optional<size_t> layout_end)
+	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, Uint32 brushes_offset, Uint32 brushes_end, Uint32 layout_offset, std::optional<Uint32> layout_end)
 	{
 		const Uint8* start_byte = &src_rom.m_buffer[brushes_offset];
 		const Uint8* current_byte = start_byte;
@@ -59,15 +59,15 @@ namespace spintool::rom
 		return new_layout;
 	}
 
-	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, size_t layout_offset, std::optional<size_t> layout_end)
+	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end)
 	{
 
 		auto new_layout = std::make_shared<TileLayout>();
 
-		const size_t total_brushes = tileset.num_tiles;
+		const Uint32 total_brushes = tileset.num_tiles;
 		new_layout->tile_brushes.resize(total_brushes);
 
-		for (size_t tile = 0; tile < new_layout->tile_brushes.size(); ++tile)
+		for (Uint32 tile = 0; tile < new_layout->tile_brushes.size(); ++tile)
 		{
 			new_layout->tile_brushes[tile] = std::make_unique<TileBrush<1, 1>>();
 			TileInstance& new_tile_instance = new_layout->tile_brushes[tile]->tiles.emplace_back();
@@ -84,7 +84,7 @@ namespace spintool::rom
 
 		const auto end_address = layout_end.value_or(layout_offset + 4 + (width * 2 * height));
 
-		for (size_t i = 0; i < (end_address - layout_offset) / 2; ++i)
+		for (Uint32 i = 0; i < (end_address - layout_offset) / 2; ++i)
 		{
 			const Uint8 first_byte = *current_byte;
 			++current_byte;

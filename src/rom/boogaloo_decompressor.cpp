@@ -22,9 +22,9 @@ namespace spintool::rom
 		return std::nullopt;
 	}
 
-	BoogalooDecompressionResult BoogalooDecompressor::DecompressData(const std::vector<Uint8>& in_data, const size_t offset)
+	BoogalooDecompressionResult BoogalooDecompressor::DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset)
 	{
-		const size_t start_offset = 0;
+		const Uint32 start_offset = 0;
 
 		const Uint8* compressed_data = &in_data[offset];
 
@@ -221,9 +221,9 @@ loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 		}
 	}
 
-	BoogalooDecompressionResult BoogalooDecompressor::DecompressDataRefactored(const std::vector<Uint8>& in_data, const size_t offset)
+	BoogalooDecompressionResult BoogalooDecompressor::DecompressDataRefactored(const std::vector<Uint8>& in_data, const Uint32 offset)
 	{
-		const size_t start_offset = 0;
+		const Uint32 start_offset = 0;
 
 		const Uint8* compressed_data = &in_data[offset];
 
@@ -252,7 +252,7 @@ loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 
 		Uint32 a0 = static_cast<Uint32>(offset); // Address to write in VRAM
 		Uint32 a1 = sp; // Compressed data
-		size_t token_bitmask = 0; // = TokenBitmaskLookup[0]; // set mask to 9 bits. A2
+		Uint32 token_bitmask = 0; // = TokenBitmaskLookup[0]; // set mask to 9 bits. A2
 		Uint32 a3 = 0;
 		Uint16 a4 = 0;
 		Uint32 a5 = 0x54CC; // A5 points to a table of size $400 bytes(likely)

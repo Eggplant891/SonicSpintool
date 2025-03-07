@@ -107,14 +107,14 @@ namespace spintool
 		SDL_RenderPresent(s_renderer);
 	}
 
-	SDLTextureHandle Renderer::RenderArbitaryOffsetToTilesetTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions_in_tiles)
+	SDLTextureHandle Renderer::RenderArbitaryOffsetToTilesetTexture(const rom::SpinballROM& rom, Uint32 offset, Point dimensions_in_tiles)
 	{
 		const Point tile_dimensions{ rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, };
 		const Point dimensions{ dimensions_in_tiles.x * tile_dimensions.x, dimensions_in_tiles.y * tile_dimensions.y };
 		SDLSurfaceHandle new_surface{ SDL_CreateSurface( dimensions.x, dimensions.y, SDL_PIXELFORMAT_RGBA32) };
 
 		SDLSurfaceHandle tile_surface{ SDL_CreateSurface(rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, SDL_PIXELFORMAT_RGBA32) };
-		size_t next_offset = offset;
+		Uint32 next_offset = offset;
 		for (int i = 0; i < dimensions_in_tiles.x * dimensions_in_tiles.y; ++i)
 		{
 			SDL_ClearSurface(tile_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
@@ -128,14 +128,14 @@ namespace spintool
 		return RenderToTexture(new_surface.get());
 	}
 
-	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions)
+	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, Uint32 offset, Point dimensions)
 	{
 		SDLSurfaceHandle new_surface{ SDL_CreateSurface(dimensions.x, dimensions.y, SDL_PIXELFORMAT_RGBA32) };
 		rom.RenderToSurface(new_surface.get(), offset, dimensions);
 		return RenderToTexture(new_surface.get());
 	}
 
-	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, size_t offset, Point dimensions, const rom::Palette& palette)
+	SDLTextureHandle Renderer::RenderArbitaryOffsetToTexture(const rom::SpinballROM& rom, Uint32 offset, Point dimensions, const rom::Palette& palette)
 	{
 		SDLSurfaceHandle new_surface{ SDL_CreateSurface(dimensions.x, dimensions.y, SDL_PIXELFORMAT_RGBA32) };
 		//UIPalette ui_palette{palette};

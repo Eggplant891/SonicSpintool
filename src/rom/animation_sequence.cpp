@@ -89,10 +89,10 @@ namespace spintool::rom
 	}
 
 
-	std::shared_ptr<const rom::AnimationSequence> AnimationSequence::LoadFromROM(const SpinballROM& src_rom, size_t offset, Ptr32 sprite_table_offset)
+	std::shared_ptr<const rom::AnimationSequence> AnimationSequence::LoadFromROM(const SpinballROM& src_rom, Uint32 offset, Ptr32 sprite_table_offset)
 	{
 		std::vector<AnimationCommand> result_data;
-		size_t current_offset = offset;
+		Uint32 current_offset = offset;
 
 		std::shared_ptr<rom::AnimationSequence> new_animation = std::make_shared<rom::AnimationSequence>();
 

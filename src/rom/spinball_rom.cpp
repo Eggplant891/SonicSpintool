@@ -28,36 +28,36 @@ namespace spintool
 		output.write(reinterpret_cast<const char*>(m_buffer.data()), m_buffer.size());
 	}
 
-	size_t rom::SpinballROM::GetOffsetForNextSprite(const rom::Sprite& current_sprite) const
+	Uint32 rom::SpinballROM::GetOffsetForNextSprite(const rom::Sprite& current_sprite) const
 	{
 		return current_sprite.rom_data.rom_offset + current_sprite.GetSizeOf();
 	}
 
-	std::vector<std::shared_ptr<rom::Palette>> rom::SpinballROM::LoadPalettes(size_t num_palettes) const
+	std::vector<std::shared_ptr<rom::Palette>> rom::SpinballROM::LoadPalettes(Uint32 num_palettes) const
 	{
-		constexpr size_t offset = 0xDFC; // Level Palettes
+		constexpr Uint32 offset = 0xDFC; // Level Palettes
 		//constexpr size_t offset = 0x9BCDA; // Main menu palettes
 		//constexpr size_t offset = 0xA1388; // Veg-o-Fortress cutscene palettes
 		std::vector<std::shared_ptr<rom::Palette>> results;
 
-		for (size_t p = 0; p < num_palettes; ++p)
+		for (Uint32 p = 0; p < num_palettes; ++p)
 		{
 			results.emplace_back(rom::Palette::LoadFromROM(*this, offset + (Palette::s_palette_size_on_rom * p)));
 		}
 
-		for (size_t p = 0; p < 2; ++p)
+		for (Uint32 p = 0; p < 2; ++p)
 		{
 			results.emplace_back(rom::Palette::LoadFromROM(*this, 0x000993FA + (Palette::s_palette_size_on_rom * p)));
 		}
 
-		for (size_t p = 0; p < 4; ++p)
+		for (Uint32 p = 0; p < 4; ++p)
 		{
 			results.emplace_back(rom::Palette::LoadFromROM(*this, 0x000A1388 + (Palette::s_palette_size_on_rom * p)));
 		}
 		return results;
 	}
 
-	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const
+	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, Uint32 offset, Point dimensions, const rom::Palette& palette) const
 	{
 		if (dimensions.x <= 0 || dimensions.y <= 0)
 		{
@@ -101,7 +101,7 @@ namespace spintool
 		
 	}
 
-	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const
+	void rom::SpinballROM::RenderToSurface(SDL_Surface* surface, Uint32 offset, Point dimensions) const
 	{
 		if (dimensions.x <= 0 || dimensions.y <= 0)
 		{
@@ -121,7 +121,7 @@ namespace spintool
 		const BoundingBox bounds{ 0,0, dimensions.x, dimensions.y };
 		const SDL_PixelFormatDetails* pixel_format = SDL_GetPixelFormatDetails(surface->format);
 
-		size_t next_offset = offset;
+		Uint32 next_offset = offset;
 		std::vector<Uint32> pixels_data;
 		for (int i = 0; i < dimensions.x * dimensions.y; ++i)
 		{
@@ -238,7 +238,7 @@ namespace spintool
 		return palette_set;
 	}
 
-	Uint32 rom::SpinballROM::ReadUint32(size_t offset) const
+	Uint32 rom::SpinballROM::ReadUint32(Uint32 offset) const
 	{
 		if (offset + 4 <= m_buffer.size())
 		{
@@ -248,7 +248,7 @@ namespace spintool
 		return 0;
 	}
 
-	Uint16 rom::SpinballROM::ReadUint16(size_t offset) const
+	Uint16 rom::SpinballROM::ReadUint16(Uint32 offset) const
 	{
 		if (offset + 2 <= m_buffer.size())
 		{
@@ -258,7 +258,7 @@ namespace spintool
 		return 0;
 	}
 
-	Uint8 rom::SpinballROM::ReadUint8(size_t offset) const
+	Uint8 rom::SpinballROM::ReadUint8(Uint32 offset) const
 	{
 		if (offset < m_buffer.size())
 		{
@@ -273,7 +273,7 @@ namespace spintool
 		return m_palettes;
 	}
 
-	size_t rom::SpinballROM::WriteUint8(size_t offset, Uint8 value)
+	Uint32 rom::SpinballROM::WriteUint8(Uint32 offset, Uint8 value)
 	{
 		if (offset + 1 <= m_buffer.size())
 		{
@@ -282,7 +282,7 @@ namespace spintool
 		return offset + 1;
 	}
 
-	size_t rom::SpinballROM::WriteUint16(size_t offset, Uint16 value)
+	Uint32 rom::SpinballROM::WriteUint16(Uint32 offset, Uint16 value)
 	{
 		if ((offset + 2) <= m_buffer.size())
 		{
@@ -293,7 +293,7 @@ namespace spintool
 		return offset + 2;
 	}
 
-	size_t rom::SpinballROM::WriteUint32(size_t offset, Uint32 value)
+	Uint32 rom::SpinballROM::WriteUint32(Uint32 offset, Uint32 value)
 	{
 		if ((offset + 4) <= m_buffer.size())
 		{

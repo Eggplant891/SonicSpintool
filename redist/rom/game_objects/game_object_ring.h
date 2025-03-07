@@ -17,8 +17,8 @@ namespace spintool::rom
 		Uint16 x_pos = 0;
 		Uint16 y_pos = 0;
 
-		constexpr static const size_t s_size_on_rom = 0x4;
+		constexpr static const Uint32 s_size_on_rom = 0x4;
 
-		static RingInstance LoadFromROM(const rom::SpinballROM& rom, size_t offset);
+		static RingInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
 	};
 }

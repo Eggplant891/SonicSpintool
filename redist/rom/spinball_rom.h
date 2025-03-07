@@ -21,22 +21,22 @@ namespace spintool::rom
 	{
 	public:
 		bool LoadROMFromPath(const std::filesystem::path& path);
-		size_t GetOffsetForNextSprite(const rom::Sprite& current_sprite) const;
-		std::vector<std::shared_ptr<rom::Palette>> LoadPalettes(size_t num_palettes) const;
+		Uint32 GetOffsetForNextSprite(const rom::Sprite& current_sprite) const;
+		std::vector<std::shared_ptr<rom::Palette>> LoadPalettes(Uint32 num_palettes) const;
 
 		void SaveROM();
 
-		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions) const;
-		void RenderToSurface(SDL_Surface* surface, size_t offset, Point dimensions, const rom::Palette& palette) const;
+		void RenderToSurface(SDL_Surface* surface, Uint32 offset, Point dimensions) const;
+		void RenderToSurface(SDL_Surface* surface, Uint32 offset, Point dimensions, const rom::Palette& palette) const;
 		void BlitRawPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
 
-		Uint8 ReadUint8(size_t offset) const;
-		Uint16 ReadUint16(size_t offset) const;
-		Uint32 ReadUint32(size_t offset) const;
+		Uint8 ReadUint8(Uint32 offset) const;
+		Uint16 ReadUint16(Uint32 offset) const;
+		Uint32 ReadUint32(Uint32 offset) const;
 
-		size_t WriteUint8(size_t offset, Uint8 value);
-		size_t WriteUint16(size_t offset, Uint16 value);
-		size_t WriteUint32(size_t offset, Uint32 value);
+		Uint32 WriteUint8(Uint32 offset, Uint8 value);
+		Uint32 WriteUint16(Uint32 offset, Uint16 value);
+		Uint32 WriteUint32(Uint32 offset, Uint32 value);
 
 		std::vector<unsigned char> m_buffer;
 		std::filesystem::path m_filepath;

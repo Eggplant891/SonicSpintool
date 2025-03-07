@@ -4,11 +4,11 @@
 
 namespace spintool::rom
 {
-	FlipperInstance FlipperInstance::LoadFromROM(const rom::SpinballROM& rom, size_t offset)
+	FlipperInstance FlipperInstance::LoadFromROM(const rom::SpinballROM& rom, Uint32 offset)
 	{
 		FlipperInstance new_instance;
 
-		size_t current_offset = offset;
+		Uint32 current_offset = offset;
 
 		new_instance.animated_obj_ptr = rom.ReadUint32(current_offset);
 		current_offset += 4;

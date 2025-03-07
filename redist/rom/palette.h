@@ -26,24 +26,24 @@ namespace spintool::rom
 
 	struct Palette
 	{
-		constexpr static const size_t s_swatches_per_palette = 16;
-		constexpr static const size_t s_size_per_swatch = 2;
-		constexpr static const size_t s_palette_size_on_rom = s_swatches_per_palette * s_size_per_swatch;
+		constexpr static const Uint32 s_swatches_per_palette = 16;
+		constexpr static const Uint32 s_size_per_swatch = 2;
+		constexpr static const Uint32 s_palette_size_on_rom = s_swatches_per_palette * s_size_per_swatch;
 		
 		std::array<Swatch, s_swatches_per_palette> palette_swatches;
-		size_t offset;
+		Uint32 offset;
 
-		static std::shared_ptr<Palette> LoadFromROM(const SpinballROM& src_rom, size_t offset);
+		static std::shared_ptr<Palette> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
 
 	};
 
 	struct PaletteSet
 	{
-		constexpr static const size_t s_max_palettes = 4;
+		constexpr static const Uint32 s_max_palettes = 4;
 
 		std::array<std::shared_ptr<Palette>, s_max_palettes> palette_lines;
 
-		static std::shared_ptr<PaletteSet> LoadFromROM(const SpinballROM& src_rom, size_t offset);
+		static std::shared_ptr<PaletteSet> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
 
 		bool operator==(const PaletteSet& rhs);
 	};

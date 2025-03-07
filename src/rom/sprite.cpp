@@ -28,7 +28,7 @@ namespace spintool::rom
 		return { -bounds.min.x, -bounds.min.y };
 	}
 
-	std::shared_ptr<const Sprite> Sprite::LoadFromROM(const SpinballROM& src_rom, size_t offset)
+	std::shared_ptr<const Sprite> Sprite::LoadFromROM(const SpinballROM& src_rom, Uint32 offset)
 	{
 		if (offset + 4 < offset) // overflow detection
 		{
@@ -60,7 +60,7 @@ namespace spintool::rom
 		{
 			sprite_tile = std::make_shared<rom::SpriteTile>();
 
-			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, (current_byte - rom_data_start) + offset);
+			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, static_cast<Uint32>(current_byte - rom_data_start) + offset);
 		}
 
 		if (new_sprite->num_tiles == 0)
@@ -85,12 +85,12 @@ namespace spintool::rom
 
 		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
 		{
-			const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
+			const Uint32 total_pixels = sprite_tile->x_size * sprite_tile->y_size;
 			if (total_pixels != 0)
 			{
 				if (offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < src_rom.m_buffer.size())
 				{
-					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), (current_byte - rom_data_start) + offset, src_rom);
+					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), static_cast<Uint32>(current_byte - rom_data_start) + offset, src_rom);
 				}
 			}
 		}
@@ -116,7 +116,7 @@ namespace spintool::rom
 		Renderer::s_sdl_update_mutex.unlock();
 	}
 
-	size_t rom::Sprite::GetSizeOf() const
+	Uint32 rom::Sprite::GetSizeOf() const
 	{
 		return rom_data.real_size;
 	}

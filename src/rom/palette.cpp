@@ -6,7 +6,7 @@
 
 namespace spintool::rom
 {
-	std::shared_ptr<spintool::rom::Palette> Palette::LoadFromROM(const SpinballROM& src_rom, size_t offset)
+	std::shared_ptr<spintool::rom::Palette> Palette::LoadFromROM(const SpinballROM& src_rom, Uint32 offset)
 	{
 		if (offset >= src_rom.m_buffer.size() || offset + s_palette_size_on_rom >= src_rom.m_buffer.size())
 		{
@@ -46,7 +46,7 @@ namespace spintool::rom
 		return ImColor{ col[0], col[1], col[2], 1.0f };
 	}
 
-	std::shared_ptr<spintool::rom::PaletteSet> PaletteSet::LoadFromROM(const SpinballROM& src_rom, size_t offset)
+	std::shared_ptr<spintool::rom::PaletteSet> PaletteSet::LoadFromROM(const SpinballROM& src_rom, Uint32 offset)
 	{
 		constexpr size_t root_palette = 0xDFC;
 
@@ -70,7 +70,7 @@ namespace spintool::rom
 
 	bool PaletteSet::operator==(const PaletteSet& rhs)
 	{
-		for (size_t i = 0; i < palette_lines.size(); ++i)
+		for (Uint32 i = 0; i < palette_lines.size(); ++i)
 		{
 			if (palette_lines[i] != nullptr && palette_lines[i].get() != rhs.palette_lines[i].get())
 			{

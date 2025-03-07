@@ -4,11 +4,11 @@
 
 namespace spintool::rom
 {
-	RingInstance RingInstance::LoadFromROM(const rom::SpinballROM& rom, size_t offset)
+	RingInstance RingInstance::LoadFromROM(const rom::SpinballROM& rom, Uint32 offset)
 	{
 		RingInstance new_instance;
 
-		size_t current_offset = offset;
+		Uint32 current_offset = offset;
 
 		new_instance.instance_id = rom.ReadUint16(current_offset);
 		current_offset += 2;

@@ -28,7 +28,7 @@ namespace spintool::rom
 
 		constexpr static const size_t s_size_on_rom = 0x14;
 
-		static GameObjectDefinition LoadFromROM(const rom::SpinballROM& rom, size_t offset);
-		size_t SaveToROM(rom::SpinballROM& writeable_rom);
+		static GameObjectDefinition LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
+		Uint32 SaveToROM(rom::SpinballROM& writeable_rom);
 	};
 }

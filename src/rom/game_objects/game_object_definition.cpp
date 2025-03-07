@@ -4,11 +4,11 @@
 
 namespace spintool::rom
 {
-	GameObjectDefinition GameObjectDefinition::LoadFromROM(const rom::SpinballROM& rom, size_t offset)
+	GameObjectDefinition GameObjectDefinition::LoadFromROM(const rom::SpinballROM& rom, Uint32 offset)
 	{
 		GameObjectDefinition new_instance;
 
-		size_t current_offset = offset;
+		Uint32 current_offset = offset;
 
 		new_instance.type_id = rom.ReadUint8(current_offset);
 		current_offset += 1;
@@ -37,9 +37,9 @@ namespace spintool::rom
 		return new_instance;
 	}
 
-	size_t GameObjectDefinition::SaveToROM(rom::SpinballROM& writeable_rom)
+	Uint32 GameObjectDefinition::SaveToROM(rom::SpinballROM& writeable_rom)
 	{
-		size_t current_offset = rom_data.rom_offset;
+		Uint32 current_offset = rom_data.rom_offset;
 
 		current_offset = writeable_rom.WriteUint8(current_offset, type_id);
 		current_offset = writeable_rom.WriteUint8(current_offset, instance_id);

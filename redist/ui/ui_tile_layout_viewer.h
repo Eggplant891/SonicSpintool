@@ -40,11 +40,11 @@ namespace spintool
 	struct RenderTileLayoutRequest
 	{
 		CompressionAlgorithm compression_algorithm = CompressionAlgorithm::NONE;
-		size_t tileset_address = 0;
-		size_t tile_brushes_address = 0;
-		size_t tile_brushes_address_end = 0;
-		size_t tile_layout_address = 0;
-		std::optional<size_t> tile_layout_address_end;
+		Uint32 tileset_address = 0;
+		Uint32 tile_brushes_address = 0;
+		Uint32 tile_brushes_address_end = 0;
+		Uint32 tile_layout_address = 0;
+		std::optional<Uint32> tile_layout_address_end;
 		std::optional<Uint16> palette_line;
 		unsigned int tile_layout_width = 0;
 		unsigned int tile_layout_height = 0;

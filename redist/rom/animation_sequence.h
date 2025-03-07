@@ -58,7 +58,7 @@ namespace spintool::rom
 		ROMData rom_data;
 		std::vector<AnimationCommand> command_sequence;
 
-		static std::shared_ptr<const AnimationSequence> LoadFromROM(const SpinballROM& src_rom, size_t offset, Ptr32 sprite_table_offset);
+		static std::shared_ptr<const AnimationSequence> LoadFromROM(const SpinballROM& src_rom, Uint32 offset, Ptr32 sprite_table_offset);
 	};
 
 	struct AnimationTable

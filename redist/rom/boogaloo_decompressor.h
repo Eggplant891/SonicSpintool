@@ -15,9 +15,9 @@ namespace spintool::rom
 	class BoogalooDecompressor
 	{
 	public:
-		static BoogalooDecompressionResult DecompressData(const std::vector<Uint8>& in_data, const size_t offset);
-		static BoogalooDecompressionResult DecompressDataRefactored(const std::vector<Uint8>& in_data, const size_t offset);
-		static BoogalooDecompressionResult IsValidSSCCompressedData(const Uint8* in_data, const size_t starting_offset);
+		static BoogalooDecompressionResult DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset);
+		static BoogalooDecompressionResult DecompressDataRefactored(const std::vector<Uint8>& in_data, const Uint32 offset);
+		static BoogalooDecompressionResult IsValidSSCCompressedData(const Uint8* in_data, const Uint32 starting_offset);
 	private:
 	};
 }

@@ -10,11 +10,11 @@ namespace spintool
 	{
 		const rom::SpinballROM& rom = m_owning_ui.GetROM();
 
-		static size_t player_anims_offset = 0x6FE;
-		static size_t num_player_anims = 58;
+		static Uint32 player_anims_offset = 0x6FE;
+		static Uint32 num_player_anims = 58;
 
 		m_animations.reserve(num_player_anims);
-		for (size_t i = 0; i < num_player_anims; ++i)
+		for (Uint32 i = 0; i < num_player_anims; ++i)
 		{
 			UIAnimationSequence sequence = { rom::AnimationSequence::LoadFromROM(rom, rom.ReadUint32(player_anims_offset + (i * 4)), 0x13DC) };
 			m_animations.emplace_back(std::move(sequence));
@@ -25,11 +25,11 @@ namespace spintool
 	{
 		const rom::SpinballROM& rom = m_owning_ui.GetROM();
 
-		static size_t player_anims_offset = 0x0003909e;
-		static size_t num_player_anims = 0x3E;
+		static Uint32 player_anims_offset = 0x0003909e;
+		static Uint32 num_player_anims = 0x3E;
 
 		m_animations.reserve(num_player_anims);
-		for (size_t i = 0; i < num_player_anims; ++i)
+		for (Uint32 i = 0; i < num_player_anims; ++i)
 		{
 			UIAnimationSequence sequence = { rom::AnimationSequence::LoadFromROM(rom, rom.ReadUint32(player_anims_offset + (i * 4)), 0x12B0C) };
 			m_animations.emplace_back(std::move(sequence));

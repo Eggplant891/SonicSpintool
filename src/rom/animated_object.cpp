@@ -3,10 +3,10 @@
 
 namespace spintool::rom
 {
-	AnimObjectDefinition AnimObjectDefinition::LoadFromROM(const rom::SpinballROM& rom, size_t offset)
+	AnimObjectDefinition AnimObjectDefinition::LoadFromROM(const rom::SpinballROM& rom, Uint32 offset)
 	{
 		AnimObjectDefinition new_instance;
-		size_t current_offset = offset;
+		Uint32 current_offset = offset;
 
 		new_instance.sprite_table = rom.ReadUint32(current_offset);
 		current_offset += 4;

@@ -2,7 +2,7 @@
 
 namespace spintool::rom
 {
-	SSCDecompressionResult SSCDecompressor::IsValidSSCCompressedData(const Uint8* in_data, const size_t starting_offset)
+	SSCDecompressionResult SSCDecompressor::IsValidSSCCompressedData(const Uint8* in_data, const Uint32 starting_offset)
 	{
 		SSCDecompressionResult results;
 
@@ -74,7 +74,7 @@ namespace spintool::rom
 		return results;
 	}
 
-	SSCDecompressionResult SSCDecompressor::DecompressData(const std::vector<Uint8>& in_data, const size_t offset, const size_t working_data_size_hint)
+	SSCDecompressionResult SSCDecompressor::DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset, const Uint32 working_data_size_hint)
 	{
 		SSCDecompressionResult results;
 		

@@ -31,7 +31,7 @@ namespace spintool::rom
 
 		ROMData header_rom_data;
 
-		const Uint8* LoadFromROM(const Uint8* rom_data_start, const size_t rom_data_offset);
+		const Uint8* LoadFromROM(const Uint8* rom_data_start, const Uint32 rom_data_offset);
 	};
 
 	struct SpriteTileData
@@ -40,7 +40,7 @@ namespace spintool::rom
 
 		ROMData tile_rom_data;
 
-		const Uint8* LoadFromROM(const SpriteTileHeader& header, const size_t rom_data_offset, const SpinballROM& src_rom);
+		const Uint8* LoadFromROM(const SpriteTileHeader& header, const Uint32 rom_data_offset, const SpinballROM& src_rom);
 	};
 
 	struct SpriteTile

@@ -7,7 +7,7 @@
 
 namespace spintool
 {
-	size_t s_tile_offsets[] =
+	Uint32 s_tile_offsets[] =
 	{
 		0x0003DBB2, // Toxic Caves
 		0x000394AA,
@@ -20,7 +20,7 @@ namespace spintool
 		0x000BDD2E, // Options
 	};
 
-	size_t s_tile_offsets_non_ssc[] =
+	Uint32 s_tile_offsets_non_ssc[] =
 	{
 		0x0009D104, // Main Menu BG tiles
 		(0x000A3124 + 2), // Veg-o-fortress BG tiles
@@ -44,12 +44,12 @@ namespace spintool
 		{
 			if (ImGui::Button("Load all tilesets"))
 			{
-				for (size_t offset : s_tile_offsets)
+				for (Uint32 offset : s_tile_offsets)
 				{
 					m_tilesets.emplace_back(rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), offset));
 				}
 
-				for (size_t offset : s_tile_offsets_non_ssc)
+				for (Uint32 offset : s_tile_offsets_non_ssc)
 				{
 					m_tilesets.emplace_back(rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), offset));
 				}
@@ -77,9 +77,9 @@ namespace spintool
 			valid_ssc_results.reserve(0xFFFF);
 			if (ImGui::Button("Search for SSC Compressed data"))
 			{
-				constexpr size_t max_tiles = 256;
+				constexpr Uint32 max_tiles = 256;
 				valid_ssc_results.clear();
-				size_t next_offset = actual_offset;
+				Uint32 next_offset = actual_offset;
 				while (next_offset+2 < m_owning_ui.GetROM().m_buffer.size())
 				{
 					Uint16 num_tiles = (static_cast<Sint16>(m_owning_ui.GetROM().m_buffer[next_offset] << 8)) | (static_cast<Sint16>(m_owning_ui.GetROM().m_buffer[next_offset + 1]));

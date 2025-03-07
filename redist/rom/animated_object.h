@@ -22,6 +22,6 @@ namespace spintool::rom
 
 		constexpr static const size_t s_size_on_rom = 0xC;
 
-		static AnimObjectDefinition LoadFromROM(const rom::SpinballROM& rom, size_t offset);
+		static AnimObjectDefinition LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
 	};
 }

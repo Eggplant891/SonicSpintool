@@ -15,6 +15,7 @@
 #include <limits>
 #include <algorithm>
 #include <iterator>
+#include "rom/culling_tables/game_obj_collision_culling_table.h"
 
 
 namespace spintool
@@ -567,16 +568,16 @@ namespace spintool
 
 			if (render_flippers)
 			{
-				const static size_t flippers_ptr_table_offset = 0x000C08BE;
-				const static size_t flippers_count_table_offset = 0x000C08EE;
-				const static size_t flipper_palette[4] =
+				const static Uint32 flippers_ptr_table_offset = 0x000C08BE;
+				const static Uint32 flippers_count_table_offset = 0x000C08EE;
+				const static Uint32 flipper_palette[4] =
 				{
 					0x1,
 					0x0,
 					0x0,
 					0x0
 				};
-				const static size_t flipper_sprite_offset[4] =
+				const static Uint32 flipper_sprite_offset[4] =
 				{
 					0x00017E82,
 					0x0002594A,
@@ -598,9 +599,9 @@ namespace spintool
 				m_flipper_instances.clear();
 				m_flipper_instances.reserve(num_flippers);
 
-				size_t current_table_offset = flippers_table_begin;
+				Uint32 current_table_offset = flippers_table_begin;
 
-				for (size_t i = 0; i < num_flippers; ++i)
+				for (Uint32 i = 0; i < num_flippers; ++i)
 				{
 					m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
 					current_table_offset = m_flipper_instances.back().rom_data.rom_offset_end;
@@ -609,7 +610,7 @@ namespace spintool
 
 			if (render_rings)
 			{
-				const static size_t ring_sprite_offset = 0x0000F6D8;
+				const static Uint32 ring_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> LevelRingSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
 				RingPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
@@ -623,9 +624,9 @@ namespace spintool
 				m_ring_instances.reserve(level_data_offsets.ring_instances.count);
 
 				{
-					size_t current_table_offset = level_data_offsets.ring_instances.offset;
+					Uint32 current_table_offset = level_data_offsets.ring_instances.offset;
 
-					for (size_t i = 0; i < level_data_offsets.ring_instances.count; ++i)
+					for (Uint32 i = 0; i < level_data_offsets.ring_instances.count; ++i)
 					{
 						m_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
 						current_table_offset = m_ring_instances.back().rom_data.rom_offset_end;
@@ -649,9 +650,9 @@ namespace spintool
 				m_game_obj_instances.reserve(level_data_offsets.object_instances.count);
 
 				{
-					size_t current_table_offset = level_data_offsets.object_instances.offset;
+					Uint32 current_table_offset = level_data_offsets.object_instances.offset;
 
-					for (size_t i = 0; i < level_data_offsets.object_instances.count; ++i)
+					for (Uint32 i = 0; i < level_data_offsets.object_instances.count; ++i)
 					{
 						m_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
 						const rom::Ptr32 anim_def_offset = m_game_obj_instances.back().animation_definition;
@@ -1282,30 +1283,17 @@ namespace spintool
 								}
 							}
 
-							for (Uint32 sector_index = 0; sector_index < 256 - 1; ++sector_index)
+							rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.collision_tile_obj_ids.offset);
+							for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size(); ++sector_index)
 							{
-								const rom::Ptr32 anim_obj_collision_data = level_data_offsets.collision_tile_obj_ids.offset;
-								const Uint16 data_offset = m_owning_ui.GetROM().ReadUint16(anim_obj_collision_data + sector_index*2);
-								const rom::Ptr32 activation_sector_data = anim_obj_collision_data + data_offset;
-
-								const Uint32 instance_id = game_obj->obj_definition.instance_id;
-								const Uint32 data_offset_end = m_owning_ui.GetROM().ReadUint16(anim_obj_collision_data + sector_index*2 + 2);
-								const Uint32 num_obj_ids = data_offset_end - data_offset;
-
-								for (Uint32 i = 0; i < num_obj_ids; ++i)
+								const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
+								for (const Uint16 obj_id : cell.obj_ids)
 								{
-									const Uint32 obj_id = m_owning_ui.GetROM().ReadUint16(anim_obj_collision_data + (data_offset*2) + (i*2));
 									if (obj_id == game_obj->obj_definition.instance_id)
 									{
-										BoundingBox sector_bbox;
-										sector_bbox.min.x = (sector_index % num_tiles_x) * tile_width;
-										sector_bbox.min.y = (sector_index / num_tiles_x) * tile_width;
-										sector_bbox.max.x = sector_bbox.min.x + tile_width;
-										sector_bbox.max.y = sector_bbox.min.y + tile_width;
-
 										ImGui::GetWindowDrawList()->AddRect(
-											ImVec2{ static_cast<float>(screen_origin.x + sector_bbox.min.x), static_cast<float>(screen_origin.y + sector_bbox.min.y) },
-											ImVec2{ static_cast<float>(screen_origin.x + sector_bbox.max.x), static_cast<float>(screen_origin.y + sector_bbox.max.y) },
+											ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+											ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
 											ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
 									}
 								}

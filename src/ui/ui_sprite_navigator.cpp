@@ -164,7 +164,7 @@ namespace spintool
 				std::vector<rom::Ptr32> sprite_offsets;
 				sprite_offsets.reserve(num_sprites);
 
-				for (size_t i = 0; i < num_sprites; ++i)
+				for (Uint32 i = 0; i < num_sprites; ++i)
 				{
 					sprite_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table_begin + (i*2)));
 				}
@@ -208,7 +208,7 @@ namespace spintool
 					const std::shared_ptr<const rom::TileSet>& tileset = tileset_entry.tileset;
 
 					ImGui::SeparatorText("Tileset");
-					size_t offset = 0;
+					Uint32 offset = 0;
 					while (true)
 					{
 						if (tileset->rom_data.rom_offset_end <= offset)
@@ -272,7 +272,7 @@ namespace spintool
 
 						results.clear();
 
-						size_t working_offset = 0;
+						Uint32 working_offset = 0;
 						while (working_offset < m_owning_ui.GetROM().m_buffer.size())
 						{
 							render_process_progress = working_offset / static_cast<float>(m_owning_ui.GetROM().m_buffer.size());
@@ -291,11 +291,11 @@ namespace spintool
 
 						render_process_progress = 0.0f;
 
-						size_t progress = 0;
-						for (size_t i = 0; i < results.size(); ++i)
+						Uint32 progress = 0;
+						for (Uint32 i = 0; i < results.size(); ++i)
 						{
-							constexpr size_t num_cycles_until_wait = 32;
-							for (size_t cycles = 0; cycles < num_cycles_until_wait && i < results.size(); ++cycles, ++i)
+							constexpr Uint32 num_cycles_until_wait = 32;
+							for (Uint32 cycles = 0; cycles < num_cycles_until_wait && i < results.size(); ++cycles, ++i)
 							{
 								std::shared_ptr<UISpriteTexture>& sprite = results[i];
 
