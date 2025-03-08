@@ -2,7 +2,7 @@
 #include "rom/sprite.h"
 #include "rom/spinball_rom.h"
 #include "rom/ssc_decompressor.h"
-#include "rom/boogaloo_decompressor.h"
+#include "rom/lzss_decompressor.h"
 
 namespace spintool::rom
 {

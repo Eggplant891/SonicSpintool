@@ -1,4 +1,4 @@
-﻿#include "rom/boogaloo_decompressor.h"
+﻿#include "rom/lzss_decompressor.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include <array>
