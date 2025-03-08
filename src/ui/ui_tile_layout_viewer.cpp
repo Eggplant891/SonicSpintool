@@ -76,6 +76,12 @@ namespace spintool
 		}
 	};
 
+	EditorTileLayoutViewer::EditorTileLayoutViewer(EditorUI& owning_ui)
+		: EditorWindowBase(owning_ui)
+	{
+		m_level = std::make_shared<Level>();
+	}
+
 	void EditorTileLayoutViewer::Update()
 	{
 		if (IsOpen() == false)
@@ -636,15 +642,15 @@ namespace spintool
 				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * level_index));
 				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * level_index));
 
-				m_flipper_instances.clear();
-				m_flipper_instances.reserve(num_flippers);
+				m_level->m_flipper_instances.clear();
+				m_level->m_flipper_instances.reserve(num_flippers);
 
 				Uint32 current_table_offset = flippers_table_begin;
 
 				for (Uint32 i = 0; i < num_flippers; ++i)
 				{
-					m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-					current_table_offset = m_flipper_instances.back().rom_data.rom_offset_end;
+					m_level->m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+					current_table_offset = m_level->m_flipper_instances.back().rom_data.rom_offset_end;
 				}
 			}
 
@@ -660,16 +666,16 @@ namespace spintool
 				SDL_SetSurfaceColorKey(RingPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(RingPreview.sprite->format), nullptr, 0, 0, 0, 0));
 				LevelRingSprite->RenderToSurface(RingPreview.sprite.get());
 
-				m_ring_instances.clear();
-				m_ring_instances.reserve(level_data_offsets.ring_instances.count);
+				m_level->m_ring_instances.clear();
+				m_level->m_ring_instances.reserve(level_data_offsets.ring_instances.count);
 
 				{
 					Uint32 current_table_offset = level_data_offsets.ring_instances.offset;
 
 					for (Uint32 i = 0; i < level_data_offsets.ring_instances.count; ++i)
 					{
-						m_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-						current_table_offset = m_ring_instances.back().rom_data.rom_offset_end;
+						m_level->m_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						current_table_offset = m_level->m_ring_instances.back().rom_data.rom_offset_end;
 					}
 				}
 				/////////////
@@ -686,17 +692,17 @@ namespace spintool
 
 				spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain)));
 				m_preview_game_objects.clear();
-				m_game_obj_instances.clear();
 				m_anim_sprite_instances.clear();
-				m_game_obj_instances.reserve(level_data_offsets.object_instances.count);
+				m_level->m_game_obj_instances.clear();
+				m_level->m_game_obj_instances.reserve(level_data_offsets.object_instances.count);
 
 				{
 					Uint32 current_table_offset = level_data_offsets.object_instances.offset;
 
 					for (Uint32 i = 0; i < level_data_offsets.object_instances.count; ++i)
 					{
-						m_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-						const rom::Ptr32 anim_def_offset = m_game_obj_instances.back().animation_definition;
+						m_level->m_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						const rom::Ptr32 anim_def_offset = m_level->m_game_obj_instances.back().animation_definition;
 						rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
 
 						auto found_sprite = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
@@ -733,7 +739,7 @@ namespace spintool
 
 							m_anim_sprite_instances.emplace_back(std::move(entry));
 						}
-						current_table_offset = m_game_obj_instances.back().rom_data.rom_offset_end;
+						current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
 					}
 				}
 			}
@@ -788,25 +794,25 @@ namespace spintool
 				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
 				if (request.compression_algorithm == CompressionAlgorithm::SSC)
 				{
-					m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
+					m_level->m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
+					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				}
 				else if (request.compression_algorithm == CompressionAlgorithm::BOOGALOO)
 				{
-					m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_tileset, request.tile_layout_address, request.tile_layout_address_end);
+					m_level->m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
+					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_level->m_tileset, request.tile_layout_address, request.tile_layout_address_end);
 				}
 
 				if (export_combined == false)
 				{
-					current_preview_data->tile_layout_address = m_tile_layout->rom_data.rom_offset;
-					current_preview_data->tile_layout_address_end = m_tile_layout->rom_data.rom_offset_end;
+					current_preview_data->tile_layout_address = m_level->m_tile_layout->rom_data.rom_offset;
+					current_preview_data->tile_layout_address_end = m_level->m_tile_layout->rom_data.rom_offset_end;
 				}
-				std::shared_ptr<const rom::Sprite> tileset_sprite = m_tileset->CreateSpriteFromTile(0);
+				std::shared_ptr<const rom::Sprite> tileset_sprite = m_level->m_tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
 
 				std::vector<rom::Sprite> brushes;
-				brushes.reserve(m_tile_layout->tile_brushes.size());
+				brushes.reserve(m_level->m_tile_layout->tile_brushes.size());
 
 				auto& brush_previews = m_tile_brushes_preview_list.emplace_back();
 				brush_previews.reserve(brushes.capacity());
@@ -815,14 +821,14 @@ namespace spintool
 				const int brush_width = static_cast<int>(request.tile_brush_width * rom::TileSet::s_tile_width);
 				const int brush_height = static_cast<int>(request.tile_brush_height * rom::TileSet::s_tile_height);
 
-				for (size_t brush_index = 0; brush_index < m_tile_layout->tile_brushes.size(); ++brush_index)
+				for (size_t brush_index = 0; brush_index < m_level->m_tile_layout->tile_brushes.size(); ++brush_index)
 				{
-					rom::TileBrushBase& brush = *m_tile_layout->tile_brushes[brush_index].get();
+					rom::TileBrushBase& brush = *m_level->m_tile_layout->tile_brushes[brush_index].get();
 					rom::Sprite& brush_sprite = brushes.emplace_back();
 					for (size_t i = 0; i < brush.tiles.size(); ++i)
 					{
 						rom::TileInstance& tile = brush.tiles[i];
-						std::shared_ptr<rom::SpriteTile> sprite_tile = m_tileset->CreateSpriteTileFromTile(tile.tile_index);
+						std::shared_ptr<rom::SpriteTile> sprite_tile = m_level->m_tileset->CreateSpriteTileFromTile(tile.tile_index);
 
 						if (sprite_tile == nullptr)
 						{
@@ -849,21 +855,21 @@ namespace spintool
 					brush_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
 				}
 
-				for (size_t i = 0; i < m_tile_layout->tile_brush_instances.size(); ++i)
+				for (size_t i = 0; i < m_level->m_tile_layout->tile_brush_instances.size(); ++i)
 				{
-					const auto tile_brush_index = m_tile_layout->tile_brush_instances[i].tile_brush_index;
+					const auto tile_brush_index = m_level->m_tile_layout->tile_brush_instances[i].tile_brush_index;
 					if (tile_brush_index >= brush_previews.size())
 					{
 						break;
 					}
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(brush_previews[tile_brush_index].surface.get()) };
-					if (m_tile_layout->tile_brush_instances[i].is_flipped_horizontally)
+					if (m_level->m_tile_layout->tile_brush_instances[i].is_flipped_horizontally)
 					{
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
 					}
 
-					if (m_tile_layout->tile_brush_instances[i].is_flipped_vertically)
+					if (m_level->m_tile_layout->tile_brush_instances[i].is_flipped_vertically)
 					{
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
 					}
@@ -878,21 +884,21 @@ namespace spintool
 
 				if (request.draw_mirrored_layout)
 				{
-					for (size_t i = 0; i < m_tile_layout->tile_brush_instances.size(); ++i)
+					for (size_t i = 0; i < m_level->m_tile_layout->tile_brush_instances.size(); ++i)
 					{
-						const auto tile_brush_index = m_tile_layout->tile_brush_instances[i].tile_brush_index;
+						const auto tile_brush_index = m_level->m_tile_layout->tile_brush_instances[i].tile_brush_index;
 						if (tile_brush_index >= brush_previews.size())
 						{
 							break;
 						}
 
 						SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(brush_previews[tile_brush_index].surface.get()) };
-						if (m_tile_layout->tile_brush_instances[i].is_flipped_horizontally == false)
+						if (m_level->m_tile_layout->tile_brush_instances[i].is_flipped_horizontally == false)
 						{
 							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
 						}
 
-						if (m_tile_layout->tile_brush_instances[i].is_flipped_vertically)
+						if (m_level->m_tile_layout->tile_brush_instances[i].is_flipped_vertically)
 						{
 							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
 						}
@@ -924,9 +930,9 @@ namespace spintool
 
 			if (render_flippers)
 			{
-				for (size_t i = 0; i < m_flipper_instances.size(); ++i)
+				for (size_t i = 0; i < m_level->m_flipper_instances.size(); ++i)
 				{
-					const rom::FlipperInstance& flipper = m_flipper_instances[i];
+					const rom::FlipperInstance& flipper = m_level->m_flipper_instances[i];
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(FlipperPreview.sprite.get()) };
 					int x_off = -24;
@@ -944,9 +950,9 @@ namespace spintool
 
 			if (render_rings)
 			{
-				for (size_t i = 0; i < m_ring_instances.size(); ++i)
+				for (size_t i = 0; i < m_level->m_ring_instances.size(); ++i)
 				{
-					const rom::RingInstance& ring = m_ring_instances[i];
+					const rom::RingInstance& ring = m_level->m_ring_instances[i];
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(RingPreview.sprite.get()) };
 					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
@@ -971,10 +977,10 @@ namespace spintool
 				};
 				static rom::Colour collision_box_colour = { 0, 255, 255, 255 };
 
-				for (size_t i = 0; i < m_game_obj_instances.size(); ++i)
+				for (size_t i = 0; i < m_level->m_game_obj_instances.size(); ++i)
 				{
-					const rom::GameObjectDefinition& game_obj = m_game_obj_instances[i];
-					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_game_obj_instances[i].animation_definition);
+					const rom::GameObjectDefinition& game_obj = m_level->m_game_obj_instances[i];
+					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_level->m_game_obj_instances[i].animation_definition);
 
 					auto anim_entry = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
 						{

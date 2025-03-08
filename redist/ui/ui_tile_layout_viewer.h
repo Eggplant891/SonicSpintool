@@ -14,9 +14,11 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include "editor/level.h"
 
 namespace spintool
 {
+	class EditorUI;
 	struct UISpriteTexture;
 }
 
@@ -79,7 +81,7 @@ namespace spintool
 	class EditorTileLayoutViewer : public EditorWindowBase
 	{
 	public:
-		using EditorWindowBase::EditorWindowBase;
+		EditorTileLayoutViewer(EditorUI& owning_ui);
 		void Update() override;
 
 		struct AnimSpriteEntry
@@ -92,18 +94,13 @@ namespace spintool
 		};
 
 	private:
+		std::shared_ptr<Level> m_level;
+
 		SDLTextureHandle m_tile_layout_preview_bg;
 		SDLTextureHandle m_tile_layout_preview_fg;
-		std::vector<std::vector<TileBrushPreview>> m_tile_brushes_preview_list;
-		std::shared_ptr<const rom::TileSet> m_tileset;
-		std::shared_ptr<rom::TileLayout> m_tile_layout;
 		std::vector<RenderTileLayoutRequest> m_tile_layout_render_requests;
-		std::vector<rom::FlipperInstance> m_flipper_instances;
-		std::vector<rom::RingInstance> m_ring_instances;
-		std::vector<rom::GameObjectDefinition> m_game_obj_instances;
-		std::vector<rom::AnimObjectDefinition> m_anim_obj_instances;
-
-		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
+		std::vector<std::vector<TileBrushPreview>> m_tile_brushes_preview_list;
 		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
+		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 	};
 }
