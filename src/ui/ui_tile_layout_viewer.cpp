@@ -1260,18 +1260,21 @@ namespace spintool
 								}
 							}
 
-							rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.collision_tile_obj_ids.offset);
-							for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size()-1; ++sector_index)
+							if (level_data_offsets.collision_tile_obj_ids.offset != 0)
 							{
-								const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
-								for (const Uint16 obj_id : cell.obj_ids)
+								rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.collision_tile_obj_ids.offset);
+								for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
 								{
-									if (obj_id == game_obj->obj_definition.instance_id)
+									const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
+									for (const Uint16 obj_id : cell.obj_ids)
 									{
-										ImGui::GetWindowDrawList()->AddRect(
-											ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-											ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
-											ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
+										if (obj_id == game_obj->obj_definition.instance_id)
+										{
+											ImGui::GetWindowDrawList()->AddRect(
+												ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+												ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+												ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
+										}
 									}
 								}
 							}
