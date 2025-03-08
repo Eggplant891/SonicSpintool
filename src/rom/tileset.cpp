@@ -29,8 +29,8 @@ namespace spintool::rom
 		//new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
-		BoogalooDecompressionResult results = rom::BoogalooDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
-		BoogalooDecompressionResult results2 = rom::BoogalooDecompressor::DecompressDataRefactored(src_rom.m_buffer, rom_offset);
+		LZSSDecompressionResult results = rom::LZSSDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
+		LZSSDecompressionResult results2 = rom::LZSSDecompressor::DecompressDataRefactored(src_rom.m_buffer, rom_offset);
 
 		if (results != results2)
 		{

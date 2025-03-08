@@ -5,13 +5,13 @@
 
 namespace spintool::rom
 {
-	std::optional<BoogalooDecompressionResult> PushByteToStack(std::vector<Uint8>& stack_data, Uint8 byte)
+	std::optional<LZSSDecompressionResult> PushByteToStack(std::vector<Uint8>& stack_data, Uint8 byte)
 	{
 		stack_data.emplace_back(byte);
 
 		if (stack_data.size() > 0xFFFF)
 		{
-			BoogalooDecompressionResult results;
+			LZSSDecompressionResult results;
 			results.error_msg = "Ran out of memory when writing stack_data";
 			results.uncompressed_data = stack_data;
 			results.uncompressed_size = results.uncompressed_data.size();
@@ -22,7 +22,7 @@ namespace spintool::rom
 		return std::nullopt;
 	}
 
-	BoogalooDecompressionResult BoogalooDecompressor::DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset)
+	LZSSDecompressionResult LZSSDecompressor::DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset)
 	{
 		const Uint32 start_offset = 0;
 
@@ -99,7 +99,7 @@ namespace spintool::rom
 
 			if ((d0 & 0x0000FFFF) == 0x101) // is token $101 ?
 			{
-				BoogalooDecompressionResult results;
+				LZSSDecompressionResult results;
 				results.uncompressed_data = vram;
 				results.rom_data.SetROMData(offset, a0 + (d3 >> 3));
 				results.uncompressed_size = results.uncompressed_data.size();
@@ -221,7 +221,7 @@ loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 		}
 	}
 
-	BoogalooDecompressionResult BoogalooDecompressor::DecompressDataRefactored(const std::vector<Uint8>& in_data, const Uint32 offset)
+	LZSSDecompressionResult LZSSDecompressor::DecompressDataRefactored(const std::vector<Uint8>& in_data, const Uint32 offset)
 	{
 		const Uint32 start_offset = 0;
 
@@ -275,7 +275,7 @@ loc_F5B6A:  // CODE XREF : DoLoadCompressed2Tiles:loc_F5B7A
 
 			if ((d0 & 0x0000FFFF) == 0x101) // Token $100 : Halt decompression
 			{
-				BoogalooDecompressionResult results;
+				LZSSDecompressionResult results;
 				results.uncompressed_data = vram;
 				results.rom_data.SetROMData(offset, a0 + (current_bit >> 3));
 				results.uncompressed_size = results.uncompressed_data.size();

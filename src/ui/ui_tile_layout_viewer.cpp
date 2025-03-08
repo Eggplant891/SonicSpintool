@@ -362,7 +362,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "bg";
@@ -397,7 +397,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "veg_o_fortress";
@@ -426,7 +426,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "robotnik_ship";
@@ -455,7 +455,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "water";
@@ -483,7 +483,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "bg";
@@ -509,7 +509,7 @@ namespace spintool
 
 					request.is_chroma_keyed = preview_menu_combined;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "fg";
@@ -534,7 +534,7 @@ namespace spintool
 
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "sega_logo";
@@ -563,7 +563,7 @@ namespace spintool
 					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
 					request.draw_mirrored_layout = true;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					LevelPaletteSet = rom::PaletteSet{};
 					LevelPaletteSet.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
@@ -597,7 +597,7 @@ namespace spintool
 					request.is_chroma_keyed = preview_bonus_combined;
 					request.show_brush_previews = false;
 					request.draw_mirrored_layout = true;
-					request.compression_algorithm = CompressionAlgorithm::BOOGALOO;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					LevelPaletteSet = rom::PaletteSet{};
 					LevelPaletteSet.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
@@ -797,7 +797,7 @@ namespace spintool
 					m_level->m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
 					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				}
-				else if (request.compression_algorithm == CompressionAlgorithm::BOOGALOO)
+				else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
 				{
 					m_level->m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
 					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_level->m_tileset, request.tile_layout_address, request.tile_layout_address_end);

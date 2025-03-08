@@ -36,7 +36,7 @@ namespace spintool
 	{
 		NONE,
 		SSC,
-		BOOGALOO
+		LZSS
 	};
 
 	struct RenderTileLayoutRequest

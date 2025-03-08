@@ -208,7 +208,7 @@
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\rom\animated_object.cpp" />
     <ClCompile Include="src\rom\animation_sequence.cpp" />
-    <ClCompile Include="src\rom\boogaloo_decompressor.cpp" />
+    <ClCompile Include="src\rom\lzss_decompressor.cpp" />
     <ClCompile Include="src\rom\collision_tile.cpp" />
     <ClCompile Include="src\rom\colour.cpp" />
     <ClCompile Include="src\rom\culling_tables\animated_object_culling_table.cpp" />
@@ -258,7 +258,7 @@
     <ClInclude Include="redist\render.h" />
     <ClInclude Include="redist\rom\animated_object.h" />
     <ClInclude Include="redist\rom\animation_sequence.h" />
-    <ClInclude Include="redist\rom\boogaloo_decompressor.h" />
+    <ClInclude Include="redist\rom\lzss_decompressor.h" />
     <ClInclude Include="redist\rom\bounding_box.h" />
     <ClInclude Include="redist\rom\collision_tile.h" />
     <ClInclude Include="redist\rom\colour.h" />
