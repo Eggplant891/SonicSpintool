@@ -32,13 +32,6 @@ namespace spintool::rom
 
 namespace spintool
 {
-	enum class CompressionAlgorithm
-	{
-		NONE,
-		SSC,
-		LZSS
-	};
-
 	struct RenderTileLayoutRequest
 	{
 		CompressionAlgorithm compression_algorithm = CompressionAlgorithm::NONE;

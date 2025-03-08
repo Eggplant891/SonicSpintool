@@ -10,6 +10,13 @@
 
 namespace spintool
 {
+	enum class CompressionAlgorithm
+	{
+		NONE,
+		SSC,
+		LZSS
+	};
+
 	struct DecompressionResult
 	{
 		rom::ROMData rom_data;
