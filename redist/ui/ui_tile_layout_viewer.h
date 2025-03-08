@@ -58,6 +58,12 @@ namespace spintool
 		SDLTextureHandle texture;
 	};
 
+	struct TilesetPreview
+	{
+		int current_page = 0;
+		std::vector<TileBrushPreview> brushes;
+	};
+
 	struct UIGameObject
 	{
 		rom::GameObjectDefinition obj_definition;
@@ -92,7 +98,7 @@ namespace spintool
 		SDLTextureHandle m_tile_layout_preview_bg;
 		SDLTextureHandle m_tile_layout_preview_fg;
 		std::vector<RenderTileLayoutRequest> m_tile_layout_render_requests;
-		std::vector<std::vector<TileBrushPreview>> m_tile_brushes_preview_list;
+		std::vector<TilesetPreview> m_tileset_preview_list;
 		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 	};

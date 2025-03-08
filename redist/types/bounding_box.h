@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 
 namespace spintool
 {
@@ -20,6 +21,16 @@ namespace spintool
 
 		int Width() const;
 		int Height() const;
+
+		Point MinOrdered() const
+		{
+			return Point{ std::min(min.x, max.x), std::min(min.y, max.y) };
+		}
+
+		Point MaxOrdered() const
+		{
+			return Point{ std::max(min.x, max.x), std::max(min.y, max.y) };
+		}
 
 		bool operator==(const BoundingBox& rhs) const
 		{

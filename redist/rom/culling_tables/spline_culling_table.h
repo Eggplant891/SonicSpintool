@@ -1,3 +1,5 @@
+#pragma once
+
 #include "types/bounding_box.h"
 #include "types/rom_ptr.h"
 
@@ -23,11 +25,12 @@ namespace spintool::rom
 		static constexpr Uint32 size_on_rom = 12;
 
 		BoundingBox spline_vector;
-		Uint16 object_type_flags;
-		Uint16 extra_info;
+		Uint16 object_type_flags = 0;
+		Uint16 extra_info = 0;
 
 		bool IsBBox() const;
 		bool IsTeleporter() const;
+		bool IsRecognisedButUnknown() const;
 		bool IsUnknown() const;
 
 		bool operator==(const CollisionSpline& rhs) const;
@@ -35,7 +38,7 @@ namespace spintool::rom
 
 	struct SplineCullingCell
 	{
-		Ptr32 jump_offset;
+		Ptr32 jump_offset = 0;
 		std::vector<CollisionSpline> splines;
 	};
 

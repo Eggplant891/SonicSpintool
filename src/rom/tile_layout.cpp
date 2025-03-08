@@ -61,7 +61,6 @@ namespace spintool::rom
 
 	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end)
 	{
-
 		auto new_layout = std::make_shared<TileLayout>();
 
 		const Uint32 total_brushes = tileset.num_tiles;
@@ -104,4 +103,23 @@ namespace spintool::rom
 
 		return new_layout;
 	}
+
+	void TileLayout::SaveToROM(SpinballROM& src_rom, Uint32 layout_offset)
+	{
+		Uint32 current_offset = layout_offset;
+		for (TileBrushInstance& brush_instance : tile_brush_instances)
+		{
+			//brush_instance.is_high_priority = (0x80 & first_byte) != 0;
+			Uint8 first_byte = 0;
+
+			first_byte |= (brush_instance.palette_line << 13) & (0x4000 | 0x2000);
+			first_byte |= (brush_instance.is_flipped_vertically << 12) & (0x1000);
+			first_byte |= (brush_instance.is_flipped_horizontally << 11) & (0x0800);
+			first_byte |= (brush_instance.tile_brush_index >> 8) & static_cast<Uint16>((0x0100 | 0x0200 | 0x0400));
+
+			current_offset = src_rom.WriteUint8(current_offset, first_byte);
+			current_offset = src_rom.WriteUint8(current_offset, brush_instance.tile_brush_index & 0x00FF);
+		}
+	}
+
 }

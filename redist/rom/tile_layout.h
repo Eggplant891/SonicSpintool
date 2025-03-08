@@ -28,9 +28,9 @@ namespace spintool::rom
 	class TileBrushBase
 	{
 	public:
-		virtual size_t BrushWidth() = 0;
-		virtual size_t BrushHeight() = 0;
-		size_t TotalTiles()
+		virtual Uint32 BrushWidth() = 0;
+		virtual Uint32 BrushHeight() = 0;
+		Uint32 TotalTiles()
 		{
 			return BrushWidth() * BrushHeight();
 		}
@@ -39,16 +39,16 @@ namespace spintool::rom
 		std::vector<TileInstance> tiles;
 	};
 
-	template<size_t width, size_t height>
+	template<Uint32 width, Uint32 height>
 	class TileBrush : public TileBrushBase
 	{
 	public:
-		size_t BrushWidth() override { return s_brush_width; }
-		size_t BrushHeight() override { return s_brush_height; }
+		Uint32 BrushWidth() override { return s_brush_width; }
+		Uint32 BrushHeight() override { return s_brush_height; }
 
-		constexpr static const size_t s_brush_width = width;
-		constexpr static const size_t s_brush_height = height;
-		constexpr static const size_t s_brush_total_tiles = width * height;
+		constexpr static const Uint32 s_brush_width = width;
+		constexpr static const Uint32 s_brush_height = height;
+		constexpr static const Uint32 s_brush_total_tiles = width * height;
 	};
 
 	template class TileBrush<1, 1>;
@@ -77,5 +77,7 @@ namespace spintool::rom
 
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, Uint32 brushes_offset, Uint32 brushes_end, Uint32 layout_offset, std::optional<Uint32> layout_end);
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end);
+
+		void SaveToROM(SpinballROM& src_rom, Uint32 layout_offset);
 	};
 }

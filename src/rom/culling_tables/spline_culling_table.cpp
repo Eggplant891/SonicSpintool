@@ -6,17 +6,22 @@ namespace spintool::rom
 {
 	bool CollisionSpline::IsBBox() const
 	{
-		return (object_type_flags & 0x8000);
+		return (object_type_flags & 0x8000) == 0x8000;
 	};
 
 	bool CollisionSpline::IsTeleporter() const
 	{
-		return (object_type_flags & 0x1000);
+		return (object_type_flags & 0x1000) == 0x1000;
+	}
+
+	bool CollisionSpline::IsRecognisedButUnknown() const
+	{
+		return (object_type_flags & 0x4000) == 0x4000;
 	}
 
 	bool CollisionSpline::IsUnknown() const
 	{
-		return !IsBBox() && !IsTeleporter() && object_type_flags != 0;
+		return !IsBBox() && !IsTeleporter() && !IsRecognisedButUnknown() && ((object_type_flags & 0x0FFF) != (object_type_flags & 0xFFFF));
 	}
 
 	bool CollisionSpline::operator==(const CollisionSpline& rhs) const
@@ -70,11 +75,11 @@ namespace spintool::rom
 	void SplineCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset)
 	{
 		Ptr32 jump_table_offset = offset;
-		Ptr32 data_offset = static_cast<Uint32>(cells_count) * 2;
+		Ptr32 data_offset = jump_table_offset + static_cast<Uint32>(cells_count) * 2;
 
 		for (SplineCullingCell& cell : cells)
 		{
-			jump_table_offset = rom.WriteUint16(jump_table_offset, data_offset / 2);
+			jump_table_offset = rom.WriteUint16(jump_table_offset, (data_offset - offset) / 2);
 			data_offset = rom.WriteUint16(data_offset, static_cast<Uint16>(cell.splines.size()));
 			for (const CollisionSpline& spline : cell.splines)
 			{
@@ -82,6 +87,7 @@ namespace spintool::rom
 				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.min.y);
 				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.max.x);
 				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.max.y);
+
 				data_offset = rom.WriteUint16(data_offset, spline.object_type_flags);
 				data_offset = rom.WriteUint16(data_offset, spline.extra_info);
 			}
