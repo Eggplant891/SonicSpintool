@@ -22,7 +22,7 @@ namespace spintool::rom
 		return { new_tileset, results };
 	}
 
-	TilesetEntry TileSet::LoadFromROMSecondCompression(const SpinballROM& src_rom, Uint32 rom_offset)
+	TilesetEntry TileSet::LoadFromROM_LZSSCompression(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
 		auto new_tileset = std::make_shared<rom::TileSet>();
 

@@ -799,7 +799,7 @@ namespace spintool
 				}
 				else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
 				{
-					m_level->m_tileset = rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
+					m_level->m_tileset = rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
 					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_level->m_tileset, request.tile_layout_address, request.tile_layout_address_end);
 				}
 

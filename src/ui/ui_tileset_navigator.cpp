@@ -51,7 +51,7 @@ namespace spintool
 
 				for (Uint32 offset : s_tile_offsets_non_ssc)
 				{
-					m_tilesets.emplace_back(rom::TileSet::LoadFromROMSecondCompression(m_owning_ui.GetROM(), offset));
+					m_tilesets.emplace_back(rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), offset));
 				}
 			}
 
