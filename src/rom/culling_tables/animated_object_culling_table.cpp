@@ -5,7 +5,7 @@
 namespace spintool
 {
 
-	spintool::rom::AnimatedObjectCullingTable rom::AnimatedObjectCullingTable::LoadFromROM(const SpinballROM& rom, Ptr32 offset)
+	spintool::rom::AnimatedObjectCullingTable rom::AnimatedObjectCullingTable::LoadFromROM(const SpinballROM& rom, const Ptr32 offset)
 	{
 		AnimatedObjectCullingTable new_table;
 
@@ -13,14 +13,14 @@ namespace spintool
 
 		for (AnimatedObjectCullingCell& cell : new_table.cells)
 		{
-			cell.jump_offset = rom.ReadUint16(offset);
-			offset += 2;
+			cell.jump_offset = rom.ReadUint8(next_offset);
+			next_offset += 1;
 		}
 
-		for (int i = 0; i < 0xFF; ++i)
+		for (int i = 0; i < cells_count-1; ++i)
 		{
-			const Uint16 start_offset = offset + new_table.cells[i].jump_offset;
-			const Uint16 end_offset = offset + new_table.cells[i + 1].jump_offset;
+			const Uint32 start_offset = offset + new_table.cells[i].jump_offset;
+			const Uint32 end_offset = offset + new_table.cells[i + 1].jump_offset;
 
 			AnimatedObjectCullingCell& cell = new_table.cells[i];
 
@@ -29,18 +29,30 @@ namespace spintool
 			cell.bbox.max.x = cell.bbox.min.x + cell_dimensions.Width();
 			cell.bbox.max.y = cell.bbox.min.y + cell_dimensions.Height();
 
-			for (Uint16 current_offset = start_offset; current_offset <= end_offset - 1; current_offset += 2)
+			for (Uint32 current_offset = start_offset; current_offset < end_offset; current_offset += 1)
 			{
-				new_table.cells[i].obj_ids.emplace_back(rom.ReadUint16(current_offset));
+				new_table.cells[i].obj_ids.emplace_back(rom.ReadUint8(current_offset));
 			}
 		}
 
 		return new_table;
 	}
 
-	void rom::AnimatedObjectCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset)
+	void rom::AnimatedObjectCullingTable::SaveToROM(SpinballROM& rom, const Ptr32 offset)
 	{
+		Ptr32 jump_table_offset = offset;
+		Ptr32 data_offset = static_cast<Uint32>(cells.size());
 
+		for (AnimatedObjectCullingCell& cell : cells)
+		{
+			jump_table_offset = rom.WriteUint8(jump_table_offset, data_offset);
+			for (const Uint8 obj_id : cell.obj_ids)
+			{
+				data_offset = rom.WriteUint8(data_offset, obj_id);
+			}
+
+			rom.WriteUint8(data_offset, data_offset - jump_table_offset);
+		}
 	}
 
 }

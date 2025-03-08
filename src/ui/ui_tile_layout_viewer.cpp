@@ -16,6 +16,8 @@
 #include <algorithm>
 #include <iterator>
 #include "rom/culling_tables/game_obj_collision_culling_table.h"
+#include "rom/culling_tables/animated_object_culling_table.h"
+#include "rom/culling_tables/spline_culling_table.h"
 
 
 namespace spintool
@@ -38,6 +40,42 @@ namespace spintool
 		bool collision = true;
 	};
 
+	struct EditorSplineManager
+	{
+		std::vector<rom::CollisionSpline> splines;
+		void LoadFromSplineCullingTable(const rom::SplineCullingTable& spline_table)
+		{
+			splines.clear();
+			for (const rom::SplineCullingCell& cell : spline_table.cells)
+			{
+				for (const rom::CollisionSpline& spline : cell.splines)
+				{
+					const bool found_spline = std::any_of(std::begin(splines), std::end(splines),
+						[&spline](const rom::CollisionSpline& _spline)
+						{
+							return _spline == spline;
+						});
+
+					if (found_spline == false)
+					{
+						splines.emplace_back(spline);
+					}
+				}
+			}
+		}
+
+		rom::SplineCullingTable GenerateSplineCullingTable() const
+		{
+			rom::SplineCullingTable new_table;
+			for (const rom::CollisionSpline& spline : splines)
+			{
+				new_table.cells[spline.spline_vector.min.x / rom::SplineCullingTable::cell_dimensions.x, spline.spline_vector.min.y / rom::SplineCullingTable::cell_dimensions.y].splines.emplace_back(spline);
+				new_table.cells[spline.spline_vector.max.x / rom::SplineCullingTable::cell_dimensions.x, spline.spline_vector.max.y / rom::SplineCullingTable::cell_dimensions.y].splines.emplace_back(spline);
+			}
+			return new_table;
+		}
+	};
+
 	void EditorTileLayoutViewer::Update()
 	{
 		if (IsOpen() == false)
@@ -53,6 +91,8 @@ namespace spintool
 			static SpriteObjectPreview FlipperPreview;
 			static SpriteObjectPreview RingPreview;
 			static SpriteObjectPreview GameObjectPreview;
+			
+			static EditorSplineManager spline_manager;
 
 			static rom::PaletteSet LevelPaletteSet;
 			static bool export_result = false;
@@ -644,6 +684,7 @@ namespace spintool
 				SDL_SetSurfaceColorKey(GameObjectPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(GameObjectPreview.sprite->format), nullptr, 255, 0, 0, 255));
 				//LevelGameObjSprite->RenderToSurface(GameObjectPreview.sprite.get());
 
+				spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain)));
 				m_preview_game_objects.clear();
 				m_game_obj_instances.clear();
 				m_anim_sprite_instances.clear();
@@ -1091,10 +1132,9 @@ namespace spintool
 				{
 					struct WorkingSpline
 					{
-						rom::Ptr32 offset;
-						BoundingBox bbox;
+						rom::CollisionSpline* destination = nullptr;
+						rom::CollisionSpline spline;
 					};
-
 					static UIGameObject* selected_game_obj = nullptr;
 					static std::optional<WorkingSpline> working_spline;
 					const ImVec2 origin = ImGui::GetCursorPos();
@@ -1111,113 +1151,71 @@ namespace spintool
 					constexpr int size_of_preview_collision_boxes = 4;
 					constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
 
+					// Terrain Collision
 					const rom::Ptr32 terrain_collision_data = m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain);
 
-					std::vector<Uint16> collision_data_offsets;
-					collision_data_offsets.reserve(num_collision_data);
-
-					for (rom::Ptr32 i = 0; i < num_collision_data; ++i)
+					//rom::SplineCullingTable spline_culling_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), terrain_collision_data);
+					//for (Uint32 sector_index = 0; sector_index < spline_culling_table.cells.size() - 1; ++sector_index)
 					{
-						collision_data_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(terrain_collision_data + (i * 2)));
-					}
+						//if (selected_collision_tile_index != -1)
+						//{
+						//	if (sector_index < static_cast<Uint32>(selected_collision_tile_index))
+						//	{
+						//		continue;
+						//	}
+						//	else if (sector_index > static_cast<Uint32>(selected_collision_tile_index))
+						//	{
+						//		break;
+						//	}
+						//}
 
-					// Terrain Collision
-
-					const rom::Ptr32 collision_index_start = selected_collision_tile_index != -1 ? selected_collision_tile_index : 0;
-					const rom::Ptr32 collision_index_end = selected_collision_tile_index != -1 ? selected_collision_tile_index + 1 : static_cast<rom::Ptr32>(collision_data_offsets.size()-1);
-
-					if(selected_collision_tile_index != -1)
-					{
-						const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % num_tiles_x) * tile_width;
-						const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / num_tiles_x) * tile_width;
-
-						ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) }, ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + tile_width), static_cast<float>(screen_origin.y + collision_tile_origin_y + tile_width) }, ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
-					}
-
-					for (rom::Ptr32 i = collision_index_start; i < collision_index_end; ++i)
-					{
-						const rom::Ptr32 start_offset = terrain_collision_data + (collision_data_offsets[i] * 2);
-						const rom::Ptr32 data_start_offset = start_offset + 2;
-						const rom::Ptr32 end_offset = terrain_collision_data + (collision_data_offsets[i + 1] * 2);
-						const Uint32 num_bytes = end_offset - start_offset;
-
-						const int collision_tile_origin_x = (static_cast<int>(i) % num_tiles_x) * tile_width;
-						const int collision_tile_origin_y = (static_cast<int>(i) / num_tiles_x) * tile_width;
-
-						BoundingBox bbox;
-						bbox.min.x = collision_tile_origin_x;
-						bbox.min.y = collision_tile_origin_y;
-						bbox.max.x = collision_tile_origin_x + tile_width;
-						bbox.max.y = collision_tile_origin_y + tile_width;
-
-						const Uint16 num_objects = static_cast<int>(m_owning_ui.GetROM().ReadUint16(start_offset));
-
-
-						for (Uint16 s = 0; s < num_objects; ++s)
+						//rom::SplineCullingCell& cell = spline_culling_table.cells[sector_index];
+						//for (rom::CollisionSpline& spline : cell.splines)
+						for( rom::CollisionSpline& spline : spline_manager.splines)
 						{
-							rom::Ptr32 short_offset = s * 12;
-
-							BoundingBox bbox2;
-							bbox2.min.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 0);
-							bbox2.min.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 2);
-							bbox2.max.x = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 4);
-							bbox2.max.y = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 6);
-
-							const Uint16 object_type_flags = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 8);
-							const Uint16 extra_info = m_owning_ui.GetROM().ReadUint16(data_start_offset + short_offset + 10);
-
-							enum class CollisionObjectType
-							{
-								Spline,
-								BBox
-							};
-
-							const bool is_bbox = (object_type_flags & 0x8000);
-							const bool is_teleporter = (object_type_flags & 0x1000);
-							const bool is_unknown = !is_bbox && !is_teleporter && object_type_flags != 0;
-
+							const BoundingBox& spline_bbox = spline.spline_vector;
 							ImVec4 colour{ 192,192,0,255 };
-							if (is_bbox)
+							if (spline.IsBBox())
 							{
 								colour = ImVec4(255, 0, 255, 255);
 							}
 
-							if (is_teleporter)
+							if (spline.IsTeleporter())
 							{
 								colour = ImVec4(0, 255, 255, 255);
 							}
 
-							if (is_unknown)
+							if (spline.IsUnknown())
 							{
 								colour = ImVec4(128, 128, 255, 255);
 							}
 
-							if (is_bbox)
+							if (spline.IsBBox())
 							{
 								ImGui::GetWindowDrawList()->AddCircle(
-									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
-									static_cast<float>(bbox2.max.x), ImGui::GetColorU32(colour), 16, 1.0f);
+									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
+									static_cast<float>(spline.spline_vector.max.x), ImGui::GetColorU32(colour), 16, 1.0f);
 
-									ImGui::GetWindowDrawList()->AddRect(
-										ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x - 2), static_cast<float>(screen_origin.y + bbox2.min.y - 2) },
-										ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x + 3), static_cast<float>(screen_origin.y + bbox2.min.y + 3) },
+								ImGui::GetWindowDrawList()->AddRect(
+									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x - 2), static_cast<float>(screen_origin.y + spline.spline_vector.min.y - 2) },
+									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x + 3), static_cast<float>(screen_origin.y + spline.spline_vector.min.y + 3) },
 									ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 1.0f);
 							}
 							else
 							{
 								ImGui::GetWindowDrawList()->AddLine(
-									ImVec2{ static_cast<float>(screen_origin.x + bbox2.min.x), static_cast<float>(screen_origin.y + bbox2.min.y) },
-									ImVec2{ static_cast<float>(screen_origin.x + bbox2.max.x), static_cast<float>(screen_origin.y + bbox2.max.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.max.x), static_cast<float>(screen_origin.y + spline.spline_vector.max.y) },
 									ImGui::GetColorU32(colour), 2.0f);
 
-								ImGui::SetCursorPos(ImVec2{ origin.x + bbox2.min.x, origin.y + bbox2.min.y });
-								ImGui::Dummy(ImVec2{ static_cast<float>(bbox.Width()), static_cast<float>(bbox.Height())});
+								ImGui::SetCursorPos(ImVec2{ origin.x + spline.spline_vector.min.x, origin.y + spline.spline_vector.min.y });
+								ImGui::Dummy(ImVec2{ static_cast<float>(spline.spline_vector.Width()), static_cast<float>(spline.spline_vector.Height()) });
 
 								BoundingBox fixed_bbox;
-								fixed_bbox.min.x = std::min(bbox2.min.x, bbox2.max.x) - 1;
-								fixed_bbox.max.x = std::max(bbox2.min.x, bbox2.max.x) + 1;
-								fixed_bbox.min.y = std::min(bbox2.min.y, bbox2.max.y) - 1;
-								fixed_bbox.max.y = std::max(bbox2.min.y, bbox2.max.y) + 1;
+								fixed_bbox.min.x = std::min(spline.spline_vector.min.x, spline.spline_vector.max.x) - 1;
+								fixed_bbox.max.x = std::max(spline.spline_vector.min.x, spline.spline_vector.max.x) + 1;
+								fixed_bbox.min.y = std::min(spline.spline_vector.min.y, spline.spline_vector.max.y) - 1;
+								fixed_bbox.max.y = std::max(spline.spline_vector.min.y, spline.spline_vector.max.y) + 1;
 
 								if (ImGui::IsMouseHoveringRect(
 									ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
@@ -1232,13 +1230,21 @@ namespace spintool
 									{
 										ImGui::OpenPopup("spline_popup");
 										WorkingSpline new_spline;
-										new_spline.offset = data_start_offset + short_offset;
-										new_spline.bbox = bbox2;
+										new_spline.destination = &spline;
+										new_spline.spline = spline;
 										working_spline.emplace(new_spline);
 									}
 								}
 							}
 						}
+					}
+
+					if (selected_collision_tile_index != -1)
+					{
+						const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % num_tiles_x) * tile_width;
+						const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / num_tiles_x) * tile_width;
+
+						ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) }, ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + tile_width), static_cast<float>(screen_origin.y + collision_tile_origin_y + tile_width) }, ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 					}
 
 					for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
@@ -1250,41 +1256,24 @@ namespace spintool
 							selected_game_obj = nullptr;
 							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
-							for (Uint32 sector_index = 0; sector_index < 48-1; ++sector_index)
+							rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.camera_activation_sector_anim_obj_ids));
+							for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size()-1; ++sector_index)
 							{
-								const rom::Ptr32 anim_obj_collision_data = m_owning_ui.GetROM().ReadUint32(level_data_offsets.camera_activation_sector_anim_obj_ids);
-								const Uint8 data_offset = m_owning_ui.GetROM().ReadUint8(anim_obj_collision_data + sector_index);
-								const rom::Ptr32 activation_sector_data = anim_obj_collision_data + data_offset;
-
-								constexpr Uint32 cam_width = 0x168;
-								constexpr Uint32 cam_height = 0x108;
-								constexpr Uint32 num_sectors_x = 6;
-
-								const Uint32 instance_id = game_obj->obj_definition.instance_id;
-								const Uint32 data_offset_end = m_owning_ui.GetROM().ReadUint8(anim_obj_collision_data + sector_index + 1);
-								const Uint32 num_obj_ids = data_offset_end - data_offset;
-
-								for (Uint32 i = 0; i < num_obj_ids; ++i)
+								const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
+								for (const Uint16 obj_id : cell.obj_ids)
 								{
-									const Uint32 obj_id = m_owning_ui.GetROM().ReadUint8(anim_obj_collision_data + data_offset + i);
 									if (obj_id == game_obj->obj_definition.instance_id)
 									{
-										BoundingBox sector_bbox;
-										sector_bbox.min.x = (sector_index % num_sectors_x) * cam_width;
-										sector_bbox.min.y = (sector_index / num_sectors_x) * cam_height;
-										sector_bbox.max.x = sector_bbox.min.x + cam_width;
-										sector_bbox.max.y = sector_bbox.min.y + cam_height;
-
 										ImGui::GetWindowDrawList()->AddRect(
-											ImVec2{ static_cast<float>(screen_origin.x + sector_bbox.min.x), static_cast<float>(screen_origin.y + sector_bbox.min.y) },
-											ImVec2{ static_cast<float>(screen_origin.x + sector_bbox.max.x), static_cast<float>(screen_origin.y + sector_bbox.max.y) },
-											ImGui::GetColorU32(ImVec4{ 255,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
+											ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+											ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+											ImGui::GetColorU32(ImVec4{ 255,255,255,255 }), 0, ImDrawFlags_None, 1.0f);
 									}
 								}
 							}
 
 							rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.collision_tile_obj_ids.offset);
-							for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size(); ++sector_index)
+							for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size()-1; ++sector_index)
 							{
 								const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
 								for (const Uint16 obj_id : cell.obj_ids)
@@ -1342,24 +1331,20 @@ namespace spintool
 						}
 						else
 						{
-							int spline_min[2] = { static_cast<int>(working_spline->bbox.min.x), static_cast<int>(working_spline->bbox.min.y) };
-							int spline_max[2] = { static_cast<int>(working_spline->bbox.max.x), static_cast<int>(working_spline->bbox.max.y) };
+							int spline_min[2] = { static_cast<int>(working_spline->spline.spline_vector.min.x), static_cast<int>(working_spline->spline.spline_vector.min.y) };
+							int spline_max[2] = { static_cast<int>(working_spline->spline.spline_vector.max.x), static_cast<int>(working_spline->spline.spline_vector.max.y) };
 
 							ImGui::InputInt2("Spline Min", spline_min);
 							ImGui::InputInt2("Spline Max", spline_max);
 
-							working_spline->bbox.min.x = spline_min[0];
-							working_spline->bbox.min.y = spline_min[1];
-							working_spline->bbox.max.x = spline_max[0];
-							working_spline->bbox.max.y = spline_max[1];
+							working_spline->spline.spline_vector.min.x = spline_min[0];
+							working_spline->spline.spline_vector.min.y = spline_min[1];
+							working_spline->spline.spline_vector.max.x = spline_max[0];
+							working_spline->spline.spline_vector.max.y = spline_max[1];
 
 							if (ImGui::Button("Confirm"))
 							{
-								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 0, spline_min[0]);
-								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 2, spline_min[1]);
-								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 4, spline_max[0]);
-								m_owning_ui.GetROM().WriteUint16(working_spline->offset + 6, spline_max[1]);
-
+								*working_spline->destination = working_spline->spline;
 								working_spline.reset();
 								ImGui::CloseCurrentPopup();
 							}

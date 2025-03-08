@@ -12,13 +12,28 @@ namespace spintool::rom
 
 namespace spintool::rom
 {
-	struct CollisionSpline
+	enum class CollisionObjectType
 	{
-		BoundingBox spline_vector;
-
+		Spline,
+		BBox
 	};
 
-	struct SplineCell
+	struct CollisionSpline
+	{
+		static constexpr Uint32 size_on_rom = 12;
+
+		BoundingBox spline_vector;
+		Uint16 object_type_flags;
+		Uint16 extra_info;
+
+		bool IsBBox() const;
+		bool IsTeleporter() const;
+		bool IsUnknown() const;
+
+		bool operator==(const CollisionSpline& rhs) const;
+	};
+
+	struct SplineCullingCell
 	{
 		Ptr32 jump_offset;
 		std::vector<CollisionSpline> splines;
@@ -26,10 +41,11 @@ namespace spintool::rom
 
 	struct SplineCullingTable
 	{
-		static constexpr BoundingBox grid_dimensions{ 0, 0, 128, 128 };
+		static constexpr Point cell_dimensions{ 128, 128 };
+		static constexpr Point grid_dimensions{ 16, 16 };
+		static constexpr Uint32 cells_count = grid_dimensions.x * grid_dimensions.y;
 
-		std::array<Ptr32, 0x100> jump_offsets;
-		std::vector<Uint8> anim_obj_ids;
+		std::array<SplineCullingCell, cells_count> cells;
 
 		static SplineCullingTable LoadFromROM(const SpinballROM& rom, Ptr32 offset);
 		void SaveToROM(SpinballROM& rom, Ptr32 offset);

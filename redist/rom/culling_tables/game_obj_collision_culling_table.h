@@ -23,8 +23,9 @@ namespace spintool::rom
 	{
 		static constexpr BoundingBox cell_dimensions{ 0, 0, 128, 128 };
 		static constexpr Point grid_dimensions{ 16,16 };
+		static constexpr Uint32 cells_count = grid_dimensions.x * grid_dimensions.y;
 
-		std::array<GameObjectCullingCell, 0x100> cells;
+		std::array<GameObjectCullingCell, cells_count> cells;
 
 		static GameObjectCullingTable LoadFromROM(const SpinballROM& rom, Ptr32 offset);
 		void SaveToROM(SpinballROM& rom, Ptr32 offset);

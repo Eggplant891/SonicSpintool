@@ -4,7 +4,7 @@
 namespace spintool::rom
 {
 
-	GameObjectCullingTable GameObjectCullingTable::LoadFromROM(const SpinballROM& rom, Ptr32 offset)
+	GameObjectCullingTable GameObjectCullingTable::LoadFromROM(const SpinballROM& rom, const Ptr32 offset)
 	{
 		GameObjectCullingTable new_table;
 
@@ -12,14 +12,14 @@ namespace spintool::rom
 
 		for (GameObjectCullingCell& cell : new_table.cells)
 		{
-			cell.jump_offset = rom.ReadUint16(offset);
-			offset += 2;
+			cell.jump_offset = rom.ReadUint16(next_offset);
+			next_offset += 2;
 		}
 
-		for (int i = 0; i < 0xFF; ++i)
+		for (int i = 0; i < cells_count-1; ++i)
 		{
-			const Uint16 start_offset = offset + new_table.cells[i].jump_offset;
-			const Uint16 end_offset = offset + new_table.cells[i+1].jump_offset;
+			const Uint32 start_offset = offset + (new_table.cells[i].jump_offset * 2);
+			const Uint32 end_offset = offset + (new_table.cells[i+1].jump_offset * 2);
 
 			GameObjectCullingCell& cell = new_table.cells[i];
 
@@ -28,7 +28,7 @@ namespace spintool::rom
 			cell.bbox.max.x = cell.bbox.min.x + cell_dimensions.Width();
 			cell.bbox.max.y = cell.bbox.min.y + cell_dimensions.Height();
 
-			for (Uint16 current_offset = start_offset; current_offset <= end_offset-1; current_offset += 2)
+			for (Uint32 current_offset = start_offset; current_offset < end_offset-1; current_offset += 2)
 			{
 				new_table.cells[i].obj_ids.emplace_back(rom.ReadUint16(current_offset));
 			}
@@ -40,27 +40,17 @@ namespace spintool::rom
 	void GameObjectCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset)
 	{
 		Ptr32 jump_table_offset = offset;
-		Ptr32 data_offset = offset + static_cast<Uint32>(cells.size()) * 2;
+		Ptr32 data_offset = static_cast<Uint32>(cells_count) * 2;
 
 		for (GameObjectCullingCell& cell : cells)
 		{
-			jump_table_offset = rom.WriteUint16(jump_table_offset, cell.jump_offset);
-			for (Uint16 game_obj_id : cell.obj_ids)
+			jump_table_offset = rom.WriteUint16(jump_table_offset, data_offset / 2);
+			for (const Uint16 obj_id : cell.obj_ids)
 			{
-				data_offset += 2;
+				data_offset = rom.WriteUint16(data_offset, obj_id);
 			}
 		}
-
-		for (int i = 0; i < 0xFF; ++i)
-		{
-			const Uint16 start_offset = offset + cells[i].jump_offset;
-			const Uint16 end_offset = offset + cells[i + 1].jump_offset;
-
-			for (Uint16 current_offset = start_offset; start_offset <= end_offset - 1; current_offset += 2)
-			{
-				cells[i].obj_ids.emplace_back(rom.ReadUint16(current_offset));
-			}
-		}
+		rom.WriteUint16(data_offset, (data_offset - jump_table_offset) / 2);
 	}
 
 }
