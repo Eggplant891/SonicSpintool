@@ -1132,16 +1132,16 @@ namespace spintool
 						SDLSurfaceHandle temp_sprite_surface{ SDL_ScaleSurface(anim_entry->sprite_surface.get(), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.x), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.y), SDL_SCALEMODE_NEAREST) };
 						SDL_Rect sprite_target_rect{ game_obj.x_pos - origin_offset.x, game_obj.y_pos - origin_offset.y, anim_entry->sprite_surface->w, anim_entry->sprite_surface->h };
 
-						if (game_obj.flip_x)
+						if (game_obj.FlipX())
 						{
 							SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_HORIZONTAL);
-							//sprite_target_rect.x = game_obj.x_pos + (anim_entry->sprite_surface->w - origin_offset.x);
+							sprite_target_rect.x = game_obj.x_pos - (anim_entry->sprite_surface->w - origin_offset.x);
 						}
 
-						if (game_obj.flip_y)
+						if (game_obj.FlipY())
 						{
 							SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_VERTICAL);
-							//sprite_target_rect.y = game_obj.y_pos + (anim_entry->sprite_surface->h - origin_offset.y);
+							sprite_target_rect.y = game_obj.y_pos - (anim_entry->sprite_surface->h - origin_offset.y);
 						}
 
 						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_sprite_surface->format), nullptr, 0, 0, 0, 255));
@@ -1539,6 +1539,21 @@ namespace spintool
 								ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
 								ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
 								ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+
+								ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
+								ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+								ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
+								ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
+								ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
+								ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
+								ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
+								ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
+								ImGui::Text("Anim Definition: 0x%08X", game_obj->obj_definition.animation_definition);
+								ImGui::Text("Anim Ptr: 0x%08X", game_obj->obj_definition.animation_ptr);
+								ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
+								ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
+								ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+
 								ImGui::EndTooltip();
 							}
 						}
