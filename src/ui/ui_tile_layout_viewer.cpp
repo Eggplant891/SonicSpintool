@@ -63,7 +63,7 @@ namespace spintool
 		}
 		ImGui::SetNextWindowPos(ImVec2{ 0,16 });
 		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
-		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoSavedSettings))
+		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
 			bool render_preview = false;
 			static LayerSettings layer_settings;
@@ -1287,7 +1287,7 @@ namespace spintool
 				selected_brush.tile_brush = nullptr;
 			}
 
-			if (ImGui::BeginChild("Preview info Area"))
+			if (ImGui::BeginChild("Preview info Area", ImVec2{ 0,0 }, ImGuiChildFlags_Border, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 			{
 				const ImVec2 panel_origin = ImGui::GetCursorScreenPos();
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
@@ -1538,7 +1538,7 @@ namespace spintool
 						ImGui::Dummy(game_obj->dimensions);
 						if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 						{
-							m_selected_game_obj = nullptr;
+							m_working_game_obj.reset();
 							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
 							rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.camera_activation_sector_anim_obj_ids));
@@ -1579,7 +1579,9 @@ namespace spintool
 							if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 							{
 								ImGui::OpenPopup("obj_popup");
-								m_selected_game_obj = game_obj.get();
+								m_working_game_obj.emplace();
+								m_working_game_obj->destination = game_obj.get();
+								m_working_game_obj->game_obj = game_obj->obj_definition;
 							}
 							else if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
 							{
@@ -1620,21 +1622,32 @@ namespace spintool
 						}
 					}
 
-					if (m_selected_game_obj == nullptr && (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr))
+					if (m_working_game_obj.has_value() == false && (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr))
 					{
 						ImGui::CloseCurrentPopup();
 					}
 					
-					if (m_selected_game_obj != nullptr && ImGui::BeginPopup("obj_popup"))
+					if (m_working_game_obj && ImGui::BeginPopup("obj_popup"))
 					{
-						const auto origin_offset = m_selected_game_obj->ui_sprite != nullptr ? m_selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
-						int pos[2] = { static_cast<int>(m_selected_game_obj->pos.x + origin_offset.x), static_cast<int>(m_selected_game_obj->pos.y + origin_offset.y) };
-						if (ImGui::InputInt2("Object Pos", pos, ImGuiInputTextFlags_EnterReturnsTrue))
+						const auto origin_offset = m_working_game_obj->destination->ui_sprite != nullptr ? m_working_game_obj->destination->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
+						int pos[2] = { static_cast<int>(m_working_game_obj->game_obj.x_pos), static_cast<int>(m_working_game_obj->game_obj.y_pos) };
+						if (ImGui::InputInt2("Object Pos", pos))
 						{
-							m_selected_game_obj->obj_definition.x_pos = pos[0];
-							m_selected_game_obj->obj_definition.y_pos = pos[1];
-							m_selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
-							m_selected_game_obj = nullptr;
+							m_working_game_obj->game_obj.x_pos = pos[0];
+							m_working_game_obj->game_obj.y_pos = pos[1];
+						}
+
+						if (ImGui::Button("Confirm"))
+						{
+							m_working_game_obj->destination->obj_definition = m_working_game_obj->game_obj;
+							m_working_game_obj->destination->obj_definition.SaveToROM(m_owning_ui.GetROM());
+							render_from_edit = true;
+							m_working_game_obj.reset();
+							ImGui::CloseCurrentPopup();
+						}
+
+						if (ImGui::Button("Cancel"))
+						{
 							ImGui::CloseCurrentPopup();
 						}
 						ImGui::EndPopup();
@@ -1671,6 +1684,18 @@ namespace spintool
 
 							if (ImGui::Button("Cancel"))
 							{
+								m_working_spline.reset();
+								ImGui::CloseCurrentPopup();
+							}
+
+							if (ImGui::Button("Delete"))
+							{
+								auto found_spline_it = std::find_if(std::begin(spline_manager.splines), std::end(spline_manager.splines),
+									[this](const rom::CollisionSpline& spline)
+									{
+										return &spline == m_working_spline->destination;
+									});
+								spline_manager.splines.erase(found_spline_it);
 								m_working_spline.reset();
 								ImGui::CloseCurrentPopup();
 							}

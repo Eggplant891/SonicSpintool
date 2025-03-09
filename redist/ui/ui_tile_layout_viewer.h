@@ -56,12 +56,31 @@ namespace spintool
 		std::shared_ptr<rom::TileLayout>* store_layout = nullptr;
 	};
 
+	struct UIGameObject
+	{
+		rom::GameObjectDefinition obj_definition;
+		ImVec2 pos = { 0,0 };
+		ImVec2 dimensions = { 0,0 };
+
+		int sprite_table_address = 0;
+		int palette_index = 0;
+
+		std::shared_ptr<UISpriteTexture> ui_sprite;
+		SDLPaletteHandle palette;
+	};
+
 	struct TileBrushPreview
 	{
 		SDLSurfaceHandle surface;
 		SDLTextureHandle texture;
 
 		Uint32 brush_index;
+	};
+
+	struct WorkingGameObject
+	{
+		UIGameObject* destination = nullptr;
+		rom::GameObjectDefinition game_obj;
 	};
 
 	struct WorkingSpline
@@ -75,19 +94,6 @@ namespace spintool
 	{
 		int current_page = 0;
 		std::vector<TileBrushPreview> brushes;
-	};
-
-	struct UIGameObject
-	{
-		rom::GameObjectDefinition obj_definition;
-		ImVec2 pos = { 0,0 };
-		ImVec2 dimensions = { 0,0 };
-
-		int sprite_table_address = 0;
-		int palette_index = 0;
-
-		std::shared_ptr<UISpriteTexture> ui_sprite;
-		SDLPaletteHandle palette;
 	};
 
 	class EditorTileLayoutViewer : public EditorWindowBase
@@ -115,7 +121,7 @@ namespace spintool
 		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 
+		std::optional<WorkingGameObject> m_working_game_obj;
 		std::optional<WorkingSpline> m_working_spline;
-		UIGameObject* m_selected_game_obj = nullptr;
 	};
 }
