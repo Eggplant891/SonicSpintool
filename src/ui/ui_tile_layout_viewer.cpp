@@ -1335,6 +1335,13 @@ namespace spintool
 
 							if (spline.IsRadial())
 							{
+								const BoundingBox& original_bbox = spline.spline_vector;
+								BoundingBox fixed_bbox;
+								fixed_bbox.min.x = spline.spline_vector.min.x - spline.spline_vector.max.x - 2;
+								fixed_bbox.max.x = spline.spline_vector.min.x + spline.spline_vector.max.x + 2;
+								fixed_bbox.min.y = spline.spline_vector.min.y - spline.spline_vector.max.x - 2;
+								fixed_bbox.max.y = spline.spline_vector.min.y + spline.spline_vector.max.x + 2;
+
 								ImGui::GetWindowDrawList()->AddCircle(
 									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
 									static_cast<float>(spline.spline_vector.max.x), ImGui::GetColorU32(colour), 16, 1.0f);
@@ -1343,6 +1350,46 @@ namespace spintool
 									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x - 2), static_cast<float>(screen_origin.y + spline.spline_vector.min.y - 2) },
 									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x + 3), static_cast<float>(screen_origin.y + spline.spline_vector.min.y + 3) },
 									ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 1.0f);
+
+								if (is_working_spline || ImGui::IsMouseHoveringRect(
+									ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) }))
+								{
+									ImGui::GetWindowDrawList()->AddRect(
+										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
+										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) },
+										ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 3.0f);
+
+									if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
+									{
+										ImGui::SeparatorText("Radial Collision");
+										ImGui::Text("Position: X: 0x%04X  Y: 0x%04X", spline.spline_vector.min.x, spline.spline_vector.min.y);
+										ImGui::Text("Radius: 0x%04X", spline.spline_vector.max.x);
+										ImGui::Text("Unused Y component: 0x%04X", spline.spline_vector.max.y);
+										ImGui::Text("Obj Type Flags: 0x%04X", spline.object_type_flags);
+										ImGui::Text("Extra Info: 0x%04X", spline.extra_info);
+
+										ImGui::EndTooltip();
+									}
+
+									if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+									{
+										WorkingSpline new_spline;
+										new_spline.destination = &spline;
+										new_spline.spline = spline;
+										m_working_spline.emplace(new_spline);
+										m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
+									}
+
+									if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+									{
+										ImGui::OpenPopup("spline_popup");
+										WorkingSpline new_spline;
+										new_spline.destination = &spline;
+										new_spline.spline = spline;
+										m_working_spline.emplace(new_spline);
+									}
+								}
 							}
 							else
 							{
@@ -1529,12 +1576,12 @@ namespace spintool
 								}
 							}
 
-							if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+							if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 							{
 								ImGui::OpenPopup("obj_popup");
 								m_selected_game_obj = game_obj.get();
 							}
-							else if (ImGui::BeginTooltip())
+							else if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
 							{
 								ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
 								ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);

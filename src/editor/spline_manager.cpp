@@ -62,6 +62,12 @@ namespace spintool
 				test_cell_and_add(static_cast<float>(x), static_cast<float>(y) + radius);
 				test_cell_and_add(static_cast<float>(x) - radius, static_cast<float>(y));
 				test_cell_and_add(static_cast<float>(x), static_cast<float>(y) - radius);
+
+				test_cell_and_add(static_cast<float>(x) + radius, static_cast<float>(y) + radius);
+				test_cell_and_add(static_cast<float>(x) - radius, static_cast<float>(y) - radius);
+				test_cell_and_add(static_cast<float>(x) - radius, static_cast<float>(y) + radius);
+				test_cell_and_add(static_cast<float>(x) + radius, static_cast<float>(y) - radius);
+
 			}
 			else
 			{
