@@ -51,7 +51,7 @@ namespace spintool
 					}
 				};
 
-			if (spline.IsBBox() || spline.IsTeleporter())
+			if (spline.IsRadial() || spline.IsTeleporter())
 			{
 				const float radius = static_cast<float>(spline.spline_vector.max.x);
 				auto x = spline.spline_vector.min.x;

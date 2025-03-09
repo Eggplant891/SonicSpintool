@@ -50,12 +50,17 @@ namespace spintool
 		bool is_chroma_keyed = false;
 		bool show_brush_previews = true;
 		bool draw_mirrored_layout = false;
+
+		std::shared_ptr<const rom::TileSet>* store_tileset = nullptr;
+		std::shared_ptr<rom::TileLayout>* store_layout = nullptr;
 	};
 
 	struct TileBrushPreview
 	{
 		SDLSurfaceHandle surface;
 		SDLTextureHandle texture;
+
+		Uint32 brush_index;
 	};
 
 	struct TilesetPreview

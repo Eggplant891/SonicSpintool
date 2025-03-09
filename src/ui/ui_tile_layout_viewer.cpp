@@ -80,7 +80,9 @@ namespace spintool
 			static rom::LevelDataOffsets level_data_offsets{ level_index };
 			static bool preview_bonus_alt_palette = false;
 
-			bool render_both = false;
+			static bool render_from_edit = false;
+
+			bool render_both = render_from_edit;
 			bool render_bg = false;
 			bool render_fg = false;
 			bool preview_intro_bg = false;
@@ -95,6 +97,8 @@ namespace spintool
 			bool preview_bonus_combined = false;
 			bool preview_sega_logo = false;
 			bool preview_options = false;
+
+			render_from_edit = false;
 
 			if (ImGui::BeginMenuBar())
 			{
@@ -127,9 +131,24 @@ namespace spintool
 						level_index = 3;
 						level_data_offsets = { level_index };
 					}
+
+					if (level_index != m_level->level_index)
+					{
+						m_level->m_bg_tileset.reset();
+						m_level->m_bg_tile_layout.reset();
+						m_level->m_fg_tileset.reset();
+						m_level->m_fg_tile_layout.reset();
+						m_level->level_index = level_index;
+					}
+
 					ImGui::Separator();
 					if (ImGui::Selectable("Save Level"))
 					{
+						if (m_level && m_level->m_bg_tile_layout && m_level->m_fg_tile_layout)
+						{
+							m_level->m_bg_tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_layout));
+							m_level->m_fg_tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout));
+						}
 						spline_manager.GenerateSplineCullingTable().SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain));
 					}
 					ImGui::EndMenu();
@@ -257,6 +276,9 @@ namespace spintool
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "bg";
 
+				request.store_tileset = &m_level->m_bg_tileset;
+				request.store_layout = &m_level->m_bg_tile_layout;
+
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
 
@@ -296,6 +318,9 @@ namespace spintool
 				sprintf_s(levelname_buffer, "level_%d", level_index);
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "fg";
+
+				request.store_tileset = &m_level->m_fg_tileset;
+				request.store_layout = &m_level->m_fg_tile_layout;
 
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -819,7 +844,7 @@ namespace spintool
 				int largest_width = std::numeric_limits<int>::min();
 				int largest_height = std::numeric_limits<int>::min();
 
-				m_tileset_preview_list.clear();
+				//m_tileset_preview_list.clear();
 
 				for (const auto& request : m_tile_layout_render_requests)
 				{
@@ -843,18 +868,72 @@ namespace spintool
 
 			while (m_tile_layout_render_requests.empty() == false)
 			{
-				m_tileset_preview_list.emplace_back();
+				bool preserve_rendered_items = false;
 				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
+				
 				if (request.compression_algorithm == CompressionAlgorithm::SSC)
 				{
-					m_level->m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
+					if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
+					{
+						m_level->m_tileset = *request.store_tileset;
+						preserve_rendered_items = true;
+					}
+					else
+					{
+						m_level->m_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
+						if (request.store_tileset != nullptr)
+						{
+							*request.store_tileset = m_level->m_tileset;
+						}
+					}
+
+					if (request.store_layout != nullptr && *request.store_layout != nullptr)
+					{
+						m_level->m_tile_layout = *request.store_layout;
+						preserve_rendered_items = true;
+					}
+					else
+					{
+						m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
+						if (request.store_layout != nullptr)
+						{
+							*request.store_layout = m_level->m_tile_layout;
+						}
+					}
 				}
 				else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
 				{
-					m_level->m_tileset = rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_level->m_tileset, request.tile_layout_address, request.tile_layout_address_end);
+					if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
+					{
+						m_level->m_tileset = *request.store_tileset;
+						preserve_rendered_items = true;
+					}
+					else
+					{
+						m_level->m_tileset = rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
+						if (request.store_tileset != nullptr)
+						{
+							*request.store_tileset = m_level->m_tileset;
+						}
+					}
+
+					if (request.store_layout != nullptr && *request.store_layout != nullptr)
+					{
+						m_level->m_tile_layout = *request.store_layout;
+						preserve_rendered_items = true;
+					}
+					else
+					{
+						m_level->m_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_level->m_tileset, request.tile_layout_address, request.tile_layout_address_end);
+						if (request.store_layout != nullptr)
+						{
+							*request.store_layout = m_level->m_tile_layout;
+						}
+					}
 				}
+
+				m_level->m_tile_layout->layout_width = request.tile_layout_width;
+				m_level->m_tile_layout->layout_height = request.tile_layout_height;
 
 				if (export_combined == false)
 				{
@@ -864,49 +943,56 @@ namespace spintool
 				std::shared_ptr<const rom::Sprite> tileset_sprite = m_level->m_tileset->CreateSpriteFromTile(0);
 				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
 
-				std::vector<rom::Sprite> brushes;
-				brushes.reserve(m_level->m_tile_layout->tile_brushes.size());
-
-				auto& brush_previews = m_tileset_preview_list.back().brushes;
-				brush_previews.clear();
-				brush_previews.reserve(brushes.capacity());
 
 				const int brush_width = static_cast<int>(request.tile_brush_width * rom::TileSet::s_tile_width);
 				const int brush_height = static_cast<int>(request.tile_brush_height * rom::TileSet::s_tile_height);
 
-				for (size_t brush_index = 0; brush_index < m_level->m_tile_layout->tile_brushes.size(); ++brush_index)
+				if (preserve_rendered_items == false)
 				{
-					rom::TileBrushBase& brush = *m_level->m_tile_layout->tile_brushes[brush_index].get();
-					rom::Sprite& brush_sprite = brushes.emplace_back();
-					for (size_t i = 0; i < brush.tiles.size(); ++i)
+					std::vector<rom::Sprite> brushes;
+					m_tileset_preview_list.emplace_back();
+					auto& brush_previews = m_tileset_preview_list.back().brushes;
+					brushes.reserve(m_level->m_tile_layout->tile_brushes.size());
+					brush_previews.clear();
+					brush_previews.reserve(brushes.capacity());
+
+					for (size_t brush_index = 0; brush_index < m_level->m_tile_layout->tile_brushes.size(); ++brush_index)
 					{
-						rom::TileInstance& tile = brush.tiles[i];
-						std::shared_ptr<rom::SpriteTile> sprite_tile = m_level->m_tileset->CreateSpriteTileFromTile(tile.tile_index);
-
-						if (sprite_tile == nullptr)
+						rom::TileBrushBase& brush = *m_level->m_tile_layout->tile_brushes[brush_index].get();
+						rom::Sprite& brush_sprite = brushes.emplace_back();
+						for (size_t i = 0; i < brush.tiles.size(); ++i)
 						{
-							break;
+							rom::TileInstance& tile = brush.tiles[i];
+							std::shared_ptr<rom::SpriteTile> sprite_tile = m_level->m_tileset->CreateSpriteTileFromTile(tile.tile_index);
+
+							if (sprite_tile == nullptr)
+							{
+								break;
+							}
+
+							const size_t current_brush_offset = i;
+
+							sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % brush.BrushWidth()) * rom::TileSet::s_tile_width;
+							sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % brush.BrushWidth())) / brush.BrushWidth()) * rom::TileSet::s_tile_height;
+
+							sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
+							sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
+
+							sprite_tile->blit_settings.palette = tile.palette_line == 0 && request.palette_line.has_value() ? LevelPaletteSet.palette_lines.at(*request.palette_line) : LevelPaletteSet.palette_lines.at(tile.palette_line);
+							brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
 						}
-
-						const size_t current_brush_offset = i;
-
-						sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % brush.BrushWidth()) * rom::TileSet::s_tile_width;
-						sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % brush.BrushWidth())) / brush.BrushWidth()) * rom::TileSet::s_tile_height;
-
-						sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
-						sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
-
-						sprite_tile->blit_settings.palette = tile.palette_line == 0 && request.palette_line.has_value() ? LevelPaletteSet.palette_lines.at(*request.palette_line) : LevelPaletteSet.palette_lines.at(tile.palette_line);
-						brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
+						brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
+						SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+						SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
+						SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
+						brush_sprite.RenderToSurface(new_surface.get());
+						SDL_Surface* the_surface = new_surface.get();
+						brush_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface), static_cast<Uint32>(brush_index) });
 					}
-					brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
-					SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-					SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
-					SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
-					brush_sprite.RenderToSurface(new_surface.get());
-					SDL_Surface* the_surface = new_surface.get();
-					brush_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface) });
 				}
+
+				const size_t target_index = m_level->m_tile_layout == m_level->m_bg_tile_layout ? 0 : 1;
+				auto& brush_previews = m_tileset_preview_list.at(target_index).brushes;
 
 				for (size_t i = 0; i < m_level->m_tile_layout->tile_brush_instances.size(); ++i)
 				{
@@ -963,11 +1049,6 @@ namespace spintool
 						SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 						SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
 					}
-				}
-
-				if (request.show_brush_previews == false)
-				{
-					brush_previews.clear();
 				}
 
 				if (export_result && export_combined == false)
@@ -1144,52 +1225,58 @@ namespace spintool
 				ImGui::TreePop();
 			}
 
-			if (m_tileset_preview_list.empty() == false && ImGui::TreeNode("Brush Previews"))
-			{
-				constexpr size_t num_previews_per_page = 16 * 8;
-				for (auto& tileset_preview : m_tileset_preview_list)
-				{
-					ImGui::PushID(&tileset_preview);
-					ImGui::BeginDisabled((tileset_preview.current_page - 1) < 0);
-					if (ImGui::Button("Previous Page"))
-					{
-						tileset_preview.current_page = std::max(0, tileset_preview.current_page - 1);
-					}
-					ImGui::EndDisabled();
-					ImGui::SameLine();
-					ImGui::BeginDisabled((tileset_preview.current_page + 1) * num_previews_per_page >= tileset_preview.brushes.size());
-					if (ImGui::Button("Next Page"))
-					{
-						tileset_preview.current_page = std::min<int>((static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page), tileset_preview.current_page + 1);
-					}
-					ImGui::EndDisabled();
-						
-					for (size_t i = tileset_preview.current_page * num_previews_per_page; i < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++i)
-					{
-						TileBrushPreview& preview_brush = tileset_preview.brushes[i];
-						if (preview_brush.texture != nullptr)
-						{
-							if (i % preview_brushes_per_row != 0)
-							{
-								ImGui::SameLine();
-							}
+			bool has_just_selected_brush = false;
 
-							ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
-							if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+			if(selected_brush.tile_brush == nullptr)
+			{
+				if (m_tileset_preview_list.empty() == false && ImGui::TreeNode("Brush Previews"))
+				{
+					constexpr size_t num_previews_per_page = 16 * 8;
+					for (auto& tileset_preview : m_tileset_preview_list)
+					{
+						ImGui::PushID(&tileset_preview);
+						ImGui::BeginDisabled((tileset_preview.current_page - 1) < 0);
+						if (ImGui::Button("Previous Page"))
+						{
+							tileset_preview.current_page = std::max(0, tileset_preview.current_page - 1);
+						}
+						ImGui::EndDisabled();
+						ImGui::SameLine();
+						ImGui::BeginDisabled((tileset_preview.current_page + 1) * num_previews_per_page >= tileset_preview.brushes.size());
+						if (ImGui::Button("Next Page"))
+						{
+							tileset_preview.current_page = std::min<int>((static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page), tileset_preview.current_page + 1);
+						}
+						ImGui::EndDisabled();
+
+						for (size_t i = tileset_preview.current_page * num_previews_per_page; i < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++i)
+						{
+							TileBrushPreview& preview_brush = tileset_preview.brushes[i];
+							if (preview_brush.texture != nullptr)
 							{
-								selected_brush.tileset = &tileset_preview;
-								selected_brush.tile_brush = &preview_brush;
-							}
-							if (ImGui::BeginItemTooltip())
-							{
-								ImGui::Text("Tile Index: 0x%02X", i);
-								ImGui::EndTooltip();
+								if (i % preview_brushes_per_row != 0)
+								{
+									ImGui::SameLine();
+								}
+
+								ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
+								if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+								{
+									selected_brush.tileset = &tileset_preview;
+									selected_brush.tile_brush = &preview_brush;
+									has_just_selected_brush = true;
+								}
+								if (ImGui::BeginItemTooltip())
+								{
+									ImGui::Text("Tile Index: 0x%02X", i);
+									ImGui::EndTooltip();
+								}
 							}
 						}
+						ImGui::PopID();
 					}
-					ImGui::PopID();
+					ImGui::TreePop();
 				}
-				ImGui::TreePop();
 			}
 
 			if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -1201,7 +1288,6 @@ namespace spintool
 			if (ImGui::BeginChild("Preview info Area"))
 			{
 				const ImVec2 panel_origin = ImGui::GetCursorScreenPos();
-
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
 					struct WorkingSpline
@@ -1212,6 +1298,7 @@ namespace spintool
 					};
 					static UIGameObject* selected_game_obj = nullptr;
 					static std::optional<WorkingSpline> working_spline;
+
 					const ImVec2 origin = ImGui::GetCursorPos();
 					const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
 					ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
@@ -1228,7 +1315,9 @@ namespace spintool
 
 					// Terrain Collision
 
-					if (selected_brush.tileset == nullptr && selected_brush.tile_brush == nullptr)
+					const bool brush_selected = (selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr);
+
+					// if( brush_selected)
 					{
 						for (rom::CollisionSpline& next_spline : spline_manager.splines)
 						{
@@ -1237,7 +1326,7 @@ namespace spintool
 
 							const BoundingBox& spline_bbox = spline.spline_vector;
 							ImVec4 colour{ 192,192,0,128 };
-							if (spline.IsBBox())
+							if (spline.IsRadial())
 							{
 								colour = ImVec4(255, 0, 255, 255);
 							}
@@ -1252,7 +1341,7 @@ namespace spintool
 								colour = ImVec4(128, 128, 255, 255);
 							}
 
-							if (spline.IsBBox())
+							if (spline.IsRadial())
 							{
 								ImGui::GetWindowDrawList()->AddCircle(
 									ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
@@ -1279,6 +1368,11 @@ namespace spintool
 								fixed_bbox.max.x = std::max(spline.spline_vector.min.x, spline.spline_vector.max.x) + 1;
 								fixed_bbox.min.y = std::min(spline.spline_vector.min.y, spline.spline_vector.max.y) - 1;
 								fixed_bbox.max.y = std::max(spline.spline_vector.min.y, spline.spline_vector.max.y) + 1;
+
+								if (brush_selected)
+								{
+									continue;
+								}
 
 								if (is_working_spline || ImGui::IsMouseHoveringRect(
 									ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
@@ -1339,18 +1433,53 @@ namespace spintool
 						}
 					}
 
-					if (working_spline.has_value() == false && selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr)
+					if (selected_brush.tile_brush != nullptr && selected_brush.tile_brush->texture == nullptr)
 					{
-						const ImVec2 mouse_pos = ImGui::GetMousePos();
-						const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_origin.x) + screen_origin.x, (mouse_pos.y - panel_origin.y) + screen_origin.x };
-						const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
-						const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
-						const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
+						selected_brush.tile_brush = nullptr;
+						selected_brush.tileset = nullptr;
+					}
 
-						ImGui::SetCursorPos(snapped_pos);
-						ImGui::Image((ImTextureID)selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(selected_brush.tile_brush->texture->w), static_cast<float>(selected_brush.tile_brush->texture->h) });
-						ImGui::SetCursorPos(snapped_pos);
-						ImGui::GetForegroundDrawList()->AddRect(ImVec2{ ImGui::GetItemRectMin().x - 1, ImGui::GetItemRectMin().y + 1 }, ImVec2{ ImGui::GetItemRectMax().x - 1, ImGui::GetItemRectMax().y + 1 }, ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
+					if (has_just_selected_brush == false)
+					{
+						if (working_spline.has_value() == false && selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr)
+						{
+
+							const ImVec2 mouse_pos = ImGui::GetMousePos();
+							const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_origin.x) + screen_origin.x, (mouse_pos.y - panel_origin.y) + screen_origin.x };
+							const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
+							const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
+							const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
+
+							ImGui::SetCursorPos(snapped_pos);
+							ImGui::Image((ImTextureID)selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(selected_brush.tile_brush->texture->w), static_cast<float>(selected_brush.tile_brush->texture->h) });
+							ImGui::SetCursorPos(snapped_pos);
+							ImGui::GetForegroundDrawList()->AddRect(ImVec2{ ImGui::GetItemRectMin().x - 1, ImGui::GetItemRectMin().y + 1 }, ImVec2{ ImGui::GetItemRectMax().x - 1, ImGui::GetItemRectMax().y + 1 }, ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
+
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+							{
+								auto grid_ref = (grid_pos.y * m_level->m_bg_tile_layout->layout_width) + grid_pos.x;
+
+								if (selected_brush.tileset == &m_tileset_preview_list[0])
+								{
+									// Background
+									if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
+									{
+										m_level->m_bg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index = selected_brush.tile_brush->brush_index;
+										render_from_edit = true;
+									}
+								}
+
+								if (selected_brush.tileset == &m_tileset_preview_list[1])
+								{
+									// Foreground
+									if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
+									{
+										m_level->m_fg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index = selected_brush.tile_brush->brush_index;
+										render_from_edit = true;
+									}
+								}
+							}
+						}
 					}
 
 					if (selected_collision_tile_index != -1)
@@ -1462,6 +1591,9 @@ namespace spintool
 						}
 						else
 						{
+							ImGui::Text("Obj Flags: 0x%04X", working_spline->spline.object_type_flags);
+							ImGui::Text("Extra Info: 0x%04X", working_spline->spline.extra_info);
+
 							int spline_min[2] = { static_cast<int>(working_spline->spline.spline_vector.min.x), static_cast<int>(working_spline->spline.spline_vector.min.y) };
 							int spline_max[2] = { static_cast<int>(working_spline->spline.spline_vector.max.x), static_cast<int>(working_spline->spline.spline_vector.max.y) };
 

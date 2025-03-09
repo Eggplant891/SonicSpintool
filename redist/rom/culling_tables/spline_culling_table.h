@@ -28,7 +28,7 @@ namespace spintool::rom
 		Uint16 object_type_flags = 0;
 		Uint16 extra_info = 0;
 
-		bool IsBBox() const;
+		bool IsRadial() const;
 		bool IsTeleporter() const;
 		bool IsRecognisedButUnknown() const;
 		bool IsUnknown() const;

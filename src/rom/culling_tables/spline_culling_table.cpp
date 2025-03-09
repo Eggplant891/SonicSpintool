@@ -4,7 +4,7 @@
 
 namespace spintool::rom
 {
-	bool CollisionSpline::IsBBox() const
+	bool CollisionSpline::IsRadial() const
 	{
 		return (object_type_flags & 0x8000) == 0x8000;
 	};
@@ -21,7 +21,7 @@ namespace spintool::rom
 
 	bool CollisionSpline::IsUnknown() const
 	{
-		return !IsBBox() && !IsTeleporter() && !IsRecognisedButUnknown() && ((object_type_flags & 0x0FFF) != (object_type_flags & 0xFFFF));
+		return !IsRadial() && !IsTeleporter() && !IsRecognisedButUnknown() && ((object_type_flags & 0x0FFF) != (object_type_flags & 0xFFFF));
 	}
 
 	bool CollisionSpline::operator==(const CollisionSpline& rhs) const

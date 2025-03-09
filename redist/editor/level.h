@@ -21,9 +21,15 @@ namespace spintool
 
 	//private:
 		std::string m_level_name;
+		int level_index = -1;
 
 		std::shared_ptr<const rom::TileSet> m_tileset;
 		std::shared_ptr<rom::TileLayout> m_tile_layout;
+
+		std::shared_ptr<const rom::TileSet> m_bg_tileset;
+		std::shared_ptr<const rom::TileSet> m_fg_tileset;
+		std::shared_ptr<rom::TileLayout> m_fg_tile_layout;
+		std::shared_ptr<rom::TileLayout> m_bg_tile_layout;
 		std::vector<rom::FlipperInstance> m_flipper_instances;
 		std::vector<rom::RingInstance> m_ring_instances;
 		std::vector<rom::GameObjectDefinition> m_game_obj_instances;
