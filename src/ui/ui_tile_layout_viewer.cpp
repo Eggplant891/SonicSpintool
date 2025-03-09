@@ -1292,15 +1292,6 @@ namespace spintool
 				const ImVec2 panel_origin = ImGui::GetCursorScreenPos();
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
-					struct WorkingSpline
-					{
-						rom::CollisionSpline* destination = nullptr;
-						rom::CollisionSpline spline;
-						Point* dest_spline_point = nullptr;
-					};
-					static UIGameObject* selected_game_obj = nullptr;
-					static std::optional<WorkingSpline> working_spline;
-
 					const ImVec2 origin = ImGui::GetCursorPos();
 					const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
 					ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
@@ -1309,7 +1300,6 @@ namespace spintool
 					ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_fg->w) * zoom, static_cast<float>(m_tile_layout_preview_fg->h) * zoom));
 
 					// Visualise collision vectors
-					constexpr Uint32 num_collision_data = 0x100;
 					constexpr int tile_width = 128;
 					constexpr int num_tiles_x = 16;
 					constexpr int size_of_preview_collision_boxes = 4;
@@ -1323,8 +1313,8 @@ namespace spintool
 					{
 						for (rom::CollisionSpline& next_spline : spline_manager.splines)
 						{
-							const bool is_working_spline = (working_spline.has_value() && working_spline->destination == &next_spline && (working_spline->dest_spline_point != nullptr || ImGui::IsPopupOpen("spline_popup")));
-							rom::CollisionSpline& spline = is_working_spline ? working_spline->spline : next_spline;
+							const bool is_working_spline = (m_working_spline.has_value() && m_working_spline->destination == &next_spline && (m_working_spline->dest_spline_point != nullptr || ImGui::IsPopupOpen("spline_popup")));
+							rom::CollisionSpline& spline = is_working_spline ? m_working_spline->spline : next_spline;
 
 							const BoundingBox& spline_bbox = spline.spline_vector;
 							ImVec4 colour{ 192,192,0,128 };
@@ -1389,26 +1379,26 @@ namespace spintool
 										ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) }))
 									{
 										start_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
-										if (working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+										if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 										{
 											WorkingSpline new_spline;
 											new_spline.destination = &spline;
 											new_spline.spline = spline;
-											working_spline.emplace(new_spline);
-											working_spline->dest_spline_point = &working_spline->spline.spline_vector.min;
+											m_working_spline.emplace(new_spline);
+											m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
 										}
 									}
 									else if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
 										ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) }))
 									{
 										end_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
-										if (working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+										if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 										{
 											WorkingSpline new_spline;
 											new_spline.destination = &spline;
 											new_spline.spline = spline;
-											working_spline.emplace(new_spline);
-											working_spline->dest_spline_point = &working_spline->spline.spline_vector.max;
+											m_working_spline.emplace(new_spline);
+											m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.max;
 										}
 									}
 
@@ -1422,13 +1412,13 @@ namespace spintool
 										ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) },
 										end_handle_colour, 0, ImDrawFlags_None, 2.0f);
 
-									if (working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+									if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 									{
 										ImGui::OpenPopup("spline_popup");
 										WorkingSpline new_spline;
 										new_spline.destination = &spline;
 										new_spline.spline = spline;
-										working_spline.emplace(new_spline);
+										m_working_spline.emplace(new_spline);
 									}
 								}
 							}
@@ -1443,7 +1433,7 @@ namespace spintool
 
 					if (has_just_selected_brush == false)
 					{
-						if (working_spline.has_value() == false && selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr)
+						if (m_working_spline.has_value() == false && selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr)
 						{
 
 							const ImVec2 mouse_pos = ImGui::GetMousePos();
@@ -1486,10 +1476,13 @@ namespace spintool
 
 					if (selected_collision_tile_index != -1)
 					{
-						const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % num_tiles_x) * tile_width;
-						const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / num_tiles_x) * tile_width;
+						const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.x;
+						const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.y;
 
-						ImGui::GetWindowDrawList()->AddRect(ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) }, ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + tile_width), static_cast<float>(screen_origin.y + collision_tile_origin_y + tile_width) }, ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
+						ImGui::GetWindowDrawList()->AddRect(
+							ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) },
+							ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + rom::SplineCullingTable::cell_dimensions.x), static_cast<float>(screen_origin.y + collision_tile_origin_y + rom::SplineCullingTable::cell_dimensions.y) },
+							ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 					}
 
 					for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
@@ -1498,7 +1491,7 @@ namespace spintool
 						ImGui::Dummy(game_obj->dimensions);
 						if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 						{
-							selected_game_obj = nullptr;
+							m_selected_game_obj = nullptr;
 							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
 							rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.camera_activation_sector_anim_obj_ids));
@@ -1539,7 +1532,7 @@ namespace spintool
 							if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 							{
 								ImGui::OpenPopup("obj_popup");
-								selected_game_obj = game_obj.get();
+								m_selected_game_obj = game_obj.get();
 							}
 							else if (ImGui::BeginTooltip())
 							{
@@ -1551,35 +1544,35 @@ namespace spintool
 						}
 					}
 
-					if (working_spline && working_spline->dest_spline_point != nullptr)
+					if (m_working_spline && m_working_spline->dest_spline_point != nullptr)
 					{
 						if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 						{
-							working_spline->dest_spline_point->x = static_cast<int>(ImGui::GetMousePos().x - screen_origin.x);
-							working_spline->dest_spline_point->y = static_cast<int>(ImGui::GetMousePos().y - screen_origin.y);
+							m_working_spline->dest_spline_point->x = static_cast<int>(ImGui::GetMousePos().x - screen_origin.x);
+							m_working_spline->dest_spline_point->y = static_cast<int>(ImGui::GetMousePos().y - screen_origin.y);
 						}
 						else
 						{
 							ImGui::OpenPopup("spline_popup");
-							working_spline->dest_spline_point = nullptr;
+							m_working_spline->dest_spline_point = nullptr;
 						}
 					}
 
-					if (selected_game_obj == nullptr && (working_spline.has_value() == false || working_spline->dest_spline_point != nullptr))
+					if (m_selected_game_obj == nullptr && (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr))
 					{
 						ImGui::CloseCurrentPopup();
 					}
 					
-					if (selected_game_obj != nullptr && ImGui::BeginPopup("obj_popup"))
+					if (m_selected_game_obj != nullptr && ImGui::BeginPopup("obj_popup"))
 					{
-						const auto origin_offset = selected_game_obj->ui_sprite != nullptr ? selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
-						int pos[2] = { static_cast<int>(selected_game_obj->pos.x + origin_offset.x), static_cast<int>(selected_game_obj->pos.y + origin_offset.y) };
+						const auto origin_offset = m_selected_game_obj->ui_sprite != nullptr ? m_selected_game_obj->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
+						int pos[2] = { static_cast<int>(m_selected_game_obj->pos.x + origin_offset.x), static_cast<int>(m_selected_game_obj->pos.y + origin_offset.y) };
 						if (ImGui::InputInt2("Object Pos", pos, ImGuiInputTextFlags_EnterReturnsTrue))
 						{
-							selected_game_obj->obj_definition.x_pos = pos[0];
-							selected_game_obj->obj_definition.y_pos = pos[1];
-							selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
-							selected_game_obj = nullptr;
+							m_selected_game_obj->obj_definition.x_pos = pos[0];
+							m_selected_game_obj->obj_definition.y_pos = pos[1];
+							m_selected_game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
+							m_selected_game_obj = nullptr;
 							ImGui::CloseCurrentPopup();
 						}
 						ImGui::EndPopup();
@@ -1587,45 +1580,45 @@ namespace spintool
 					
 					if (ImGui::BeginPopup("spline_popup"))
 					{
-						if (working_spline.has_value() == false || working_spline->dest_spline_point != nullptr)
+						if (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr)
 						{
 							ImGui::CloseCurrentPopup();
 						}
 						else
 						{
-							ImGui::Text("Obj Flags: 0x%04X", working_spline->spline.object_type_flags);
-							ImGui::Text("Extra Info: 0x%04X", working_spline->spline.extra_info);
+							ImGui::Text("Obj Flags: 0x%04X", m_working_spline->spline.object_type_flags);
+							ImGui::Text("Extra Info: 0x%04X", m_working_spline->spline.extra_info);
 
-							int spline_min[2] = { static_cast<int>(working_spline->spline.spline_vector.min.x), static_cast<int>(working_spline->spline.spline_vector.min.y) };
-							int spline_max[2] = { static_cast<int>(working_spline->spline.spline_vector.max.x), static_cast<int>(working_spline->spline.spline_vector.max.y) };
+							int spline_min[2] = { static_cast<int>(m_working_spline->spline.spline_vector.min.x), static_cast<int>(m_working_spline->spline.spline_vector.min.y) };
+							int spline_max[2] = { static_cast<int>(m_working_spline->spline.spline_vector.max.x), static_cast<int>(m_working_spline->spline.spline_vector.max.y) };
 
 							ImGui::InputInt2("Spline Min", spline_min);
 							ImGui::InputInt2("Spline Max", spline_max);
 
-							working_spline->spline.spline_vector.min.x = spline_min[0];
-							working_spline->spline.spline_vector.min.y = spline_min[1];
-							working_spline->spline.spline_vector.max.x = spline_max[0];
-							working_spline->spline.spline_vector.max.y = spline_max[1];
+							m_working_spline->spline.spline_vector.min.x = spline_min[0];
+							m_working_spline->spline.spline_vector.min.y = spline_min[1];
+							m_working_spline->spline.spline_vector.max.x = spline_max[0];
+							m_working_spline->spline.spline_vector.max.y = spline_max[1];
 
 							if (ImGui::Button("Confirm"))
 							{
-								*working_spline->destination = working_spline->spline;
-								working_spline.reset();
+								*m_working_spline->destination = m_working_spline->spline;
+								m_working_spline.reset();
 								ImGui::CloseCurrentPopup();
 							}
 
 							if (ImGui::Button("Cancel"))
 							{
-								working_spline.reset();
+								m_working_spline.reset();
 								ImGui::CloseCurrentPopup();
 							}
 						}
 						ImGui::EndPopup();
 					}
 
-					if (ImGui::IsPopupOpen("spline_popup") == false && working_spline.has_value() && working_spline->dest_spline_point == nullptr)
+					if (ImGui::IsPopupOpen("spline_popup") == false && m_working_spline.has_value() && m_working_spline->dest_spline_point == nullptr)
 					{
-						working_spline.reset();
+						m_working_spline.reset();
 					}
 				}
 			}

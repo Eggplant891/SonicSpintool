@@ -3,6 +3,7 @@
 #include "ui/ui_editor_window.h"
 #include "types/sdl_handle_defs.h"
 
+#include "rom/culling_tables/spline_culling_table.h"
 #include "rom/game_objects/game_object_definition.h"
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
@@ -63,6 +64,13 @@ namespace spintool
 		Uint32 brush_index;
 	};
 
+	struct WorkingSpline
+	{
+		rom::CollisionSpline* destination = nullptr;
+		rom::CollisionSpline spline;
+		Point* dest_spline_point = nullptr;
+	};
+
 	struct TilesetPreview
 	{
 		int current_page = 0;
@@ -106,5 +114,8 @@ namespace spintool
 		std::vector<TilesetPreview> m_tileset_preview_list;
 		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
+
+		std::optional<WorkingSpline> m_working_spline;
+		UIGameObject* m_selected_game_obj = nullptr;
 	};
 }
