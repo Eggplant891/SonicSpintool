@@ -98,8 +98,6 @@ namespace spintool
 			bool preview_sega_logo = false;
 			bool preview_options = false;
 
-			render_from_edit = false;
-
 			if (ImGui::BeginMenuBar())
 			{
 				if (ImGui::BeginMenu("Levels"))
@@ -741,23 +739,23 @@ namespace spintool
 
 						for (const rom::CollisionSpline& spline : rom_cell.splines)
 						{
-							assert(std::any_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
+							if(std::none_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
 								{
 									return _spline == spline || spline.extra_info == 0x0006;
-								}));
-								//{
-								//	// Did we lose this spline entirely, or was this some redunant data?
-								//
-								//	assert(std::any_of(std::begin(og_table.cells), std::end(og_table.cells),
-								//		[&spline](const rom::SplineCullingCell& _cell)
-								//		{
-								//			return std::any_of(std::begin(_cell.splines), std::end(_cell.splines),
-								//				[&spline](const rom::CollisionSpline& _spline)
-								//				{
-								//					return _spline == spline;
-								//				});
-								//		}));
-								//}
+								}))
+								{
+									// Did we lose this spline entirely, or was this some redunant data?
+								
+									assert(std::any_of(std::begin(og_table.cells), std::end(og_table.cells),
+										[&spline](const rom::SplineCullingCell& _cell)
+										{
+											return std::any_of(std::begin(_cell.splines), std::end(_cell.splines),
+												[&spline](const rom::CollisionSpline& _spline)
+												{
+													return _spline == spline;
+												});
+										}));
+								}
 						}
 					}
 
@@ -844,7 +842,11 @@ namespace spintool
 				int largest_width = std::numeric_limits<int>::min();
 				int largest_height = std::numeric_limits<int>::min();
 
-				//m_tileset_preview_list.clear();
+				if (render_from_edit == false)
+				{
+					m_tileset_preview_list.clear();
+				}
+				render_from_edit = false;
 
 				for (const auto& request : m_tile_layout_render_requests)
 				{
