@@ -2,4 +2,4 @@
 /bin/*
 /intermediate/*
 /lib/*
-*.vcxproj.*
+*.vcxproj.user

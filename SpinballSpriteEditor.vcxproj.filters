@@ -1,0 +1,363 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\ui">
+      <UniqueIdentifier>{f4fe216d-6e21-4b33-a354-0c82a041ddb3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\external">
+      <UniqueIdentifier>{9d2ce93d-efcc-4c06-a309-8d2e229848ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\external\imgui">
+      <UniqueIdentifier>{59b5b22d-eca6-4610-aab9-394c13caaa5f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\external\imgui\backend">
+      <UniqueIdentifier>{864c9dca-b066-434d-8650-b983e6f32cf3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ui">
+      <UniqueIdentifier>{80c074e4-bbd3-4e70-955c-14ae3936ad8b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rom">
+      <UniqueIdentifier>{b788004e-dfab-4d22-b7bf-13a7f3477ab1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rom">
+      <UniqueIdentifier>{73d99b28-cdb9-4d5e-b633-b35a7dc9414d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\types">
+      <UniqueIdentifier>{f6f284f1-b5b3-43fe-9917-9cbb4e7c3b84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\types">
+      <UniqueIdentifier>{9b90afc7-845e-467a-b615-dad2287ec2c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rom\game_objects">
+      <UniqueIdentifier>{aecc6c40-299e-4478-bb33-fedfbe8190a9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rom\game_objects">
+      <UniqueIdentifier>{253725e4-39f2-423a-8b7a-8729207134d1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\rom\culling_tables">
+      <UniqueIdentifier>{d8a0a8a9-77e5-4bc7-9d69-0f76b36ed7cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\rom\culling_tables">
+      <UniqueIdentifier>{4bb64046-9728-4468-8c63-f7a2366a2afb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\editor">
+      <UniqueIdentifier>{3f317d95-6260-40dd-a4e8-99db7fcba47e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\editor">
+      <UniqueIdentifier>{00578600-426d-414f-a3c0-c6556cb689e2}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="external\imgui\imgui.cpp">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_demo.cpp">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_draw.cpp">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_tables.cpp">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\imgui_widgets.cpp">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\backends\imgui_impl_sdl3.cpp">
+      <Filter>Header Files\external\imgui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="external\imgui\backends\imgui_impl_sdlrenderer3.cpp">
+      <Filter>Header Files\external\imgui\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\render.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_file_selector.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_palette.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_palette_viewer.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_sprite.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_sprite_importer.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_sprite_navigator.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_sprite_viewer.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_editor.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\spinball_rom.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\colour.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\tileset.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\sprite.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\sprite_tile.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\ssc_decompressor.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\palette.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\types\bounding_box.cpp">
+      <Filter>Source Files\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\rom_data.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_tileset_navigator.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\tile_layout.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\types\blit_settings.cpp">
+      <Filter>Source Files\types</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_tile_layout_viewer.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_editor_window.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\animated_object.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\animation_sequence.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_animation_navigator.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\game_objects\game_object_flipper.cpp">
+      <Filter>Source Files\rom\game_objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\game_objects\game_object_ring.cpp">
+      <Filter>Source Files\rom\game_objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\lzss_decompressor.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\collision_tile.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\game_objects\game_object_definition.cpp">
+      <Filter>Source Files\rom\game_objects</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\rom_asset_definitions.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\culling_tables\animated_object_culling_table.cpp">
+      <Filter>Source Files\rom\culling_tables</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\culling_tables\game_obj_collision_culling_table.cpp">
+      <Filter>Source Files\rom\culling_tables</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\culling_tables\spline_culling_table.cpp">
+      <Filter>Source Files\rom\culling_tables</Filter>
+    </ClCompile>
+    <ClCompile Include="src\editor\tile_brush_manager.cpp">
+      <Filter>Source Files\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\editor\tile_layout_manager.cpp">
+      <Filter>Source Files\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\editor\game_obj_manager.cpp">
+      <Filter>Source Files\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\editor\level.cpp">
+      <Filter>Source Files\editor</Filter>
+    </ClCompile>
+    <ClCompile Include="src\editor\spline_manager.cpp">
+      <Filter>Source Files\editor</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="external\imgui\imconfig.h">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imgui.h">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imgui_internal.h">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imstb_rectpack.h">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imstb_textedit.h">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\imstb_truetype.h">
+      <Filter>Header Files\external\imgui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\backends\imgui_impl_sdl3.h">
+      <Filter>Header Files\external\imgui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="external\imgui\backends\imgui_impl_sdlrenderer3.h">
+      <Filter>Header Files\external\imgui\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\render.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_sprite_viewer.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_editor.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_file_selector.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_palette.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_palette_viewer.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_sprite.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_sprite_importer.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_sprite_navigator.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\spinball_rom.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\palette.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\sprite.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\sprite_tile.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\ssc_decompressor.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\tileset.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\colour.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\bounding_box.h">
+      <Filter>Header Files\types</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\sdl_handle_defs.h">
+      <Filter>Header Files\types</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\rom_data.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_tileset_navigator.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\tile_layout.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\types\blit_settings.h">
+      <Filter>Header Files\types</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_tile_layout_viewer.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_editor_window.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\animation_sequence.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\animated_object.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_animation_navigator.h">
+      <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\game_objects\game_object_flipper.h">
+      <Filter>Header Files\rom\game_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\game_objects\game_object_ring.h">
+      <Filter>Header Files\rom\game_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\types\decompression_result.h">
+      <Filter>Header Files\types</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\lzss_decompressor.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\collision_tile.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\types\rom_ptr.h">
+      <Filter>Header Files\types</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\rom_asset_definitions.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\game_objects\game_object_definition.h">
+      <Filter>Header Files\rom\game_objects</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\culling_tables\animated_object_culling_table.h">
+      <Filter>Header Files\rom\culling_tables</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\culling_tables\game_obj_collision_culling_table.h">
+      <Filter>Header Files\rom\culling_tables</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\culling_tables\spline_culling_table.h">
+      <Filter>Header Files\rom\culling_tables</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\editor\tile_brush_manager.h">
+      <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\editor\tile_layout_manager.h">
+      <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\editor\game_obj_manager.h">
+      <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\editor\level.h">
+      <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\editor\spline_manager.h">
+      <Filter>Header Files\editor</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
