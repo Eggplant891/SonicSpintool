@@ -76,6 +76,7 @@ namespace spintool::rom
 
 	struct LevelDataOffsets
 	{
+		LevelDataOffsets() = default;
 		LevelDataOffsets(const int level_index);
 
 		LevelDataTableOffsets table_offsets;

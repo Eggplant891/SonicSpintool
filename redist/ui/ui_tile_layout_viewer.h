@@ -189,7 +189,7 @@ namespace spintool
 		SpriteObjectPreview m_game_object_preview;
 
 		rom::PaletteSet m_level_palette_set;
-		rom::LevelDataOffsets m_level_data_offsets{ m_level->level_index };
+		rom::LevelDataOffsets m_level_data_offsets;
 
 		bool m_export_result = false;
 		bool m_preview_bonus_alt_palette = false;

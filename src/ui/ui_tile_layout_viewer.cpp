@@ -26,6 +26,7 @@ namespace spintool
 		: EditorWindowBase(owning_ui)
 	{
 		m_level = std::make_shared<Level>();
+		m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
 	}
 
 	void EditorTileLayoutViewer::Update()
@@ -39,7 +40,6 @@ namespace spintool
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
 			bool render_preview = false;
-
 			bool render_both = m_render_from_edit;
 			bool render_bg = false;
 			bool render_fg = false;
@@ -60,8 +60,14 @@ namespace spintool
 			{
 				if (ImGui::BeginMenu("File"))
 				{
-					if( ImGui::Selectable(""))
 					ImGui::BeginDisabled(m_level == nullptr || m_level->level_index == -1);
+
+					if (ImGui::Selectable("Repaint Level"))
+					{
+						m_render_from_edit = true;
+						render_both = true;
+					}
+
 					if (ImGui::Selectable("Save Level"))
 					{
 						if (m_level && m_level->m_bg_tile_layout && m_level->m_fg_tile_layout)
@@ -82,28 +88,24 @@ namespace spintool
 							{
 								render_both = true;
 								level_index = 0;
-								m_level_data_offsets = { m_level->level_index };
 							}
 
 							if (ImGui::Selectable("Lava Powerhouse"))
 							{
 								render_both = true;
 								level_index = 1;
-								m_level_data_offsets = { m_level->level_index };
 							}
 
 							if (ImGui::Selectable("The Machine"))
 							{
 								render_both = true;
 								level_index = 2;
-								m_level_data_offsets = { m_level->level_index };
 							}
 
 							if (ImGui::Selectable("Showdown"))
 							{
 								render_both = true;
 								level_index = 3;
-								m_level_data_offsets = { m_level->level_index };
 							}
 
 							if (level_index != m_level->level_index)
@@ -113,6 +115,7 @@ namespace spintool
 								m_level->m_fg_tileset.reset();
 								m_level->m_fg_tile_layout.reset();
 								m_level->level_index = level_index;
+								m_level_data_offsets = { level_index };
 							}
 							ImGui::EndMenu();
 						}

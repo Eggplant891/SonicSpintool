@@ -34,14 +34,14 @@ namespace spintool
 				{
 					const Uint32 cell_x = static_cast<int>(x) / rom::SplineCullingTable::cell_dimensions.x;
 					const Uint32 cell_y = static_cast<int>(y) / rom::SplineCullingTable::cell_dimensions.y;
-
-					if (cell_x == rom::SplineCullingTable::grid_dimensions.x || cell_y == rom::SplineCullingTable::grid_dimensions.y)
+					const size_t cell_index = (cell_y * rom::SplineCullingTable::grid_dimensions.x) + cell_x;
+					if (cell_x == rom::SplineCullingTable::grid_dimensions.x || cell_y == rom::SplineCullingTable::grid_dimensions.y || cell_index >= new_table.cells.size())
 					{
 						//std::cout << "Discarded spline in cell [" << cell_x << "," << cell_y << "]" << std::endl;
 						return;
 					}
 
-					rom::SplineCullingCell& target_cell = new_table.cells[(cell_y * rom::SplineCullingTable::grid_dimensions.x) + cell_x];
+					rom::SplineCullingCell& target_cell = new_table.cells[cell_index];
 					if (std::none_of(std::begin(target_cell.splines), std::end(target_cell.splines), [&spline](const rom::CollisionSpline& _spline)
 						{
 							return _spline == spline;
