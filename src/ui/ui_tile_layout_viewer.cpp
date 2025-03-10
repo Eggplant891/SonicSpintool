@@ -47,6 +47,33 @@ namespace spintool
 	{
 		TilesetPreview* tileset = nullptr;
 		TileBrushPreview* tile_brush = nullptr;
+		bool is_picking_from_layout = false;
+		bool flip_x = false;
+		bool flip_y = false;
+
+		void Clear()
+		{
+			is_picking_from_layout = false;
+			tileset = nullptr;
+			tile_brush = nullptr;
+			flip_x = false;
+			flip_y = false;
+		}
+
+		bool IsPickingBrushFromLayout() const
+		{
+			return is_picking_from_layout;
+		}
+
+		bool HasBrushSelected() const
+		{
+			return (tileset != nullptr && tile_brush != nullptr);
+		}
+
+		bool IsActive() const
+		{
+			return (tileset != nullptr && tile_brush != nullptr) || (is_picking_from_layout);
+		}
 	};
 
 	EditorTileLayoutViewer::EditorTileLayoutViewer(EditorUI& owning_ui)
@@ -1229,7 +1256,7 @@ namespace spintool
 
 			bool has_just_selected_brush = false;
 
-			if(selected_brush.tile_brush == nullptr)
+			if(selected_brush.IsActive() == false)
 			{
 				if (m_tileset_preview_list.empty() == false && ImGui::TreeNode("Brush Previews"))
 				{
@@ -1250,6 +1277,12 @@ namespace spintool
 							tileset_preview.current_page = std::min<int>((static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page), tileset_preview.current_page + 1);
 						}
 						ImGui::EndDisabled();
+
+						if (ImGui::Button("Pick from layout"))
+						{
+							selected_brush.is_picking_from_layout = true;
+							selected_brush.tileset = &tileset_preview;
+						}
 
 						for (size_t i = tileset_preview.current_page * num_previews_per_page; i < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++i)
 						{
@@ -1281,15 +1314,14 @@ namespace spintool
 				}
 			}
 
-			if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+			if (selected_brush.IsActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 			{
-				selected_brush.tileset = nullptr;
-				selected_brush.tile_brush = nullptr;
+				selected_brush.Clear();
 			}
 
-			if (ImGui::BeginChild("Preview info Area", ImVec2{ 0,0 }, ImGuiChildFlags_Border, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar))
+			if (ImGui::BeginChild("Preview info Area", ImVec2{ 0,0 }, 0, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 			{
-				const ImVec2 panel_origin = ImGui::GetCursorScreenPos();
+				const ImVec2 panel_screen_origin = ImGui::GetCursorScreenPos();
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
 					const ImVec2 origin = ImGui::GetCursorPos();
@@ -1307,9 +1339,9 @@ namespace spintool
 
 					// Terrain Collision
 
-					const bool brush_selected = (selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr);
+					const bool brush_selected = selected_brush.HasBrushSelected();
 
-					// if( brush_selected)
+					if (brush_selected == false)
 					{
 						for (rom::CollisionSpline& next_spline : spline_manager.splines)
 						{
@@ -1472,52 +1504,123 @@ namespace spintool
 						}
 					}
 
-					if (selected_brush.tile_brush != nullptr && selected_brush.tile_brush->texture == nullptr)
-					{
-						selected_brush.tile_brush = nullptr;
-						selected_brush.tileset = nullptr;
-					}
-
 					if (has_just_selected_brush == false)
 					{
-						if (m_working_spline.has_value() == false && selected_brush.tileset != nullptr && selected_brush.tile_brush != nullptr)
+						if (m_working_spline.has_value() == false && selected_brush.IsActive())
 						{
 
 							const ImVec2 mouse_pos = ImGui::GetMousePos();
-							const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_origin.x) + screen_origin.x, (mouse_pos.y - panel_origin.y) + screen_origin.x };
+							const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_screen_origin.x) + screen_origin.x, (mouse_pos.y - panel_screen_origin.y) + screen_origin.x };
 							const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
 							const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
 							const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
+							const ImVec2 final_snapped_pos{ snapped_pos.x + screen_origin.x + (panel_screen_origin.x - screen_origin.x), snapped_pos.y + screen_origin.y + (panel_screen_origin.y - screen_origin.y) };
 
-							ImGui::SetCursorPos(snapped_pos);
-							ImGui::Image((ImTextureID)selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(selected_brush.tile_brush->texture->w), static_cast<float>(selected_brush.tile_brush->texture->h) });
-							ImGui::SetCursorPos(snapped_pos);
-							ImGui::GetForegroundDrawList()->AddRect(ImVec2{ ImGui::GetItemRectMin().x - 1, ImGui::GetItemRectMin().y + 1 }, ImVec2{ ImGui::GetItemRectMax().x - 1, ImGui::GetItemRectMax().y + 1 }, ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
+							if (selected_brush.HasBrushSelected())
+							{
+								ImGui::SetCursorScreenPos(final_snapped_pos);
+								ImVec2 uv0 = { 0,0 };
+								ImVec2 uv1 = { 1,1 };
+								if (selected_brush.flip_x)
+								{
+									uv0.x = 1;
+									uv1.x = 0;
+								}
+								if (selected_brush.flip_y)
+								{
+									uv0.y = 1;
+									uv1.y = 0;
+								}
+								ImGui::Image((ImTextureID)selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(selected_brush.tile_brush->texture->w), static_cast<float>(selected_brush.tile_brush->texture->h) }, uv0, uv1);
+							}
+
+							ImGui::GetForegroundDrawList()->AddRect(
+								ImVec2{ final_snapped_pos.x - 1, final_snapped_pos.y - 1},
+								ImVec2{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1},
+								ImGui::GetColorU32(ImVec4{255,0,255,255}), 0, 0, 1.0f);
 
 							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{
 								auto grid_ref = (grid_pos.y * m_level->m_bg_tile_layout->layout_width) + grid_pos.x;
 
-								if (selected_brush.tileset == &m_tileset_preview_list[0])
+								if (selected_brush.IsPickingBrushFromLayout())
 								{
-									// Background
-									if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
+									if (selected_brush.tileset == &m_tileset_preview_list[0])
 									{
-										m_level->m_bg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index = selected_brush.tile_brush->brush_index;
-										render_from_edit = true;
+										if (m_level->m_bg_tile_layout->tile_brush_instances.empty() == false)
+										{
+											const int selected_index = m_level->m_bg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
+											selected_brush.tile_brush = &selected_brush.tileset->brushes.at(selected_index);
+											selected_brush.is_picking_from_layout = false;
+										}
+										else
+										{
+											selected_brush.Clear();
+										}
 									}
-								}
-
-								if (selected_brush.tileset == &m_tileset_preview_list[1])
-								{
-									// Foreground
-									if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
+									else if (selected_brush.tileset == &m_tileset_preview_list[1])
 									{
-										m_level->m_fg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index = selected_brush.tile_brush->brush_index;
-										render_from_edit = true;
+										if (m_level->m_fg_tile_layout->tile_brush_instances.empty() == false)
+										{
+											const int selected_index = m_level->m_fg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
+											selected_brush.tile_brush = &selected_brush.tileset->brushes.at(selected_index);
+											selected_brush.is_picking_from_layout = false;
+										}
+										else
+										{
+											selected_brush.Clear();
+										}
+									}
+									has_just_selected_brush = true;
+								}
+								else if (selected_brush.HasBrushSelected())
+								{
+
+									if (selected_brush.tileset == &m_tileset_preview_list[0])
+									{
+										// Background
+										if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
+										{
+											auto& tile = m_level->m_bg_tile_layout->tile_brush_instances.at(grid_ref);
+											tile.tile_brush_index = selected_brush.tile_brush->brush_index;
+											tile.is_flipped_horizontally = selected_brush.flip_x;
+											tile.is_flipped_vertically = selected_brush.flip_y;
+											render_from_edit = true;
+										}
+									}
+
+									if (selected_brush.tileset == &m_tileset_preview_list[1])
+									{
+										// Foreground
+										if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
+										{
+											auto& tile = m_level->m_fg_tile_layout->tile_brush_instances.at(grid_ref);
+											tile.tile_brush_index = selected_brush.tile_brush->brush_index;
+											tile.is_flipped_horizontally = selected_brush.flip_x;
+											tile.is_flipped_vertically = selected_brush.flip_y;
+											render_from_edit = true;
+										}
 									}
 								}
 							}
+						}
+					}
+
+					if (selected_brush.IsPickingBrushFromLayout() == false && (selected_brush.tile_brush != nullptr && selected_brush.tile_brush->texture == nullptr))
+					{
+						selected_brush.Clear();
+					}
+
+					if (selected_brush.HasBrushSelected())
+					{
+						if (ImGui::IsKeyPressed(ImGuiKey_R))
+						{
+							selected_brush.flip_x = !selected_brush.flip_x;
+						}
+
+						if (ImGui::IsKeyPressed(ImGuiKey_F))
+						{
+							selected_brush.flip_x = !selected_brush.flip_y;
 						}
 					}
 
