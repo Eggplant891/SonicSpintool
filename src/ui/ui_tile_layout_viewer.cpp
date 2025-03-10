@@ -1620,7 +1620,7 @@ namespace spintool
 
 						if (ImGui::IsKeyPressed(ImGuiKey_F))
 						{
-							selected_brush.flip_x = !selected_brush.flip_y;
+							selected_brush.flip_y = !selected_brush.flip_y;
 						}
 					}
 
