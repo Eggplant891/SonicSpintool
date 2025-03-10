@@ -1,10 +1,7 @@
 #include "ui/ui_tile_layout_viewer.h"
 
 #include "ui/ui_editor.h"
-#include "editor/spline_manager.h"
 
-#include "rom/rom_asset_definitions.h"
-#include "rom/animated_object.h"
 #include "rom/sprite.h"
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
@@ -25,57 +22,6 @@
 
 namespace spintool
 {
-	struct SpriteObjectPreview
-	{
-		SDLSurfaceHandle sprite;
-		SDLPaletteHandle palette;
-	};
-
-	struct LayerSettings
-	{
-		bool background = true;
-		bool foreground = true;
-		bool foreground_high_priority = true;
-		bool rings = true;
-		bool flippers = true;
-		bool invisible_objects = true;
-		bool visible_objects = true;
-		bool collision = true;
-	};
-
-	struct TileBrushSelection
-	{
-		TilesetPreview* tileset = nullptr;
-		TileBrushPreview* tile_brush = nullptr;
-		bool is_picking_from_layout = false;
-		bool flip_x = false;
-		bool flip_y = false;
-
-		void Clear()
-		{
-			is_picking_from_layout = false;
-			tileset = nullptr;
-			tile_brush = nullptr;
-			flip_x = false;
-			flip_y = false;
-		}
-
-		bool IsPickingBrushFromLayout() const
-		{
-			return is_picking_from_layout;
-		}
-
-		bool HasBrushSelected() const
-		{
-			return (tileset != nullptr && tile_brush != nullptr);
-		}
-
-		bool IsActive() const
-		{
-			return (tileset != nullptr && tile_brush != nullptr) || (is_picking_from_layout);
-		}
-	};
-
 	EditorTileLayoutViewer::EditorTileLayoutViewer(EditorUI& owning_ui)
 		: EditorWindowBase(owning_ui)
 	{
@@ -93,23 +39,8 @@ namespace spintool
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
 			bool render_preview = false;
-			static LayerSettings layer_settings;
-			static SpriteObjectPreview FlipperPreview;
-			static SpriteObjectPreview RingPreview;
-			static SpriteObjectPreview GameObjectPreview;
-			static TileBrushSelection selected_brush;
-			static SplineManager spline_manager;
 
-			static rom::PaletteSet LevelPaletteSet;
-			static bool export_result = false;
-
-			static int level_index = 0;
-			static rom::LevelDataOffsets level_data_offsets{ level_index };
-			static bool preview_bonus_alt_palette = false;
-
-			static bool render_from_edit = false;
-
-			bool render_both = render_from_edit;
+			bool render_both = m_render_from_edit;
 			bool render_bg = false;
 			bool render_fg = false;
 			bool preview_intro_bg = false;
@@ -127,131 +58,142 @@ namespace spintool
 
 			if (ImGui::BeginMenuBar())
 			{
-				if (ImGui::BeginMenu("Levels"))
+				if (ImGui::BeginMenu("File"))
 				{
-					if (ImGui::Selectable("Toxic Caves"))
-					{
-						render_both = true;
-						level_index = 0;
-						level_data_offsets = { level_index };
-					}
-
-					if (ImGui::Selectable("Lava Powerhouse"))
-					{
-						render_both = true;
-						level_index = 1;
-						level_data_offsets = { level_index };
-					}
-
-					if (ImGui::Selectable("The Machine"))
-					{
-						render_both = true;
-						level_index = 2;
-						level_data_offsets = { level_index };
-					}
-
-					if (ImGui::Selectable("Showdown"))
-					{
-						render_both = true;
-						level_index = 3;
-						level_data_offsets = { level_index };
-					}
-
-					if (level_index != m_level->level_index)
-					{
-						m_level->m_bg_tileset.reset();
-						m_level->m_bg_tile_layout.reset();
-						m_level->m_fg_tileset.reset();
-						m_level->m_fg_tile_layout.reset();
-						m_level->level_index = level_index;
-					}
-
-					ImGui::Separator();
+					if( ImGui::Selectable(""))
+					ImGui::BeginDisabled(m_level == nullptr || m_level->level_index == -1);
 					if (ImGui::Selectable("Save Level"))
 					{
 						if (m_level && m_level->m_bg_tile_layout && m_level->m_fg_tile_layout)
 						{
-							m_level->m_bg_tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_layout));
-							m_level->m_fg_tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout));
+							m_level->m_bg_tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_layout));
+							m_level->m_fg_tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout));
 						}
-						spline_manager.GenerateSplineCullingTable().SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain));
+						m_spline_manager.GenerateSplineCullingTable().SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+					}
+					ImGui::EndDisabled();
+					ImGui::Separator();
+					if (ImGui::BeginMenu("Load"))
+					{
+						if (ImGui::BeginMenu("Level"))
+						{
+							int level_index = m_level->level_index;
+							if (ImGui::Selectable("Toxic Caves"))
+							{
+								render_both = true;
+								level_index = 0;
+								m_level_data_offsets = { m_level->level_index };
+							}
+
+							if (ImGui::Selectable("Lava Powerhouse"))
+							{
+								render_both = true;
+								level_index = 1;
+								m_level_data_offsets = { m_level->level_index };
+							}
+
+							if (ImGui::Selectable("The Machine"))
+							{
+								render_both = true;
+								level_index = 2;
+								m_level_data_offsets = { m_level->level_index };
+							}
+
+							if (ImGui::Selectable("Showdown"))
+							{
+								render_both = true;
+								level_index = 3;
+								m_level_data_offsets = { m_level->level_index };
+							}
+
+							if (level_index != m_level->level_index)
+							{
+								m_level->m_bg_tileset.reset();
+								m_level->m_bg_tile_layout.reset();
+								m_level->m_fg_tileset.reset();
+								m_level->m_fg_tile_layout.reset();
+								m_level->level_index = level_index;
+							}
+							ImGui::EndMenu();
+						}
+
+						if (ImGui::BeginMenu("Intro"))
+						{
+							if (ImGui::Selectable("Background"))
+							{
+								preview_intro_bg = true;
+							}
+							if (ImGui::Selectable("Foreground"))
+							{
+								preview_intro_fg = true;
+							}
+							if (ImGui::Selectable("Robotnik Ship"))
+							{
+								preview_intro_ship = true;
+							}
+							if (ImGui::Selectable("Water"))
+							{
+								preview_intro_water = true;
+							}
+							ImGui::EndMenu();
+						}
+
+						if (ImGui::BeginMenu("Frontend"))
+						{
+							if (ImGui::Selectable("Background"))
+							{
+								preview_menu_bg = true;
+							}
+							if (ImGui::Selectable("Foreground"))
+							{
+								preview_menu_fg = true;
+							}
+							if (ImGui::Selectable("Combined"))
+							{
+								preview_menu_combined = true;
+							}
+							ImGui::EndMenu();
+						}
+
+						if (ImGui::BeginMenu("Bonus"))
+						{
+							if (ImGui::Selectable("Background"))
+							{
+								preview_bonus_bg = true;
+							}
+							if (ImGui::Selectable("Foreground"))
+							{
+								preview_bonus_fg = true;
+							}
+							if (ImGui::Selectable("Combined"))
+							{
+								preview_bonus_combined = true;
+							}
+							ImGui::EndMenu();
+						}
+
+						if (ImGui::BeginMenu("Other"))
+						{
+							if (ImGui::Selectable("Preview Sega Logo"))
+							{
+								preview_sega_logo = true;
+							}
+
+							if (ImGui::Selectable("Preview Options Menu"))
+							{
+								preview_options = true;
+							}
+							ImGui::EndMenu();
+						}
+
+						ImGui::EndMenu();
 					}
 					ImGui::EndMenu();
 				}
-
-				if (ImGui::BeginMenu("Intro"))
-				{
-					if (ImGui::Selectable("Background"))
-					{
-						preview_intro_bg = true;
-					}
-					if (ImGui::Selectable("Foreground"))
-					{
-						preview_intro_fg = true;
-					}
-					if (ImGui::Selectable("Robotnik Ship"))
-					{
-						preview_intro_ship = true;
-					}
-					if (ImGui::Selectable("Water"))
-					{
-						preview_intro_water = true;
-					}
-					ImGui::EndMenu();
-				}
-
-				if (ImGui::BeginMenu("Frontend"))
-				{
-					if (ImGui::Selectable("Background"))
-					{
-						preview_menu_bg = true;
-					}
-					if (ImGui::Selectable("Foreground"))
-					{
-						preview_menu_fg = true;
-					}
-					if (ImGui::Selectable("Combined"))
-					{
-						preview_menu_combined = true;
-					}
-					ImGui::EndMenu();
-				}
-
-				if (ImGui::BeginMenu("Bonus"))
-				{
-					if (ImGui::Selectable("Background"))
-					{
-						preview_bonus_bg = true;
-					}
-					if (ImGui::Selectable("Foreground"))
-					{
-						preview_bonus_fg = true;
-					}
-					if (ImGui::Selectable("Combined"))
-					{
-						preview_bonus_combined = true;
-					}
-					ImGui::EndMenu();
-				}
-
-				if (ImGui::BeginMenu("Other"))
-				{
-					if (ImGui::Selectable("Preview Sega Logo"))
-					{
-						preview_sega_logo = true;
-					}
-
-					if (ImGui::Selectable("Preview Options Menu"))
-					{
-						preview_options = true;
-					}
-					ImGui::EndMenu();
-				}
-
 				ImGui::SameLine();
-				ImGui::Checkbox("Export", &export_result);
+				ImGui::Checkbox("Export", &m_export_result);
 				ImGui::SameLine();
-				ImGui::Checkbox("Alt palette", &preview_bonus_alt_palette);
+				ImGui::Checkbox("Alt palette", &m_preview_bonus_alt_palette);
 				ImGui::EndMenuBar();
 			}
 
@@ -269,15 +211,15 @@ namespace spintool
 			if (render_bg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tileset);
-				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_layout);
-				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
-				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
+				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tileset);
+				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_layout);
+				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_brushes);
+				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout);
 
-				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
+				m_level_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.palette_set);
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
+				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.tile_layout_width);
+				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.tile_layout_height);
 
 				RenderTileLayoutRequest request;
 
@@ -297,7 +239,7 @@ namespace spintool
 				request.is_chroma_keyed = false;
 				request.compression_algorithm = CompressionAlgorithm::SSC;
 				char levelname_buffer[32];
-				sprintf_s(levelname_buffer, "level_%d", level_index);
+				sprintf_s(levelname_buffer, "level_%d", m_level->level_index);
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "bg";
 
@@ -310,13 +252,13 @@ namespace spintool
 			if (render_fg)
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const rom::LevelDataOffsets level_data_offsets{ level_index };
+				const rom::LevelDataOffsets level_data_offsets{ m_level->level_index };
 				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
 				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
 				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
 				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
 
-				LevelPaletteSet = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
+				m_level_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.palette_set);
 
 				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
 				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
@@ -340,7 +282,7 @@ namespace spintool
 				request.compression_algorithm = CompressionAlgorithm::SSC;
 
 				char levelname_buffer[32];
-				sprintf_s(levelname_buffer, "level_%d", level_index);
+				sprintf_s(levelname_buffer, "level_%d", m_level->level_index);
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "fg";
 
@@ -369,7 +311,7 @@ namespace spintool
 				request.is_chroma_keyed = false;
 				request.compression_algorithm = CompressionAlgorithm::SSC;
 
-				LevelPaletteSet = *m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
+				m_level_palette_set = *m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
 
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
@@ -395,7 +337,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "bg";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -430,7 +372,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "veg_o_fortress";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -459,7 +401,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "robotnik_ship";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -488,7 +430,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "water";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
@@ -516,7 +458,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "bg";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -542,7 +484,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "fg";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -567,7 +509,7 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "sega_logo";
 
-					LevelPaletteSet = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
+					m_level_palette_set = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
@@ -580,7 +522,7 @@ namespace spintool
 					request.tileset_address = 0x000C77B0;
 					request.tile_layout_address = 0x000C7350 - 4;
 					request.tile_layout_address_end = 0x000c77b0 - 4;
-					request.palette_line = preview_bonus_alt_palette ? 1 : 0;
+					request.palette_line = m_preview_bonus_alt_palette ? 1 : 0;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -593,11 +535,11 @@ namespace spintool
 					request.draw_mirrored_layout = true;
 					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
-					LevelPaletteSet = rom::PaletteSet{};
-					LevelPaletteSet.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
-					LevelPaletteSet.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
-					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
-					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
+					m_level_palette_set = rom::PaletteSet{};
+					m_level_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
+					m_level_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
+					m_level_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
+					m_level_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 
 					request.layout_type_name = "bonus";
 					request.layout_layout_name = "bg";
@@ -614,7 +556,7 @@ namespace spintool
 					request.tileset_address = 0x000C77B0;
 					request.tile_layout_address = 0x000C6EF0 - 4;
 					request.tile_layout_address_end = 0x000C734D;
-					request.palette_line = preview_bonus_alt_palette ? 0 : 1;
+					request.palette_line = m_preview_bonus_alt_palette ? 0 : 1;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -627,11 +569,11 @@ namespace spintool
 					request.draw_mirrored_layout = true;
 					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
-					LevelPaletteSet = rom::PaletteSet{};
-					LevelPaletteSet.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
-					LevelPaletteSet.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
-					LevelPaletteSet.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
-					LevelPaletteSet.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
+					m_level_palette_set = rom::PaletteSet{};
+					m_level_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
+					m_level_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
+					m_level_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
+					m_level_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 
 					request.layout_type_name = "bonus";
 					request.layout_layout_name = "fg";
@@ -659,16 +601,16 @@ namespace spintool
 					0x00035692
 				};
 
-				std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[level_index]);
-				FlipperPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-				FlipperPreview.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[flipper_palette[level_index]]);
-				SDL_SetSurfacePalette(FlipperPreview.sprite.get(), FlipperPreview.palette.get());
-				SDL_ClearSurface(FlipperPreview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-				SDL_SetSurfaceColorKey(FlipperPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(FlipperPreview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
-				flipperSprite->RenderToSurface(FlipperPreview.sprite.get());
+				std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[m_level->level_index]);
+				m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
+				m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_level_palette_set.palette_lines[flipper_palette[m_level->level_index]]);
+				SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
+				SDL_ClearSurface(m_flipper_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+				SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_flipper_preview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
+				flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
 
-				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * level_index));
-				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * level_index));
+				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->level_index));
+				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * m_level->level_index));
 
 				m_level->m_flipper_instances.clear();
 				m_level->m_flipper_instances.reserve(num_flippers);
@@ -687,20 +629,20 @@ namespace spintool
 				const static Uint32 ring_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> LevelRingSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
-				RingPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-				RingPreview.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
-				SDL_SetSurfacePalette(RingPreview.sprite.get(), RingPreview.palette.get());
-				SDL_ClearSurface(RingPreview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-				SDL_SetSurfaceColorKey(RingPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(RingPreview.sprite->format), nullptr, 0, 0, 0, 0));
-				LevelRingSprite->RenderToSurface(RingPreview.sprite.get());
+				m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+				m_ring_preview.palette = Renderer::CreateSDLPalette(*m_level_palette_set.palette_lines[3].get());
+				SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
+				SDL_ClearSurface(m_ring_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+				SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_ring_preview.sprite->format), nullptr, 0, 0, 0, 0));
+				LevelRingSprite->RenderToSurface(m_ring_preview.sprite.get());
 
 				m_level->m_ring_instances.clear();
-				m_level->m_ring_instances.reserve(level_data_offsets.ring_instances.count);
+				m_level->m_ring_instances.reserve(m_level_data_offsets.ring_instances.count);
 
 				{
-					Uint32 current_table_offset = level_data_offsets.ring_instances.offset;
+					Uint32 current_table_offset = m_level_data_offsets.ring_instances.offset;
 
-					for (Uint32 i = 0; i < level_data_offsets.ring_instances.count; ++i)
+					for (Uint32 i = 0; i < m_level_data_offsets.ring_instances.count; ++i)
 					{
 						m_level->m_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
 						current_table_offset = m_level->m_ring_instances.back().rom_data.rom_offset_end;
@@ -711,19 +653,19 @@ namespace spintool
 				const static size_t game_obj_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> LevelGameObjSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), game_obj_sprite_offset);
-				GameObjectPreview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelGameObjSprite->GetBoundingBox().Width(), LevelGameObjSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-				GameObjectPreview.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines[3].get());
-				SDL_SetSurfacePalette(GameObjectPreview.sprite.get(), GameObjectPreview.palette.get());
-				SDL_ClearSurface(GameObjectPreview.sprite.get(), 255, 255, 255, 255);
-				SDL_SetSurfaceColorKey(GameObjectPreview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(GameObjectPreview.sprite->format), nullptr, 255, 0, 0, 255));
+				m_game_object_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelGameObjSprite->GetBoundingBox().Width(), LevelGameObjSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+				m_game_object_preview.palette = Renderer::CreateSDLPalette(*m_level_palette_set.palette_lines[3].get());
+				SDL_SetSurfacePalette(m_game_object_preview.sprite.get(), m_game_object_preview.palette.get());
+				SDL_ClearSurface(m_game_object_preview.sprite.get(), 255, 255, 255, 255);
+				SDL_SetSurfaceColorKey(m_game_object_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_game_object_preview.sprite->format), nullptr, 255, 0, 0, 255));
 				//LevelGameObjSprite->RenderToSurface(GameObjectPreview.sprite.get());
 
-				spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain)));
+				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain)));
 				SplineManager boogaloo;
-				boogaloo.LoadFromSplineCullingTable(spline_manager.GenerateSplineCullingTable());
+				boogaloo.LoadFromSplineCullingTable(m_spline_manager.GenerateSplineCullingTable());
 
-				const auto rom_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.collision_data_terrain));
-				const auto og_table = spline_manager.GenerateSplineCullingTable();
+				const auto rom_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+				const auto og_table = m_spline_manager.GenerateSplineCullingTable();
 				const auto new_table = boogaloo.GenerateSplineCullingTable();
 
 				// Spline culling unit test
@@ -748,7 +690,7 @@ namespace spintool
 							break;
 						}
 
-						if ((spline_manager.splines[c] == boogaloo.splines[c]) == false)
+						if ((m_spline_manager.splines[c] == boogaloo.splines[c]) == false)
 						{
 							break;
 						}
@@ -796,12 +738,12 @@ namespace spintool
 				m_preview_game_objects.clear();
 				m_anim_sprite_instances.clear();
 				m_level->m_game_obj_instances.clear();
-				m_level->m_game_obj_instances.reserve(level_data_offsets.object_instances.count);
+				m_level->m_game_obj_instances.reserve(m_level_data_offsets.object_instances.count);
 
 				{
-					Uint32 current_table_offset = level_data_offsets.object_instances.offset;
+					Uint32 current_table_offset = m_level_data_offsets.object_instances.offset;
 
-					for (Uint32 i = 0; i < level_data_offsets.object_instances.count; ++i)
+					for (Uint32 i = 0; i < m_level_data_offsets.object_instances.count; ++i)
 					{
 						m_level->m_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
 						const rom::Ptr32 anim_def_offset = m_level->m_game_obj_instances.back().animation_definition;
@@ -829,7 +771,7 @@ namespace spintool
 								entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
 								const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
 								auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-								entry.palette = Renderer::CreateSDLPalette(*LevelPaletteSet.palette_lines.at(anim_obj.palette_index % 4).get());
+								entry.palette = Renderer::CreateSDLPalette(*m_level_palette_set.palette_lines.at(anim_obj.palette_index % 4).get());
 								SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
 								SDL_ClearSurface(new_sprite_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_sprite_surface->format), nullptr, 0, 0, 0, 0));
@@ -869,11 +811,11 @@ namespace spintool
 				int largest_width = std::numeric_limits<int>::min();
 				int largest_height = std::numeric_limits<int>::min();
 
-				if (render_from_edit == false)
+				if (m_render_from_edit == false)
 				{
 					m_tileset_preview_list.clear();
 				}
-				render_from_edit = false;
+				m_render_from_edit = false;
 
 				for (const auto& request : m_tile_layout_render_requests)
 				{
@@ -1007,7 +949,7 @@ namespace spintool
 							sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
 							sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
 
-							sprite_tile->blit_settings.palette = tile.palette_line == 0 && request.palette_line.has_value() ? LevelPaletteSet.palette_lines.at(*request.palette_line) : LevelPaletteSet.palette_lines.at(tile.palette_line);
+							sprite_tile->blit_settings.palette = tile.palette_line == 0 && request.palette_line.has_value() ? m_level_palette_set.palette_lines.at(*request.palette_line) : m_level_palette_set.palette_lines.at(tile.palette_line);
 							brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
 						}
 						brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
@@ -1080,7 +1022,7 @@ namespace spintool
 					}
 				}
 
-				if (export_result && export_combined == false)
+				if (m_export_result && export_combined == false)
 				{
 					static char path_buffer[4096];
 					sprintf_s(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
@@ -1097,7 +1039,7 @@ namespace spintool
 				{
 					const rom::FlipperInstance& flipper = m_level->m_flipper_instances[i];
 
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(FlipperPreview.sprite.get()) };
+					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_flipper_preview.sprite.get()) };
 					int x_off = -24;
 					if (flipper.is_x_flipped)
 					{
@@ -1117,7 +1059,7 @@ namespace spintool
 				{
 					const rom::RingInstance& ring = m_level->m_ring_instances[i];
 
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(RingPreview.sprite.get()) };
+					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_ring_preview.sprite.get()) };
 					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
@@ -1184,7 +1126,7 @@ namespace spintool
 					}
 					else
 					{
-						SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(GameObjectPreview.sprite.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
+						SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(m_game_object_preview.sprite.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
 
 						auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
 						SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
@@ -1199,7 +1141,7 @@ namespace spintool
 				}
 			}
 
-			if (export_result && export_combined)
+			if (m_export_result && export_combined)
 			{
 				static char path_buffer[4096];
 
@@ -1281,8 +1223,8 @@ namespace spintool
 										ImGui::SameLine();
 										if (ImGui::Button("Pick from layout"))
 										{
-											selected_brush.is_picking_from_layout = true;
-											selected_brush.tileset = &tileset_preview;
+											m_selected_brush.is_picking_from_layout = true;
+											m_selected_brush.tileset = &tileset_preview;
 										}
 
 										for (size_t i = tileset_preview.current_page * num_previews_per_page; i < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++i)
@@ -1298,8 +1240,8 @@ namespace spintool
 												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
 												if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 												{
-													selected_brush.tileset = &tileset_preview;
-													selected_brush.tile_brush = &preview_brush;
+													m_selected_brush.tileset = &tileset_preview;
+													m_selected_brush.tile_brush = &preview_brush;
 													has_just_selected_brush = true;
 												}
 												if (ImGui::BeginItemTooltip())
@@ -1320,7 +1262,7 @@ namespace spintool
 					
 						if (ImGui::BeginTabItem("Palette"))
 						{
-							for (const std::shared_ptr<rom::Palette>& palette : LevelPaletteSet.palette_lines)
+							for (const std::shared_ptr<rom::Palette>& palette : m_level_palette_set.palette_lines)
 							{
 								if (palette != nullptr)
 								{
@@ -1361,11 +1303,11 @@ namespace spintool
 
 						// Terrain Collision
 
-						const bool brush_selected = selected_brush.HasBrushSelected();
+						const bool brush_selected = m_selected_brush.HasBrushSelected();
 
 						if (brush_selected == false)
 						{
-							for (rom::CollisionSpline& next_spline : spline_manager.splines)
+							for (rom::CollisionSpline& next_spline : m_spline_manager.splines)
 							{
 								const bool is_working_spline = (m_working_spline.has_value() && m_working_spline->destination == &next_spline && (m_working_spline->dest_spline_point != nullptr || ImGui::IsPopupOpen("spline_popup")));
 								rom::CollisionSpline& spline = is_working_spline ? m_working_spline->spline : next_spline;
@@ -1528,7 +1470,7 @@ namespace spintool
 
 						if (has_just_selected_brush == false)
 						{
-							if (m_working_spline.has_value() == false && selected_brush.IsActive())
+							if (m_working_spline.has_value() == false && m_selected_brush.IsActive())
 							{
 
 								const ImVec2 mouse_pos = ImGui::GetMousePos();
@@ -1538,22 +1480,22 @@ namespace spintool
 								const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
 								const ImVec2 final_snapped_pos{ snapped_pos.x + screen_origin.x + (panel_screen_origin.x - screen_origin.x), snapped_pos.y + screen_origin.y + (panel_screen_origin.y - screen_origin.y) };
 
-								if (selected_brush.HasBrushSelected())
+								if (m_selected_brush.HasBrushSelected())
 								{
 									ImGui::SetCursorScreenPos(final_snapped_pos);
 									ImVec2 uv0 = { 0,0 };
 									ImVec2 uv1 = { 1,1 };
-									if (selected_brush.flip_x)
+									if (m_selected_brush.flip_x)
 									{
 										uv0.x = 1;
 										uv1.x = 0;
 									}
-									if (selected_brush.flip_y)
+									if (m_selected_brush.flip_y)
 									{
 										uv0.y = 1;
 										uv1.y = 0;
 									}
-									ImGui::Image((ImTextureID)selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(selected_brush.tile_brush->texture->w), static_cast<float>(selected_brush.tile_brush->texture->h) }, uv0, uv1);
+									ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) }, uv0, uv1);
 								}
 
 								ImGui::GetForegroundDrawList()->AddRect(
@@ -1565,62 +1507,62 @@ namespace spintool
 								{
 									auto grid_ref = (grid_pos.y * m_level->m_bg_tile_layout->layout_width) + grid_pos.x;
 
-									if (selected_brush.IsPickingBrushFromLayout())
+									if (m_selected_brush.IsPickingBrushFromLayout())
 									{
-										if (selected_brush.tileset == &m_tileset_preview_list[0])
+										if (m_selected_brush.tileset == &m_tileset_preview_list[0])
 										{
 											if (m_level->m_bg_tile_layout->tile_brush_instances.empty() == false)
 											{
 												const int selected_index = m_level->m_bg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
-												selected_brush.tile_brush = &selected_brush.tileset->brushes.at(selected_index);
-												selected_brush.is_picking_from_layout = false;
+												m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
+												m_selected_brush.is_picking_from_layout = false;
 											}
 											else
 											{
-												selected_brush.Clear();
+												m_selected_brush.Clear();
 											}
 										}
-										else if (selected_brush.tileset == &m_tileset_preview_list[1])
+										else if (m_selected_brush.tileset == &m_tileset_preview_list[1])
 										{
 											if (m_level->m_fg_tile_layout->tile_brush_instances.empty() == false)
 											{
 												const int selected_index = m_level->m_fg_tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
-												selected_brush.tile_brush = &selected_brush.tileset->brushes.at(selected_index);
-												selected_brush.is_picking_from_layout = false;
+												m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
+												m_selected_brush.is_picking_from_layout = false;
 											}
 											else
 											{
-												selected_brush.Clear();
+												m_selected_brush.Clear();
 											}
 										}
 										has_just_selected_brush = true;
 									}
-									else if (selected_brush.HasBrushSelected())
+									else if (m_selected_brush.HasBrushSelected())
 									{
 
-										if (selected_brush.tileset == &m_tileset_preview_list[0])
+										if (m_selected_brush.tileset == &m_tileset_preview_list[0])
 										{
 											// Background
 											if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
 											{
 												auto& tile = m_level->m_bg_tile_layout->tile_brush_instances.at(grid_ref);
-												tile.tile_brush_index = selected_brush.tile_brush->brush_index;
-												tile.is_flipped_horizontally = selected_brush.flip_x;
-												tile.is_flipped_vertically = selected_brush.flip_y;
-												render_from_edit = true;
+												tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
+												tile.is_flipped_horizontally = m_selected_brush.flip_x;
+												tile.is_flipped_vertically = m_selected_brush.flip_y;
+												m_render_from_edit = true;
 											}
 										}
 
-										if (selected_brush.tileset == &m_tileset_preview_list[1])
+										if (m_selected_brush.tileset == &m_tileset_preview_list[1])
 										{
 											// Foreground
 											if (grid_ref < m_level->m_bg_tile_layout->tile_brush_instances.size())
 											{
 												auto& tile = m_level->m_fg_tile_layout->tile_brush_instances.at(grid_ref);
-												tile.tile_brush_index = selected_brush.tile_brush->brush_index;
-												tile.is_flipped_horizontally = selected_brush.flip_x;
-												tile.is_flipped_vertically = selected_brush.flip_y;
-												render_from_edit = true;
+												tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
+												tile.is_flipped_horizontally = m_selected_brush.flip_x;
+												tile.is_flipped_vertically = m_selected_brush.flip_y;
+												m_render_from_edit = true;
 											}
 										}
 									}
@@ -1628,21 +1570,21 @@ namespace spintool
 							}
 						}
 
-						if (selected_brush.IsPickingBrushFromLayout() == false && (selected_brush.tile_brush != nullptr && selected_brush.tile_brush->texture == nullptr))
+						if (m_selected_brush.IsPickingBrushFromLayout() == false && (m_selected_brush.tile_brush != nullptr && m_selected_brush.tile_brush->texture == nullptr))
 						{
-							selected_brush.Clear();
+							m_selected_brush.Clear();
 						}
 
-						if (selected_brush.HasBrushSelected())
+						if (m_selected_brush.HasBrushSelected())
 						{
 							if (ImGui::IsKeyPressed(ImGuiKey_R))
 							{
-								selected_brush.flip_x = !selected_brush.flip_x;
+								m_selected_brush.flip_x = !m_selected_brush.flip_x;
 							}
 
 							if (ImGui::IsKeyPressed(ImGuiKey_F))
 							{
-								selected_brush.flip_y = !selected_brush.flip_y;
+								m_selected_brush.flip_y = !m_selected_brush.flip_y;
 							}
 						}
 
@@ -1666,7 +1608,7 @@ namespace spintool
 								m_working_game_obj.reset();
 								ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
-								rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(level_data_offsets.camera_activation_sector_anim_obj_ids));
+								rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
 								for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
 								{
 									const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
@@ -1682,9 +1624,9 @@ namespace spintool
 									}
 								}
 
-								if (level_data_offsets.collision_tile_obj_ids.offset != 0)
+								if (m_level_data_offsets.collision_tile_obj_ids.offset != 0)
 								{
-									rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), level_data_offsets.collision_tile_obj_ids.offset);
+									rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
 									for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
 									{
 										const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
@@ -1766,7 +1708,7 @@ namespace spintool
 							{
 								m_working_game_obj->destination->obj_definition = m_working_game_obj->game_obj;
 								m_working_game_obj->destination->obj_definition.SaveToROM(m_owning_ui.GetROM());
-								render_from_edit = true;
+								m_render_from_edit = true;
 								m_working_game_obj.reset();
 								ImGui::CloseCurrentPopup();
 							}
@@ -1815,12 +1757,12 @@ namespace spintool
 
 								if (ImGui::Button("Delete"))
 								{
-									auto found_spline_it = std::find_if(std::begin(spline_manager.splines), std::end(spline_manager.splines),
+									auto found_spline_it = std::find_if(std::begin(m_spline_manager.splines), std::end(m_spline_manager.splines),
 										[this](const rom::CollisionSpline& spline)
 										{
 											return &spline == m_working_spline->destination;
 										});
-									spline_manager.splines.erase(found_spline_it);
+									m_spline_manager.splines.erase(found_spline_it);
 									m_working_spline.reset();
 									ImGui::CloseCurrentPopup();
 								}
@@ -1838,9 +1780,9 @@ namespace spintool
 			}
 			ImGui::EndGroup();
 
-			if (selected_brush.IsActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+			if (m_selected_brush.IsActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 			{
-				selected_brush.Clear();
+				m_selected_brush.Clear();
 			}
 		}
 		ImGui::End();

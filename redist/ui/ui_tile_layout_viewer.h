@@ -3,10 +3,16 @@
 #include "ui/ui_editor_window.h"
 #include "types/sdl_handle_defs.h"
 
+#include "editor/level.h"
+#include "editor/spline_manager.h"
+#include "rom/rom_asset_definitions.h"
+
 #include "rom/culling_tables/spline_culling_table.h"
 #include "rom/game_objects/game_object_definition.h"
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
+#include "rom/rom_asset_definitions.h"
+#include "rom/palette.h"
 #include "rom/animated_object.h"
 
 #include "imgui.h"
@@ -15,7 +21,6 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include "editor/level.h"
 
 namespace spintool
 {
@@ -96,6 +101,57 @@ namespace spintool
 		std::vector<TileBrushPreview> brushes;
 	};
 
+	struct SpriteObjectPreview
+	{
+		SDLSurfaceHandle sprite;
+		SDLPaletteHandle palette;
+	};
+
+	struct LayerSettings
+	{
+		bool background = true;
+		bool foreground = true;
+		bool foreground_high_priority = true;
+		bool rings = true;
+		bool flippers = true;
+		bool invisible_objects = true;
+		bool visible_objects = true;
+		bool collision = true;
+	};
+
+	struct TileBrushSelection
+	{
+		TilesetPreview* tileset = nullptr;
+		TileBrushPreview* tile_brush = nullptr;
+		bool is_picking_from_layout = false;
+		bool flip_x = false;
+		bool flip_y = false;
+
+		void Clear()
+		{
+			is_picking_from_layout = false;
+			tileset = nullptr;
+			tile_brush = nullptr;
+			flip_x = false;
+			flip_y = false;
+		}
+
+		bool IsPickingBrushFromLayout() const
+		{
+			return is_picking_from_layout;
+		}
+
+		bool HasBrushSelected() const
+		{
+			return (tileset != nullptr && tile_brush != nullptr);
+		}
+
+		bool IsActive() const
+		{
+			return (tileset != nullptr && tile_brush != nullptr) || (is_picking_from_layout);
+		}
+	};
+
 	class EditorTileLayoutViewer : public EditorWindowBase
 	{
 	public:
@@ -113,9 +169,9 @@ namespace spintool
 
 	private:
 		std::shared_ptr<Level> m_level;
+		LayerSettings m_layer_settings;
+		SplineManager m_spline_manager;
 
-		SDLTextureHandle m_tile_layout_preview_bg;
-		SDLTextureHandle m_tile_layout_preview_fg;
 		std::vector<RenderTileLayoutRequest> m_tile_layout_render_requests;
 		std::vector<TilesetPreview> m_tileset_preview_list;
 		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
@@ -123,5 +179,21 @@ namespace spintool
 
 		std::optional<WorkingGameObject> m_working_game_obj;
 		std::optional<WorkingSpline> m_working_spline;
+
+		TileBrushSelection m_selected_brush;
+
+		SDLTextureHandle m_tile_layout_preview_bg;
+		SDLTextureHandle m_tile_layout_preview_fg;
+		SpriteObjectPreview m_flipper_preview;
+		SpriteObjectPreview m_ring_preview;
+		SpriteObjectPreview m_game_object_preview;
+
+		rom::PaletteSet m_level_palette_set;
+		rom::LevelDataOffsets m_level_data_offsets{ m_level->level_index };
+
+		bool m_export_result = false;
+		bool m_preview_bonus_alt_palette = false;
+		bool m_render_from_edit = false;
+
 	};
 }
