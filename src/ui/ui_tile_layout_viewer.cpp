@@ -195,22 +195,6 @@ namespace spintool
 		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
-			bool render_preview = false;
-			bool render_both = m_render_from_edit;
-			bool render_bg = false;
-			bool render_fg = false;
-			bool preview_intro_bg = false;
-			bool preview_intro_fg = false;
-			bool preview_intro_ship = false;
-			bool preview_intro_water = false;
-			bool preview_menu_bg = false;
-			bool preview_menu_fg = false;
-			bool preview_menu_combined = false;
-			bool preview_bonus_bg = false;
-			bool preview_bonus_fg = false;
-			bool preview_bonus_combined = false;
-			bool preview_sega_logo = false;
-			bool preview_options = false;
 			bool render_flippers = false;
 			bool render_rings = false;
 
