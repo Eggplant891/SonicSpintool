@@ -229,14 +229,16 @@ namespace spintool
 					0x00035692
 				};
 
-				std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[m_level->level_index]);
-				m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-				m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_palette[m_level->level_index]]);
-				SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
-				SDL_ClearSurface(m_flipper_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-				SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_flipper_preview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
-				flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
-
+				if (m_flipper_preview.sprite == nullptr || m_render_from_edit == false)
+				{
+					std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[m_level->level_index]);
+					m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
+					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_palette[m_level->level_index]]);
+					SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
+					SDL_ClearSurface(m_flipper_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_flipper_preview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
+					flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
+				}
 				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->level_index));
 				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * m_level->level_index));
 
@@ -254,15 +256,18 @@ namespace spintool
 
 			if (render_rings)
 			{
-				const static Uint32 ring_sprite_offset = 0x0000F6D8;
+				if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
+				{
+					const static Uint32 ring_sprite_offset = 0x0000F6D8;
 
-				std::shared_ptr<const rom::Sprite> LevelRingSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
-				m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(LevelRingSprite->GetBoundingBox().Width(), LevelRingSprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-				m_ring_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[3].get());
-				SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
-				SDL_ClearSurface(m_ring_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-				SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_ring_preview.sprite->format), nullptr, 0, 0, 0, 0));
-				LevelRingSprite->RenderToSurface(m_ring_preview.sprite.get());
+					std::shared_ptr<const rom::Sprite> ring_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
+					m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(ring_sprite->GetBoundingBox().Width(), ring_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+					m_ring_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[3].get());
+					SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
+					SDL_ClearSurface(m_ring_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+					SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_ring_preview.sprite->format), nullptr, 0, 0, 0, 0));
+					ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
+				}
 
 				m_level->m_ring_instances.clear();
 				m_level->m_ring_instances.reserve(m_level_data_offsets.ring_instances.count);
