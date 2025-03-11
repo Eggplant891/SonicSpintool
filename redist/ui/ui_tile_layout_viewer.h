@@ -152,11 +152,27 @@ namespace spintool
 		}
 	};
 
+	enum RenderRequestType
+	{
+		NONE,
+		LEVEL,
+		MENU,
+		OPTIONS,
+		BONUS,
+		SEGA_LOGO,
+		INTRO,
+		INTRO_SHIP,
+		INTRO_WATER,
+		COUNT
+	};
+
 	class EditorTileLayoutViewer : public EditorWindowBase
 	{
 	public:
 		EditorTileLayoutViewer(EditorUI& owning_ui);
 		void Update() override;
+		RenderRequestType DrawMenuBar();
+		void PrepareRenderRequest(RenderRequestType render_request);
 
 		struct AnimSpriteEntry
 		{
@@ -169,6 +185,9 @@ namespace spintool
 
 	private:
 		std::shared_ptr<Level> m_level;
+		std::shared_ptr<const rom::TileSet> m_working_tileset;
+		std::shared_ptr<rom::TileLayout> m_working_tile_layout;
+		rom::PaletteSet m_working_palette_set;
 		LayerSettings m_layer_settings;
 		SplineManager m_spline_manager;
 
@@ -188,7 +207,6 @@ namespace spintool
 		SpriteObjectPreview m_ring_preview;
 		SpriteObjectPreview m_game_object_preview;
 
-		rom::PaletteSet m_level_palette_set;
 		rom::LevelDataOffsets m_level_data_offsets;
 
 		bool m_export_result = false;

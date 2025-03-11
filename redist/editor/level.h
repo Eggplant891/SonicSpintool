@@ -4,6 +4,7 @@
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
 #include "rom/game_objects/game_object_definition.h"
+#include "rom/palette.h"
 #include "rom/tile_layout.h"
 #include "rom/tileset.h"
 
@@ -15,6 +16,13 @@
 
 namespace spintool
 {
+	struct TileLayer
+	{
+		std::shared_ptr<const rom::TileSet> tileset;
+		std::shared_ptr<rom::TileLayout> tile_layout;
+		rom::PaletteSet palette_set;
+	};
+
 	class Level
 	{
 	public:
@@ -22,14 +30,8 @@ namespace spintool
 	//private:
 		std::string m_level_name;
 		int level_index = -1;
+		std::vector<TileLayer> m_tile_layers;
 
-		std::shared_ptr<const rom::TileSet> m_tileset;
-		std::shared_ptr<rom::TileLayout> m_tile_layout;
-
-		std::shared_ptr<const rom::TileSet> m_bg_tileset;
-		std::shared_ptr<const rom::TileSet> m_fg_tileset;
-		std::shared_ptr<rom::TileLayout> m_fg_tile_layout;
-		std::shared_ptr<rom::TileLayout> m_bg_tile_layout;
 		std::vector<rom::FlipperInstance> m_flipper_instances;
 		std::vector<rom::RingInstance> m_ring_instances;
 		std::vector<rom::GameObjectDefinition> m_game_obj_instances;
