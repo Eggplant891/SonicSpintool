@@ -25,8 +25,6 @@ namespace spintool
 	EditorTileLayoutViewer::EditorTileLayoutViewer(EditorUI& owning_ui)
 		: EditorWindowBase(owning_ui)
 	{
-		m_level = std::make_shared<Level>();
-		m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
 	}
 
 	void EditorTileLayoutViewer::Update()
@@ -83,7 +81,8 @@ namespace spintool
 					{
 						if (ImGui::BeginMenu("Level"))
 						{
-							int level_index = m_level->level_index;
+							const int previous_level_index = m_level != nullptr ? m_level->level_index : -1;
+							int level_index = -1;
 							if (ImGui::Selectable("Toxic Caves"))
 							{
 								render_both = true;
@@ -108,14 +107,19 @@ namespace spintool
 								level_index = 3;
 							}
 
-							if (level_index != m_level->level_index)
+							if (level_index != -1 && level_index != previous_level_index)
 							{
+								m_level = std::make_shared<Level>();
 								m_level->m_bg_tileset.reset();
 								m_level->m_bg_tile_layout.reset();
 								m_level->m_fg_tileset.reset();
 								m_level->m_fg_tile_layout.reset();
 								m_level->level_index = level_index;
-								m_level_data_offsets = { level_index };
+								m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
+							}
+							else if (level_index != -1)
+							{
+								m_render_from_edit = true;
 							}
 							ImGui::EndMenu();
 						}
@@ -172,6 +176,8 @@ namespace spintool
 							{
 								preview_bonus_combined = true;
 							}
+							ImGui::Separator();
+							ImGui::Checkbox("Alt palette", &m_preview_bonus_alt_palette);
 							ImGui::EndMenu();
 						}
 
@@ -191,12 +197,11 @@ namespace spintool
 
 						ImGui::EndMenu();
 					}
+					
+					ImGui::Checkbox("Export", &m_export_result);
+
 					ImGui::EndMenu();
 				}
-				ImGui::SameLine();
-				ImGui::Checkbox("Export", &m_export_result);
-				ImGui::SameLine();
-				ImGui::Checkbox("Alt palette", &m_preview_bonus_alt_palette);
 				ImGui::EndMenuBar();
 			}
 
@@ -297,6 +302,8 @@ namespace spintool
 
 			if (preview_options)
 			{
+				m_level.reset();
+
 				RenderTileLayoutRequest request;
 
 				request.tileset_address = rom::OptionsMenuTileset;
@@ -321,6 +328,7 @@ namespace spintool
 
 			if (preview_intro_bg)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -347,6 +355,7 @@ namespace spintool
 
 			if (preview_intro_fg)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -383,6 +392,7 @@ namespace spintool
 
 			if (preview_intro_ship)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -412,6 +422,7 @@ namespace spintool
 
 			if (preview_intro_water)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -441,6 +452,7 @@ namespace spintool
 
 			if (preview_menu_bg || preview_menu_combined)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -468,6 +480,7 @@ namespace spintool
 
 			if (preview_menu_fg || preview_menu_combined)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -494,6 +507,7 @@ namespace spintool
 
 			if (preview_sega_logo)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -519,6 +533,7 @@ namespace spintool
 
 			if (preview_bonus_bg || preview_bonus_combined)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -553,6 +568,7 @@ namespace spintool
 
 			if (preview_bonus_fg || preview_bonus_combined)
 			{
+				m_level.reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -1744,6 +1760,19 @@ namespace spintool
 								m_working_spline->spline.spline_vector.min.y = spline_min[1];
 								m_working_spline->spline.spline_vector.max.x = spline_max[0];
 								m_working_spline->spline.spline_vector.max.y = spline_max[1];
+
+								bool can_walk = m_working_spline->spline.object_type_flags & 0x0080;
+								if (ImGui::Checkbox("Can walk", &can_walk))
+								{
+									if (can_walk)
+									{
+										m_working_spline->spline.object_type_flags |= 0x0080;
+									}
+									else
+									{
+										m_working_spline->spline.object_type_flags &= ~0x0080;
+									}
+								}
 
 								if (ImGui::Button("Confirm"))
 								{
