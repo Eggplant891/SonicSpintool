@@ -945,7 +945,7 @@ namespace spintool
 
 								const BoundingBox& spline_bbox = spline.spline_vector;
 								ImVec4 colour{ 192,192,0,128 };
-								if (spline.IsRadial() && (spline.object_type_flags & 0x8000) != 0x8000)
+								if (spline.IsRadial() && spline.object_type_flags != 0x8000)
 								{
 									colour = ImVec4(255, 0, 255, 255);
 								}
@@ -971,7 +971,7 @@ namespace spintool
 
 									ImGui::GetWindowDrawList()->AddCircle(
 										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
-										static_cast<float>(spline.spline_vector.max.x), ImGui::GetColorU32(colour), 16, (spline.object_type_flags & 0x8000) != 0x8000 ? 1.0f : 2.0f);
+										static_cast<float>(spline.spline_vector.max.x), ImGui::GetColorU32(colour), 16, spline.object_type_flags != 0x8000 ? 1.0f : 2.0f);
 
 									ImGui::GetWindowDrawList()->AddRect(
 										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x - 2), static_cast<float>(screen_origin.y + spline.spline_vector.min.y - 2) },
