@@ -117,10 +117,18 @@ namespace spintool
 		bool invisible_objects = true;
 		bool visible_objects = true;
 		bool collision = true;
+		bool collision_culling = false;
+		bool visibility_culling = false;
+
+		bool hover_game_objects = true;
+		bool hover_splines = true;
+		bool hover_radials = true;
+		bool hover_tiles = false;
 	};
 
 	struct TileBrushSelection
 	{
+		TileLayer* tile_layer = nullptr;
 		TilesetPreview* tileset = nullptr;
 		TileBrushPreview* tile_brush = nullptr;
 		bool is_picking_from_layout = false;
@@ -129,11 +137,7 @@ namespace spintool
 
 		void Clear()
 		{
-			is_picking_from_layout = false;
-			tileset = nullptr;
-			tile_brush = nullptr;
-			flip_x = false;
-			flip_y = false;
+			*this = TileBrushSelection{};
 		}
 
 		bool IsPickingBrushFromLayout() const
@@ -184,6 +188,8 @@ namespace spintool
 		};
 
 	private:
+		void TestCollisionCullingResults() const;
+
 		std::shared_ptr<Level> m_level;
 		std::shared_ptr<const rom::TileSet> m_working_tileset;
 		std::shared_ptr<rom::TileLayout> m_working_tile_layout;

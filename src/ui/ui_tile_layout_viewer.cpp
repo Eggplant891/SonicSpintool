@@ -30,6 +30,11 @@ namespace spintool
 	RenderRequestType EditorTileLayoutViewer::DrawMenuBar()
 	{
 		RenderRequestType out_render_request = RenderRequestType::NONE;
+		if (m_render_from_edit)
+		{
+			out_render_request = RenderRequestType::LEVEL;
+		}
+
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -54,131 +59,159 @@ namespace spintool
 					}
 					m_spline_manager.GenerateSplineCullingTable().SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
 				}
+
 				ImGui::EndDisabled();
 				ImGui::Separator();
-				if (ImGui::BeginMenu("Load"))
-				{
-					if (ImGui::BeginMenu("Level"))
-					{
-						const int previous_level_index = m_level != nullptr ? m_level->level_index : -1;
-						int level_index = -1;
-						if (ImGui::Selectable("Toxic Caves"))
-						{
-							out_render_request = RenderRequestType::LEVEL;
-							level_index = 0;
-						}
-
-						if (ImGui::Selectable("Lava Powerhouse"))
-						{
-							out_render_request = RenderRequestType::LEVEL;
-							level_index = 1;
-						}
-
-						if (ImGui::Selectable("The Machine"))
-						{
-							out_render_request = RenderRequestType::LEVEL;
-							level_index = 2;
-						}
-
-						if (ImGui::Selectable("Showdown"))
-						{
-							out_render_request = RenderRequestType::LEVEL;
-							level_index = 3;
-						}
-
-						if (level_index != -1 && level_index != previous_level_index)
-						{
-							m_level = std::make_shared<Level>();
-							m_level->level_index = level_index;
-							m_level->m_tile_layers.emplace_back();
-							m_level->m_tile_layers.emplace_back();
-							m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
-						}
-						else if (level_index != -1)
-						{
-							m_render_from_edit = true;
-						}
-						ImGui::EndMenu();
-					}
-
-					if (ImGui::BeginMenu("Intro"))
-					{
-						if (ImGui::Selectable("Background"))
-						{
-							out_render_request = RenderRequestType::INTRO;
-						}
-						if (ImGui::Selectable("Foreground"))
-						{
-							out_render_request = RenderRequestType::INTRO;
-						}
-						if (ImGui::Selectable("Robotnik Ship"))
-						{
-							out_render_request = RenderRequestType::INTRO_SHIP;
-						}
-						if (ImGui::Selectable("Water"))
-						{
-							out_render_request = RenderRequestType::INTRO_WATER;
-						}
-						ImGui::EndMenu();
-					}
-
-					if (ImGui::BeginMenu("Frontend"))
-					{
-						if (ImGui::Selectable("Background"))
-						{
-							//preview_menu_bg = true;
-						}
-						if (ImGui::Selectable("Foreground"))
-						{
-							//preview_menu_fg = true;
-						}
-						if (ImGui::Selectable("Combined"))
-						{
-							out_render_request = RenderRequestType::MENU;
-						}
-						ImGui::EndMenu();
-					}
-
-					if (ImGui::BeginMenu("Bonus"))
-					{
-						if (ImGui::Selectable("Background"))
-						{
-							//preview_bonus_bg = true;
-						}
-						if (ImGui::Selectable("Foreground"))
-						{
-							//preview_bonus_fg = true;
-						}
-						if (ImGui::Selectable("Combined"))
-						{
-							out_render_request = RenderRequestType::BONUS;
-						}
-						ImGui::Separator();
-						ImGui::Checkbox("Alt palette", &m_preview_bonus_alt_palette);
-						ImGui::EndMenu();
-					}
-
-					if (ImGui::BeginMenu("Other"))
-					{
-						if (ImGui::Selectable("Preview Sega Logo"))
-						{
-							out_render_request = RenderRequestType::SEGA_LOGO;
-						}
-
-						if (ImGui::Selectable("Preview Options Menu"))
-						{
-							out_render_request = RenderRequestType::OPTIONS;
-						}
-						ImGui::EndMenu();
-					}
-
-					ImGui::EndMenu();
-				}
+				
 
 				ImGui::Checkbox("Export", &m_export_result);
 
 				ImGui::EndMenu();
 			}
+
+			if (ImGui::BeginMenu("Load"))
+			{
+				if (ImGui::BeginMenu("Level"))
+				{
+					const int previous_level_index = m_level != nullptr ? m_level->level_index : -1;
+					int level_index = -1;
+					if (ImGui::Selectable("Toxic Caves"))
+					{
+						out_render_request = RenderRequestType::LEVEL;
+						level_index = 0;
+					}
+
+					if (ImGui::Selectable("Lava Powerhouse"))
+					{
+						out_render_request = RenderRequestType::LEVEL;
+						level_index = 1;
+					}
+
+					if (ImGui::Selectable("The Machine"))
+					{
+						out_render_request = RenderRequestType::LEVEL;
+						level_index = 2;
+					}
+
+					if (ImGui::Selectable("Showdown"))
+					{
+						out_render_request = RenderRequestType::LEVEL;
+						level_index = 3;
+					}
+
+					if (level_index != -1 && level_index != previous_level_index)
+					{
+						m_level = std::make_shared<Level>();
+						m_level->level_index = level_index;
+						m_level->m_tile_layers.emplace_back();
+						m_level->m_tile_layers.emplace_back();
+						m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
+					}
+					else if (level_index != -1)
+					{
+						m_render_from_edit = true;
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Intro"))
+				{
+					if (ImGui::Selectable("Background"))
+					{
+						out_render_request = RenderRequestType::INTRO;
+					}
+					if (ImGui::Selectable("Foreground"))
+					{
+						out_render_request = RenderRequestType::INTRO;
+					}
+					if (ImGui::Selectable("Robotnik Ship"))
+					{
+						out_render_request = RenderRequestType::INTRO_SHIP;
+					}
+					if (ImGui::Selectable("Water"))
+					{
+						out_render_request = RenderRequestType::INTRO_WATER;
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Frontend"))
+				{
+					if (ImGui::Selectable("Background"))
+					{
+						//preview_menu_bg = true;
+					}
+					if (ImGui::Selectable("Foreground"))
+					{
+						//preview_menu_fg = true;
+					}
+					if (ImGui::Selectable("Combined"))
+					{
+						out_render_request = RenderRequestType::MENU;
+					}
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Bonus"))
+				{
+					if (ImGui::Selectable("Background"))
+					{
+						//preview_bonus_bg = true;
+					}
+					if (ImGui::Selectable("Foreground"))
+					{
+						//preview_bonus_fg = true;
+					}
+					if (ImGui::Selectable("Combined"))
+					{
+						out_render_request = RenderRequestType::BONUS;
+					}
+					ImGui::Separator();
+					ImGui::Checkbox("Alt palette", &m_preview_bonus_alt_palette);
+					ImGui::EndMenu();
+				}
+
+				if (ImGui::BeginMenu("Other"))
+				{
+					if (ImGui::Selectable("Preview Sega Logo"))
+					{
+						out_render_request = RenderRequestType::SEGA_LOGO;
+					}
+
+					if (ImGui::Selectable("Preview Options Menu"))
+					{
+						out_render_request = RenderRequestType::OPTIONS;
+					}
+					ImGui::EndMenu();
+				}
+
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("View"))
+			{
+				ImGui::SeparatorText("Layers");
+				ImGui::Checkbox("Collision", &m_layer_settings.collision);
+				ImGui::SeparatorText("Culling Visualisation");
+				ImGui::Checkbox("Collision Culling Sectors", &m_layer_settings.collision_culling);
+				ImGui::Checkbox("Visibility Culling Sectors", &m_layer_settings.visibility_culling);
+				ImGui::SeparatorText("Tooltips");
+				ImGui::Checkbox("Game Object Info", &m_layer_settings.hover_game_objects);
+				ImGui::Checkbox("Spline Collision Info", &m_layer_settings.hover_splines);
+				ImGui::Checkbox("Radial Collision Info", &m_layer_settings.hover_radials);
+				ImGui::Checkbox("Tile Info", &m_layer_settings.hover_tiles);
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("Debug"))
+			{
+				if (ImGui::Selectable("Test Collision Culling"))
+				{
+					TestCollisionCullingResults();
+				}
+				ImGui::EndMenu();
+			}
+
 			ImGui::EndMenuBar();
 		}
 
@@ -294,79 +327,6 @@ namespace spintool
 				//LevelGameObjSprite->RenderToSurface(GameObjectPreview.sprite.get());
 
 				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain)));
-				SplineManager boogaloo;
-				boogaloo.LoadFromSplineCullingTable(m_spline_manager.GenerateSplineCullingTable());
-
-				const auto rom_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
-				const auto og_table = m_spline_manager.GenerateSplineCullingTable();
-				const auto new_table = boogaloo.GenerateSplineCullingTable();
-
-				// Spline culling unit test
-				for (size_t i = 0; i < rom_table.cells.size(); ++i)
-				{
-					const rom::SplineCullingCell& rom_cell = rom_table.cells[i];
-					const rom::SplineCullingCell& og_cell = og_table.cells[i];
-					const rom::SplineCullingCell& new_cell = og_table.cells[i];
-
-					bool orders_mismatch = false;
-					orders_mismatch = og_cell.splines.size() == new_cell.splines.size() && og_cell.splines.size() == rom_cell.splines.size();
-					for (size_t c = 0; c < og_cell.splines.size(); ++c)
-					{
-						assert(og_cell.splines[c] == new_cell.splines[c]);
-						if (og_cell.splines[c] == new_cell.splines[c] && og_cell.splines[c] == rom_cell.splines[c])
-						{
-							continue;
-						}
-						else
-						{
-							orders_mismatch = true;
-							break;
-						}
-
-						if ((m_spline_manager.splines[c] == boogaloo.splines[c]) == false)
-						{
-							break;
-						}
-					}
-
-					if (orders_mismatch)
-					{
-						for (const rom::CollisionSpline& spline : og_cell.splines)
-						{
-							assert(std::any_of(std::begin(rom_cell.splines), std::end(rom_cell.splines), [&spline](const rom::CollisionSpline& _spline)
-								{
-									return _spline == spline;
-								}));
-						}
-
-						for (const rom::CollisionSpline& spline : rom_cell.splines)
-						{
-							if(std::none_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
-								{
-									return _spline == spline || spline.extra_info == 0x0006;
-								}))
-								{
-									// Did we lose this spline entirely, or was this some redunant data?
-								
-									assert(std::any_of(std::begin(og_table.cells), std::end(og_table.cells),
-										[&spline](const rom::SplineCullingCell& _cell)
-										{
-											return std::any_of(std::begin(_cell.splines), std::end(_cell.splines),
-												[&spline](const rom::CollisionSpline& _spline)
-												{
-													return _spline == spline;
-												});
-										}));
-								}
-						}
-					}
-
-					if ((og_cell.splines.size() == new_cell.splines.size() && og_cell.splines.size() == rom_cell.splines.size()) == false)
-					{
-						break;
-					}
-					
-				}
 
 				m_preview_game_objects.clear();
 				m_anim_sprite_instances.clear();
@@ -835,8 +795,9 @@ namespace spintool
 								};
 								int tab_index = 0;
 								constexpr size_t num_previews_per_page = 8 * 16;
-								for (auto& tileset_preview : m_tileset_preview_list)
+								for (size_t i = 0; i < m_tileset_preview_list.size(); ++i)
 								{
+									TilesetPreview& tileset_preview = m_tileset_preview_list[i];
 									if (ImGui::BeginTabItem(layer_names[tab_index++]))
 									{
 										ImGui::PushID(&tileset_preview);
@@ -846,6 +807,8 @@ namespace spintool
 											tileset_preview.current_page = std::max(0, tileset_preview.current_page - 1);
 										}
 										ImGui::EndDisabled();
+										ImGui::SameLine();
+										ImGui::Text("%d / %d", tileset_preview.current_page + 1, num_previews_per_page != 0 ? static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page + 1 : 1);
 										ImGui::SameLine();
 										ImGui::BeginDisabled((tileset_preview.current_page + 1) * num_previews_per_page >= tileset_preview.brushes.size());
 										if (ImGui::Button("Next Page"))
@@ -857,6 +820,7 @@ namespace spintool
 										if (ImGui::Button("Pick from layout"))
 										{
 											m_selected_brush.is_picking_from_layout = true;
+											m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[i] : nullptr;
 											m_selected_brush.tileset = &tileset_preview;
 										}
 
@@ -937,10 +901,18 @@ namespace spintool
 					const ImVec2 panel_screen_origin = ImGui::GetCursorScreenPos();
 					if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 					{
+						LayerSettings current_layer_settings = m_layer_settings;
+
 						const ImVec2 origin = ImGui::GetCursorPos();
 						const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
+						const ImVec2 mouse_pos = ImGui::GetMousePos();
+						const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_screen_origin.x) + origin.x, (mouse_pos.y - panel_screen_origin.y) + origin.x };
+						const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
+						const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
+						const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
+						const ImVec2 final_snapped_pos{ snapped_pos.x + screen_origin.x + (panel_screen_origin.x - screen_origin.x), snapped_pos.y + screen_origin.y + (panel_screen_origin.y - screen_origin.y) };
+						
 						ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
-
 						ImGui::SetCursorPos(origin);
 						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_fg->w) * zoom, static_cast<float>(m_tile_layout_preview_fg->h) * zoom));
 
@@ -952,9 +924,19 @@ namespace spintool
 
 						// Terrain Collision
 
-						const bool brush_selected = m_selected_brush.HasBrushSelected();
+						if (m_selected_brush.HasBrushSelected() || m_selected_brush.IsPickingBrushFromLayout())
+						{
+							current_layer_settings.collision = false;
+							current_layer_settings.rings = false;
+							current_layer_settings.flippers = false;
+							current_layer_settings.visible_objects = false;
+							current_layer_settings.hover_game_objects = false;
+							current_layer_settings.hover_splines = false;
+							current_layer_settings.hover_radials = false;
+							current_layer_settings.hover_tiles = m_selected_brush.IsPickingBrushFromLayout();
+						}
 
-						if (brush_selected == false)
+						if (current_layer_settings.collision == true)
 						{
 							for (rom::CollisionSpline& next_spline : m_spline_manager.splines)
 							{
@@ -1005,7 +987,7 @@ namespace spintool
 											ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) },
 											ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 3.0f);
 
-										if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
+										if (m_working_spline.has_value() == false && current_layer_settings.hover_radials && ImGui::BeginTooltip())
 										{
 											ImGui::SeparatorText("Radial Collision");
 											ImGui::Text("Position: X: 0x%04X  Y: 0x%04X", spline.spline_vector.min.x, spline.spline_vector.min.y);
@@ -1052,11 +1034,6 @@ namespace spintool
 									fixed_bbox.max.x = std::max(spline.spline_vector.min.x, spline.spline_vector.max.x) + 1;
 									fixed_bbox.min.y = std::min(spline.spline_vector.min.y, spline.spline_vector.max.y) - 1;
 									fixed_bbox.max.y = std::max(spline.spline_vector.min.y, spline.spline_vector.max.y) + 1;
-
-									if (brush_selected)
-									{
-										continue;
-									}
 
 									if (is_working_spline || ImGui::IsMouseHoveringRect(
 										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
@@ -1117,17 +1094,23 @@ namespace spintool
 							}
 						}
 
-						if (has_just_selected_brush == false)
+						if (m_level && has_just_selected_brush == false)
 						{
-							if (m_working_spline.has_value() == false && m_selected_brush.IsActive())
-							{
+							const int grid_ref = (grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + grid_pos.x;
 
-								const ImVec2 mouse_pos = ImGui::GetMousePos();
-								const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_screen_origin.x) + origin.x, (mouse_pos.y - panel_screen_origin.y) + origin.x };
-								const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
-								const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
-								const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
-								const ImVec2 final_snapped_pos{ snapped_pos.x + screen_origin.x + (panel_screen_origin.x - screen_origin.x), snapped_pos.y + screen_origin.y + (panel_screen_origin.y - screen_origin.y) };
+							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && grid_ref >= 0 && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
+							{
+								const int hovered_index = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
+
+								if (m_selected_brush.tileset != nullptr && hovered_index > 0 && hovered_index < m_selected_brush.tileset->brushes.size() && ImGui::BeginTooltip())
+								{
+									ImGui::Image((ImTextureID)m_selected_brush.tileset->brushes.at(hovered_index).texture.get(), ImVec2{ 64,64 });
+									ImGui::EndTooltip();
+								}
+							}
+
+							if (m_selected_brush.IsActive())
+							{
 
 								if (m_selected_brush.HasBrushSelected())
 								{
@@ -1152,67 +1135,32 @@ namespace spintool
 									ImVec2{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1 },
 									ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
 
-								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
 								{
-									auto grid_ref = (grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + grid_pos.x;
-
 									if (m_selected_brush.IsPickingBrushFromLayout())
 									{
-										if (m_selected_brush.tileset == &m_tileset_preview_list[0])
+										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false)
 										{
-											if (m_level->m_tile_layers[0].tile_layout->tile_brush_instances.empty() == false)
-											{
-												const int selected_index = m_level->m_tile_layers[0].tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
-												m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
-												m_selected_brush.is_picking_from_layout = false;
-											}
-											else
-											{
-												m_selected_brush.Clear();
-											}
+											const int selected_index = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
+											m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
+											m_selected_brush.is_picking_from_layout = false;
 										}
-										else if (m_selected_brush.tileset == &m_tileset_preview_list[1])
+										else
 										{
-											if (m_level->m_tile_layers[1].tile_layout->tile_brush_instances.empty() == false)
-											{
-												const int selected_index = m_level->m_tile_layers[1].tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
-												m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
-												m_selected_brush.is_picking_from_layout = false;
-											}
-											else
-											{
-												m_selected_brush.Clear();
-											}
+											m_selected_brush.Clear();
 										}
 										has_just_selected_brush = true;
 									}
 									else if (m_selected_brush.HasBrushSelected())
 									{
-
-										if (m_selected_brush.tileset == &m_tileset_preview_list[0])
+										// Background
+										if (grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 										{
-											// Background
-											if (grid_ref < m_level->m_tile_layers[0].tile_layout->tile_brush_instances.size())
-											{
-												auto& tile = m_level->m_tile_layers[0].tile_layout->tile_brush_instances.at(grid_ref);
-												tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
-												tile.is_flipped_horizontally = m_selected_brush.flip_x;
-												tile.is_flipped_vertically = m_selected_brush.flip_y;
-												m_render_from_edit = true;
-											}
-										}
-
-										if (m_selected_brush.tileset == &m_tileset_preview_list[1])
-										{
-											// Foreground
-											if (grid_ref < m_level->m_tile_layers[1].tile_layout->tile_brush_instances.size())
-											{
-												auto& tile = m_level->m_tile_layers[1].tile_layout->tile_brush_instances.at(grid_ref);
-												tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
-												tile.is_flipped_horizontally = m_selected_brush.flip_x;
-												tile.is_flipped_vertically = m_selected_brush.flip_y;
-												m_render_from_edit = true;
-											}
+											auto& tile = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
+											tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
+											tile.is_flipped_horizontally = m_selected_brush.flip_x;
+											tile.is_flipped_vertically = m_selected_brush.flip_y;
+											m_render_from_edit = true;
 										}
 									}
 								}
@@ -1248,78 +1196,84 @@ namespace spintool
 								ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 						}
 
-						for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
+						if (current_layer_settings.hover_game_objects)
 						{
-							ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
-							ImGui::Dummy(game_obj->dimensions);
-							if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+							for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
 							{
-								m_working_game_obj.reset();
-								ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
-
-								rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
-								for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
+								ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
+								ImGui::Dummy(game_obj->dimensions);
+								if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 								{
-									const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
-									for (const Uint16 obj_id : cell.obj_ids)
-									{
-										if (obj_id == game_obj->obj_definition.instance_id)
-										{
-											ImGui::GetWindowDrawList()->AddRect(
-												ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-												ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
-												ImGui::GetColorU32(ImVec4{ 255,255,255,255 }), 0, ImDrawFlags_None, 1.0f);
-										}
-									}
-								}
+									m_working_game_obj.reset();
+									ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
-								if (m_level_data_offsets.collision_tile_obj_ids.offset != 0)
-								{
-									rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
-									for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
+									if (current_layer_settings.visibility_culling)
 									{
-										const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
-										for (const Uint16 obj_id : cell.obj_ids)
+										rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+										for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
 										{
-											if (obj_id == game_obj->obj_definition.instance_id)
+											const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
+											for (const Uint16 obj_id : cell.obj_ids)
 											{
-												ImGui::GetWindowDrawList()->AddRect(
-													ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-													ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
-													ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
+												if (obj_id == game_obj->obj_definition.instance_id)
+												{
+													ImGui::GetWindowDrawList()->AddRect(
+														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+														ImGui::GetColorU32(ImVec4{ 255,255,255,255 }), 0, ImDrawFlags_None, 1.0f);
+												}
 											}
 										}
 									}
-								}
 
-								if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-								{
-									ImGui::OpenPopup("obj_popup");
-									m_working_game_obj.emplace();
-									m_working_game_obj->destination = game_obj.get();
-									m_working_game_obj->game_obj = game_obj->obj_definition;
-								}
-								else if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
-								{
-									ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
-									ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
-									ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+									if (current_layer_settings.collision_culling && m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+									{
+										rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+										for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
+										{
+											const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
+											for (const Uint16 obj_id : cell.obj_ids)
+											{
+												if (obj_id == game_obj->obj_definition.instance_id)
+												{
+													ImGui::GetWindowDrawList()->AddRect(
+														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+														ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
+												}
+											}
+										}
+									}
 
-									ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
-									ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
-									ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
-									ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
-									ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
-									ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
-									ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
-									ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
-									ImGui::Text("Anim Definition: 0x%08X", game_obj->obj_definition.animation_definition);
-									ImGui::Text("Anim Ptr: 0x%08X", game_obj->obj_definition.animation_ptr);
-									ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
-									ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
-									ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+									if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+									{
+										ImGui::OpenPopup("obj_popup");
+										m_working_game_obj.emplace();
+										m_working_game_obj->destination = game_obj.get();
+										m_working_game_obj->game_obj = game_obj->obj_definition;
+									}
+									else if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
+									{
+										ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
+										ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+										ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
 
-									ImGui::EndTooltip();
+										ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
+										ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+										ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
+										ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
+										ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
+										ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
+										ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
+										ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
+										ImGui::Text("Anim Definition: 0x%08X", game_obj->obj_definition.animation_definition);
+										ImGui::Text("Anim Ptr: 0x%08X", game_obj->obj_definition.animation_ptr);
+										ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
+										ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
+										ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+
+										ImGui::EndTooltip();
+									}
 								}
 							}
 						}
@@ -1841,6 +1795,83 @@ namespace spintool
 			}
 		}
 		break;
+
+		}
+	}
+
+	void EditorTileLayoutViewer::TestCollisionCullingResults() const
+	{
+		// Spline culling unit test
+		SplineManager boogaloo;
+		boogaloo.LoadFromSplineCullingTable(m_spline_manager.GenerateSplineCullingTable());
+
+		const auto rom_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+		const auto og_table = m_spline_manager.GenerateSplineCullingTable();
+		const auto new_table = boogaloo.GenerateSplineCullingTable();
+
+		for (size_t i = 0; i < rom_table.cells.size(); ++i)
+		{
+			const rom::SplineCullingCell& rom_cell = rom_table.cells[i];
+			const rom::SplineCullingCell& og_cell = og_table.cells[i];
+			const rom::SplineCullingCell& new_cell = og_table.cells[i];
+
+			bool orders_mismatch = false;
+			orders_mismatch = og_cell.splines.size() == new_cell.splines.size() && og_cell.splines.size() == rom_cell.splines.size();
+			for (size_t c = 0; c < og_cell.splines.size(); ++c)
+			{
+				assert(og_cell.splines[c] == new_cell.splines[c]);
+				if (og_cell.splines[c] == new_cell.splines[c] && og_cell.splines[c] == rom_cell.splines[c])
+				{
+					continue;
+				}
+				else
+				{
+					orders_mismatch = true;
+					break;
+				}
+
+				if ((m_spline_manager.splines[c] == boogaloo.splines[c]) == false)
+				{
+					break;
+				}
+			}
+
+			if (orders_mismatch)
+			{
+				for (const rom::CollisionSpline& spline : og_cell.splines)
+				{
+					assert(std::any_of(std::begin(rom_cell.splines), std::end(rom_cell.splines), [&spline](const rom::CollisionSpline& _spline)
+						{
+							return _spline == spline;
+						}));
+				}
+
+				for (const rom::CollisionSpline& spline : rom_cell.splines)
+				{
+					if (std::none_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
+						{
+							return _spline == spline || spline.extra_info == 0x0006;
+						}))
+					{
+						// Did we lose this spline entirely, or was this some redunant data?
+
+						assert(std::any_of(std::begin(og_table.cells), std::end(og_table.cells),
+							[&spline](const rom::SplineCullingCell& _cell)
+							{
+								return std::any_of(std::begin(_cell.splines), std::end(_cell.splines),
+									[&spline](const rom::CollisionSpline& _spline)
+									{
+										return _spline == spline;
+									});
+							}));
+					}
+				}
+			}
+
+			if ((og_cell.splines.size() == new_cell.splines.size() && og_cell.splines.size() == rom_cell.splines.size()) == false)
+			{
+				break;
+			}
 
 		}
 	}
