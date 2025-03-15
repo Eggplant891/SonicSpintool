@@ -18,6 +18,7 @@
 #include <iterator>
 #include <cmath>
 #include <iostream>
+#include "imgui_internal.h"
 
 
 namespace spintool
@@ -1390,6 +1391,63 @@ namespace spintool
 						{
 							m_working_spline.reset();
 						}
+					}
+				}
+
+				ImGuiWindow* tile_area = ImGui::GetCurrentContext()->CurrentWindow;
+				if (tile_area != nullptr)
+				{
+					const bool is_hovering_tile_area = (ImGui::GetCurrentContext()->HoveredWindow == tile_area);
+
+					static bool is_dragging = false;
+					static ImVec2 drag_start_pos = ImGui::GetMousePos();
+					static ImVec2 scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
+					if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+					{
+						if (is_dragging == false && is_hovering_tile_area && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+						{
+							drag_start_pos = ImGui::GetMousePos();
+							scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
+							is_dragging = true;
+						}
+
+						if (is_dragging)
+						{
+							tile_area->Scroll.x = scroll_start_pos.x + (drag_start_pos.x - ImGui::GetMousePos().x);
+							tile_area->Scroll.y = scroll_start_pos.y + (drag_start_pos.y - ImGui::GetMousePos().y);
+						}
+					}
+					else
+					{
+						is_dragging = false;
+					}
+
+					int scroll_multiplier = 1;
+
+					if (ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift))
+					{
+						scroll_multiplier = 2;
+					}
+					const int scroll_amount = 4 * scroll_multiplier;
+
+					if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow))
+					{
+						tile_area->Scroll.y -= scroll_amount;
+					}
+
+					if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow))
+					{
+						tile_area->Scroll.x -= scroll_amount;
+					}
+
+					if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow))
+					{
+						tile_area->Scroll.y += scroll_amount;
+					}
+
+					if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow))
+					{
+						tile_area->Scroll.x += scroll_amount;
 					}
 				}
 				ImGui::EndChild();
