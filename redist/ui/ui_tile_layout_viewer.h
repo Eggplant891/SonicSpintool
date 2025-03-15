@@ -64,14 +64,17 @@ namespace spintool
 	struct UIGameObject
 	{
 		rom::GameObjectDefinition obj_definition;
-		ImVec2 pos = { 0,0 };
+		ImVec2 GetSpriteDrawPos() const
+		{
+			return ImVec2{ obj_definition.x_pos + sprite_pos_offset.x, obj_definition.y_pos + sprite_pos_offset.y };
+		}
+		ImVec2 sprite_pos_offset = { 0,0 };
 		ImVec2 dimensions = { 0,0 };
 
 		int sprite_table_address = 0;
 		int palette_index = 0;
 
 		std::shared_ptr<UISpriteTexture> ui_sprite;
-		SDLPaletteHandle palette;
 	};
 
 	struct TileBrushPreview
@@ -84,8 +87,9 @@ namespace spintool
 
 	struct WorkingGameObject
 	{
+		std::optional<ImVec2> initial_drag_offset;
 		UIGameObject* destination = nullptr;
-		rom::GameObjectDefinition game_obj;
+		UIGameObject game_obj;
 	};
 
 	struct WorkingSpline
@@ -178,6 +182,9 @@ namespace spintool
 		void Update() override;
 		RenderRequestType DrawMenuBar();
 		void PrepareRenderRequest(RenderRequestType render_request);
+
+		bool IsDraggingObject() const;
+		bool IsObjectPopupOpen() const;
 
 		struct AnimSpriteEntry
 		{

@@ -51,9 +51,11 @@ namespace spintool
 					}
 				};
 
+			static constexpr int player_radius = 0;
+
 			if (spline.IsRadial() || spline.IsTeleporter())
 			{
-				const float radius = static_cast<float>(spline.spline_vector.max.x);
+				const float radius = static_cast<float>(spline.spline_vector.max.x) + player_radius;
 				auto x = spline.spline_vector.min.x;
 				auto y = spline.spline_vector.min.y;
 
@@ -76,10 +78,38 @@ namespace spintool
 				for (int i = 0; num_tests != 0 && i <= num_tests; ++i)
 				{
 					const float delta = static_cast<float>(i) / static_cast<float>(num_tests);
-					auto x = spline.spline_vector.MinOrdered().x;
-					auto y = spline.spline_vector.MinOrdered().y;
-					test_cell_and_add(x + (spline.spline_vector.Width() * delta), y + (spline.spline_vector.Height() * delta));
+					const auto x = spline.spline_vector.MinOrdered().x - player_radius;
+					const auto y = spline.spline_vector.MinOrdered().y + player_radius;
+					test_cell_and_add(x + ((spline.spline_vector.Width() - player_radius) * delta), y + ((spline.spline_vector.Height() + player_radius) * delta));
 				}
+
+				//
+				//	const auto x = spline.spline_vector.MinOrdered().x;
+				//	const auto y = spline.spline_vector.MinOrdered().x;
+				//	test_cell_and_add(static_cast<float>(x), static_cast<float>(y));
+				//	test_cell_and_add(static_cast<float>(x) + player_radius, static_cast<float>(y));
+				//	test_cell_and_add(static_cast<float>(x), static_cast<float>(y) + player_radius);
+				//	test_cell_and_add(static_cast<float>(x) - player_radius, static_cast<float>(y));
+				//	test_cell_and_add(static_cast<float>(x), static_cast<float>(y) - player_radius);
+				//	test_cell_and_add(static_cast<float>(x) + player_radius, static_cast<float>(y) + player_radius);
+				//	test_cell_and_add(static_cast<float>(x) - player_radius, static_cast<float>(y) - player_radius);
+				//	test_cell_and_add(static_cast<float>(x) - player_radius, static_cast<float>(y) + player_radius);
+				//	test_cell_and_add(static_cast<float>(x) + player_radius, static_cast<float>(y) - player_radius);
+				//
+				//
+				//
+				//	const auto x = spline.spline_vector.MaxOrdered().x;
+				//	const auto y = spline.spline_vector.MaxOrdered().x;
+				//	test_cell_and_add(static_cast<float>(x), static_cast<float>(y));
+				//	test_cell_and_add(static_cast<float>(x) + player_radius, static_cast<float>(y));
+				//	test_cell_and_add(static_cast<float>(x), static_cast<float>(y) + player_radius);
+				//	test_cell_and_add(static_cast<float>(x) - player_radius, static_cast<float>(y));
+				//	test_cell_and_add(static_cast<float>(x), static_cast<float>(y) - player_radius);
+				//	test_cell_and_add(static_cast<float>(x) + player_radius, static_cast<float>(y) + player_radius);
+				//	test_cell_and_add(static_cast<float>(x) - player_radius, static_cast<float>(y) - player_radius);
+				//	test_cell_and_add(static_cast<float>(x) - player_radius, static_cast<float>(y) + player_radius);
+				//	test_cell_and_add(static_cast<float>(x) + player_radius, static_cast<float>(y) - player_radius);
+				//
 			}
 		}
 		return new_table;

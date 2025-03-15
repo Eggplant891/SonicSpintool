@@ -712,7 +712,7 @@ namespace spintool
 
 						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
 						new_obj->obj_definition = game_obj;
-						new_obj->pos = ImVec2{ static_cast<float>(sprite_target_rect.x), static_cast<float>(sprite_target_rect.y) };
+						new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(sprite_target_rect.x) - game_obj.x_pos, static_cast<float>(sprite_target_rect.y) - game_obj.y_pos };
 						new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
 						new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
 						new_obj->sprite_table_address = animSpriteEntry.sprite_table;
@@ -731,6 +731,14 @@ namespace spintool
 						SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width / 2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
 						SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
 						SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
+
+						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+						new_obj->obj_definition = game_obj;
+						new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(target_rect.x) - game_obj.x_pos, static_cast<float>(target_rect.y) - game_obj.y_pos };
+						new_obj->dimensions = ImVec2{ static_cast<float>(target_rect.w) , static_cast<float>(target_rect.h) };
+						//new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
+						//new_obj->sprite_table_address = animSpriteEntry.sprite_table;
+						m_preview_game_objects.emplace_back(std::move(new_obj));
 					}
 				}
 			}
@@ -913,7 +921,7 @@ namespace spintool
 						const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
 						const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
 						const ImVec2 final_snapped_pos{ snapped_pos.x + screen_origin.x + (panel_screen_origin.x - screen_origin.x), snapped_pos.y + screen_origin.y + (panel_screen_origin.y - screen_origin.y) };
-						
+
 						ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
 						ImGui::SetCursorPos(origin);
 						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_fg->w) * zoom, static_cast<float>(m_tile_layout_preview_fg->h) * zoom));
@@ -936,6 +944,18 @@ namespace spintool
 							current_layer_settings.hover_splines = false;
 							current_layer_settings.hover_radials = false;
 							current_layer_settings.hover_tiles = m_selected_brush.IsPickingBrushFromLayout();
+						}
+
+						if (m_working_game_obj)
+						{
+							current_layer_settings.collision = false;
+							current_layer_settings.rings = false;
+							current_layer_settings.flippers = false;
+							current_layer_settings.visible_objects = false;
+							current_layer_settings.hover_game_objects = false;
+							current_layer_settings.hover_splines = false;
+							current_layer_settings.hover_radials = false;
+							current_layer_settings.hover_tiles = false;
 						}
 
 						if (current_layer_settings.collision == true)
@@ -1198,83 +1218,124 @@ namespace spintool
 								ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 						}
 
-						if (current_layer_settings.hover_game_objects)
+						if (ImGui::IsPopupOpen("obj_popup") == false)
 						{
-							for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
+							if (m_working_game_obj)
 							{
-								ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->pos.x, origin.y + game_obj->pos.y });
-								ImGui::Dummy(game_obj->dimensions);
-								if (ImGui::IsPopupOpen("obj_popup") == false && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+								if (m_working_game_obj->initial_drag_offset.has_value() == false)
 								{
 									m_working_game_obj.reset();
-									ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
-
-									if (current_layer_settings.visibility_culling)
+								}
+								else
+								{
+									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
-										rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
-										for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
-										{
-											const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
-											for (const Uint16 obj_id : cell.obj_ids)
-											{
-												if (obj_id == game_obj->obj_definition.instance_id)
-												{
-													ImGui::GetWindowDrawList()->AddRect(
-														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
-														ImGui::GetColorU32(ImVec4{ 255,255,255,255 }), 0, ImDrawFlags_None, 1.0f);
-												}
-											}
-										}
-									}
+										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>((ImGui::GetMousePos().x - screen_origin.x) - m_working_game_obj->game_obj.sprite_pos_offset.x - m_working_game_obj->initial_drag_offset->x);
+										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>((ImGui::GetMousePos().y - screen_origin.y) - m_working_game_obj->game_obj.sprite_pos_offset.y - m_working_game_obj->initial_drag_offset->y);
 
-									if (current_layer_settings.collision_culling && m_level_data_offsets.collision_tile_obj_ids.offset != 0)
-									{
-										rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
-										for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
-										{
-											const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
-											for (const Uint16 obj_id : cell.obj_ids)
-											{
-												if (obj_id == game_obj->obj_definition.instance_id)
-												{
-													ImGui::GetWindowDrawList()->AddRect(
-														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-														ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
-														ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
-												}
-											}
-										}
+										ImGui::SetCursorPos(ImVec2{ origin.x + m_working_game_obj->game_obj.GetSpriteDrawPos().x, origin.y + m_working_game_obj->game_obj.GetSpriteDrawPos().y });
+										ImGui::Dummy(ImVec2{ (float)m_working_game_obj->game_obj.dimensions.x, (float)m_working_game_obj->game_obj.dimensions.y });
+										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 									}
-
-									if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+									else if (m_working_game_obj->initial_drag_offset)
 									{
 										ImGui::OpenPopup("obj_popup");
-										m_working_game_obj.emplace();
-										m_working_game_obj->destination = game_obj.get();
-										m_working_game_obj->game_obj = game_obj->obj_definition;
+										m_working_game_obj->initial_drag_offset.reset();
 									}
-									else if (m_working_spline.has_value() == false && ImGui::BeginTooltip())
+								}
+							}
+
+							if (current_layer_settings.hover_game_objects)
+							{
+								for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
+								{
+									ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->GetSpriteDrawPos().x, origin.y + game_obj->GetSpriteDrawPos().y });
+									ImGui::Dummy(game_obj->dimensions);
+									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 									{
-										ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
-										ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
-										ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
-										ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
-										ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
-										ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
-										ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
-										ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
-										ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
-										ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
-										ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
-										ImGui::Text("Anim Definition: 0x%08X", game_obj->obj_definition.animation_definition);
-										ImGui::Text("Anim Ptr: 0x%08X", game_obj->obj_definition.animation_ptr);
-										ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
-										ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
-										ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+										if (current_layer_settings.visibility_culling)
+										{
+											rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+											for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
+											{
+												const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
+												for (const Uint16 obj_id : cell.obj_ids)
+												{
+													if (obj_id == game_obj->obj_definition.instance_id)
+													{
+														ImGui::GetWindowDrawList()->AddRect(
+															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+															ImGui::GetColorU32(ImVec4{ 255,255,255,255 }), 0, ImDrawFlags_None, 1.0f);
+													}
+												}
+											}
+										}
 
-										ImGui::EndTooltip();
+										if (current_layer_settings.collision_culling && m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+										{
+											rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+											for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
+											{
+												const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
+												for (const Uint16 obj_id : cell.obj_ids)
+												{
+													if (obj_id == game_obj->obj_definition.instance_id)
+													{
+														ImGui::GetWindowDrawList()->AddRect(
+															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
+															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+															ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
+													}
+												}
+											}
+										}
+
+										if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+										{
+											ImGui::OpenPopup("obj_popup");
+											m_working_game_obj.emplace();
+											m_working_game_obj->destination = game_obj.get();
+											m_working_game_obj->game_obj = *game_obj;
+										}
+										else if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+										{
+											m_working_game_obj.emplace();
+											m_working_game_obj->destination = game_obj.get();
+											m_working_game_obj->game_obj = *game_obj;
+											m_working_game_obj->initial_drag_offset = ImVec2{ (ImGui::GetMousePos().x - screen_origin.x) - m_working_game_obj->game_obj.GetSpriteDrawPos().x, (ImGui::GetMousePos().y - screen_origin.y) - m_working_game_obj->game_obj.GetSpriteDrawPos().y };
+										}
+										else if (ImGui::BeginTooltip())
+										{
+											ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
+											ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+											if (game_obj->ui_sprite)
+											{
+												ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+											}
+											else
+											{
+												ImGui::Text("<No Sprite>");
+											}
+
+											ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
+											ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+											ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
+											ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
+											ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
+											ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
+											ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
+											ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
+											ImGui::Text("Anim Definition: 0x%08X", game_obj->obj_definition.animation_definition);
+											ImGui::Text("Anim Ptr: 0x%08X", game_obj->obj_definition.animation_ptr);
+											ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
+											ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
+											ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+
+											ImGui::EndTooltip();
+										}
 									}
 								}
 							}
@@ -1299,19 +1360,26 @@ namespace spintool
 							ImGui::CloseCurrentPopup();
 						}
 
+						if (m_working_game_obj && ImGui::IsPopupOpen("obj_popup"))
+						{
+							ImGui::SetCursorPos(ImVec2{ origin.x + m_working_game_obj->game_obj.GetSpriteDrawPos().x, origin.y + m_working_game_obj->game_obj.GetSpriteDrawPos().y });
+							ImGui::Dummy(ImVec2{ (float)m_working_game_obj->game_obj.dimensions.x, (float)m_working_game_obj->game_obj.dimensions.y });
+							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+						}
+
 						if (m_working_game_obj && ImGui::BeginPopup("obj_popup"))
 						{
 							const auto origin_offset = m_working_game_obj->destination->ui_sprite != nullptr ? m_working_game_obj->destination->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
-							int pos[2] = { static_cast<int>(m_working_game_obj->game_obj.x_pos), static_cast<int>(m_working_game_obj->game_obj.y_pos) };
+							int pos[2] = { static_cast<int>(m_working_game_obj->game_obj.GetSpriteDrawPos().x), static_cast<int>(m_working_game_obj->game_obj.GetSpriteDrawPos().y)};
 							if (ImGui::InputInt2("Object Pos", pos))
 							{
-								m_working_game_obj->game_obj.x_pos = pos[0];
-								m_working_game_obj->game_obj.y_pos = pos[1];
+								m_working_game_obj->game_obj.obj_definition.x_pos = pos[0];
+								m_working_game_obj->game_obj.obj_definition.y_pos = pos[1];
 							}
 
 							if (ImGui::Button("Confirm"))
 							{
-								m_working_game_obj->destination->obj_definition = m_working_game_obj->game_obj;
+								*m_working_game_obj->destination = m_working_game_obj->game_obj;
 								m_working_game_obj->destination->obj_definition.SaveToROM(m_owning_ui.GetROM());
 								m_render_from_edit = true;
 								m_working_game_obj.reset();
@@ -1320,6 +1388,7 @@ namespace spintool
 
 							if (ImGui::Button("Cancel"))
 							{
+								m_working_game_obj.reset();
 								ImGui::CloseCurrentPopup();
 							}
 							ImGui::EndPopup();
@@ -1934,6 +2003,26 @@ namespace spintool
 		}
 	}
 
+	bool EditorTileLayoutViewer::IsDraggingObject() const
+	{
+		if (m_working_game_obj)
+		{
+			return m_working_game_obj->destination != nullptr && ImGui::IsPopupOpen("obj_popup") == false;
+		}
+
+		if (m_working_spline)
+		{
+			return m_working_spline->dest_spline_point != nullptr;
+		}
+
+		return false;
+	}
+
+	bool EditorTileLayoutViewer::IsObjectPopupOpen() const
+	{
+		return ImGui::IsPopupOpen("obj_popup") || ImGui::IsPopupOpen("spline_popup");
+	}
+
 	void EditorTileLayoutViewer::TestCollisionCullingResults() const
 	{
 		// Spline culling unit test
@@ -1983,23 +2072,28 @@ namespace spintool
 
 				for (const rom::CollisionSpline& spline : rom_cell.splines)
 				{
-					if (std::none_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
+					assert(std::any_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
 						{
-							return _spline == spline || spline.extra_info == 0x0006;
-						}))
-					{
-						// Did we lose this spline entirely, or was this some redunant data?
+							return _spline == spline;// || spline.extra_info == 0x0006;
+						}));
 
-						assert(std::any_of(std::begin(og_table.cells), std::end(og_table.cells),
-							[&spline](const rom::SplineCullingCell& _cell)
-							{
-								return std::any_of(std::begin(_cell.splines), std::end(_cell.splines),
-									[&spline](const rom::CollisionSpline& _spline)
-									{
-										return _spline == spline;
-									});
-							}));
-					}
+					//if (std::none_of(std::begin(og_cell.splines), std::end(og_cell.splines), [&spline](const rom::CollisionSpline& _spline)
+					//	{
+					//		return _spline == spline;// || spline.extra_info == 0x0006;
+					//	}))
+					//{
+					//	// Did we lose this spline entirely, or was this some redunant data?
+					//
+					//	assert(std::any_of(std::begin(og_table.cells), std::end(og_table.cells),
+					//		[&spline](const rom::SplineCullingCell& _cell)
+					//		{
+					//			return std::any_of(std::begin(_cell.splines), std::end(_cell.splines),
+					//				[&spline](const rom::CollisionSpline& _spline)
+					//				{
+					//					return _spline == spline;
+					//				});
+					//		}));
+					//}
 				}
 			}
 
