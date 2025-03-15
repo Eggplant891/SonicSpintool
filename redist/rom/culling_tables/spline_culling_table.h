@@ -17,7 +17,7 @@ namespace spintool::rom
 	enum class CollisionObjectType
 	{
 		Spline,
-		BBox
+		Radial
 	};
 
 	struct CollisionSpline
@@ -30,6 +30,8 @@ namespace spintool::rom
 
 		bool IsRadial() const;
 		bool IsTeleporter() const;
+		bool IsBumper() const;
+		bool IsRingOrCollectible() const;
 		bool IsRecognisedButUnknown() const;
 		bool IsUnknown() const;
 

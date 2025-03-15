@@ -1113,7 +1113,6 @@ namespace spintool
 
 							if (m_selected_brush.IsActive())
 							{
-
 								if (m_selected_brush.HasBrushSelected())
 								{
 									ImGui::SetCursorScreenPos(final_snapped_pos);
@@ -1376,10 +1375,10 @@ namespace spintool
 									}
 								}
 
-								bool round_bumper = m_working_spline->spline.object_type_flags & 0x8000;
-								if (ImGui::Checkbox("Radial Collision", &round_bumper))
+								bool radial_collision = m_working_spline->spline.object_type_flags & 0x8000;
+								if (ImGui::Checkbox("Radial Collision", &radial_collision))
 								{
-									if (round_bumper)
+									if (radial_collision)
 									{
 										m_working_spline->spline.object_type_flags |= 0x8000;
 									}

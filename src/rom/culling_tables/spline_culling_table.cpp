@@ -14,6 +14,16 @@ namespace spintool::rom
 		return (object_type_flags & 0x1000) == 0x1000;
 	}
 
+	bool CollisionSpline::IsBumper() const
+	{
+		return (object_type_flags & 0x4000) == 0x4000;
+	}
+
+	bool CollisionSpline::IsRingOrCollectible() const
+	{
+		return (object_type_flags & 0x2000) == 0x2000;
+	}
+
 	bool CollisionSpline::IsRecognisedButUnknown() const
 	{
 		return (object_type_flags & 0x4000) == 0x4000;
