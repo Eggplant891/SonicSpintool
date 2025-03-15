@@ -7,6 +7,7 @@
 #include <thread>
 #include <algorithm>
 #include "ui/ui_file_selector.h"
+#include <numeric>
 
 namespace spintool
 {
@@ -98,6 +99,30 @@ namespace spintool
 			{
 				open_rom_popup = true;
 			}
+
+			static std::array<double, 32> rolling_frame_times;
+			static size_t current_frame = 0;
+
+			static std::chrono::steady_clock fps_clock;
+			static std::chrono::time_point previous_poll_time = fps_clock.now();
+			const std::chrono::time_point current_poll_time = fps_clock.now();
+			const std::chrono::duration frame_time = current_poll_time - previous_poll_time;
+
+			rolling_frame_times[current_frame] = static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(frame_time).count());
+			
+			const double rolling_average = std::accumulate(std::begin(rolling_frame_times), std::end(rolling_frame_times), 0.0,
+				[](double frame_time, double rolling_average_in)
+				{
+					return frame_time + rolling_average_in;
+				}) / static_cast<double>(std::size(rolling_frame_times));
+			current_frame = (current_frame + 1) % std::size(rolling_frame_times);
+
+			previous_poll_time = current_poll_time;
+
+			const float content_region_remaining = ImGui::GetContentRegionAvail().x;
+			const float offset = content_region_remaining - ImGui::CalcTextSize("FPS 9999").x;
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
+			ImGui::Text("FPS %.0f", static_cast<double>(std::chrono::nanoseconds(std::chrono::seconds(1)).count()) / static_cast<double>(rolling_average));
 
 			menu_bar_height = ImGui::GetWindowHeight();
 			ImGui::EndMainMenuBar();
