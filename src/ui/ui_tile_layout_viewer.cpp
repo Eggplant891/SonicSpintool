@@ -796,9 +796,9 @@ namespace spintool
 								};
 								int tab_index = 0;
 								constexpr size_t num_previews_per_page = 8 * 16;
-								for (size_t i = 0; i < m_tileset_preview_list.size(); ++i)
+								for (size_t layer_index = 0; layer_index < m_tileset_preview_list.size(); ++layer_index)
 								{
-									TilesetPreview& tileset_preview = m_tileset_preview_list[i];
+									TilesetPreview& tileset_preview = m_tileset_preview_list[layer_index];
 									if (ImGui::BeginTabItem(layer_names[tab_index++]))
 									{
 										ImGui::PushID(&tileset_preview);
@@ -821,16 +821,16 @@ namespace spintool
 										if (ImGui::Button("Pick from layout"))
 										{
 											m_selected_brush.is_picking_from_layout = true;
-											m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[i] : nullptr;
+											m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
 											m_selected_brush.tileset = &tileset_preview;
 										}
 
-										for (size_t i = tileset_preview.current_page * num_previews_per_page; i < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++i)
+										for (size_t page_index = tileset_preview.current_page * num_previews_per_page; page_index < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++page_index)
 										{
-											TileBrushPreview& preview_brush = tileset_preview.brushes[i];
+											TileBrushPreview& preview_brush = tileset_preview.brushes[page_index];
 											if (preview_brush.texture != nullptr)
 											{
-												if (i % preview_brushes_per_row != 0)
+												if (page_index % preview_brushes_per_row != 0)
 												{
 													ImGui::SameLine();
 												}
@@ -840,11 +840,12 @@ namespace spintool
 												{
 													m_selected_brush.tileset = &tileset_preview;
 													m_selected_brush.tile_brush = &preview_brush;
+													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
 													has_just_selected_brush = true;
 												}
 												if (ImGui::BeginItemTooltip())
 												{
-													ImGui::Text("Tile Index: 0x%02X", i);
+													ImGui::Text("Tile Index: 0x%02X", page_index);
 													ImGui::EndTooltip();
 												}
 											}
@@ -1145,6 +1146,7 @@ namespace spintool
 											const int selected_index = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
 											m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
 											m_selected_brush.is_picking_from_layout = false;
+											m_selected_brush.was_picked_from_layout = true;
 										}
 										else
 										{
@@ -1333,7 +1335,9 @@ namespace spintool
 							else
 							{
 								ImGui::Text("Obj Flags: 0x%04X", m_working_spline->spline.object_type_flags);
-								ImGui::Text("Extra Info: 0x%04X", m_working_spline->spline.extra_info);
+								int working_info = m_working_spline->spline.extra_info;
+								ImGui::InputInt("Extra Info: 0x%04X", &working_info, 1,1,ImGuiInputTextFlags_CharsHexadecimal);
+								m_working_spline->spline.extra_info = (0x0000FFFF & working_info);
 
 								int spline_min[2] = { static_cast<int>(m_working_spline->spline.spline_vector.min.x), static_cast<int>(m_working_spline->spline.spline_vector.min.y) };
 								int spline_max[2] = { static_cast<int>(m_working_spline->spline.spline_vector.max.x), static_cast<int>(m_working_spline->spline.spline_vector.max.y) };
@@ -1345,6 +1349,45 @@ namespace spintool
 								m_working_spline->spline.spline_vector.min.y = spline_min[1];
 								m_working_spline->spline.spline_vector.max.x = spline_max[0];
 								m_working_spline->spline.spline_vector.max.y = spline_max[1];
+
+								bool teleporter = m_working_spline->spline.object_type_flags & 0x1000;
+								if (ImGui::Checkbox("Teleporter", &teleporter))
+								{
+									if (teleporter)
+									{
+										m_working_spline->spline.object_type_flags |= 0x1000;
+									}
+									else
+									{
+										m_working_spline->spline.object_type_flags &= ~0x1000;
+									}
+								}
+
+								bool ring = m_working_spline->spline.object_type_flags & 0x2000;
+								if (ImGui::Checkbox("Ring / Collectible", &ring))
+								{
+									if (ring)
+									{
+										m_working_spline->spline.object_type_flags |= 0x2000;
+									}
+									else
+									{
+										m_working_spline->spline.object_type_flags &= ~0x2000;
+									}
+								}
+
+								bool round_bumper = m_working_spline->spline.object_type_flags & 0x8000;
+								if (ImGui::Checkbox("Radial Collision", &round_bumper))
+								{
+									if (round_bumper)
+									{
+										m_working_spline->spline.object_type_flags |= 0x8000;
+									}
+									else
+									{
+										m_working_spline->spline.object_type_flags &= ~0x8000;
+									}
+								}
 
 								bool can_walk = m_working_spline->spline.object_type_flags & 0x0080;
 								if (ImGui::Checkbox("Can walk", &can_walk))
@@ -1359,19 +1402,45 @@ namespace spintool
 									}
 								}
 
+								bool trigger_slide = m_working_spline->spline.object_type_flags & 0x0100;
+								if (ImGui::Checkbox("Trigger Slide Anim", &trigger_slide))
+								{
+									if (trigger_slide)
+									{
+										m_working_spline->spline.object_type_flags |= 0x0100;
+									}
+									else
+									{
+										m_working_spline->spline.object_type_flags &= ~0x0100;
+									}
+								}
+
+								bool standard_bumper = m_working_spline->spline.object_type_flags & 0x4000;
+								if (ImGui::Checkbox("Bumper", &standard_bumper))
+								{
+									if (standard_bumper)
+									{
+										m_working_spline->spline.object_type_flags |= 0x4000;
+									}
+									else
+									{
+										m_working_spline->spline.object_type_flags &= ~0x4000;
+									}
+								}
+
 								if (ImGui::Button("Confirm"))
 								{
 									*m_working_spline->destination = m_working_spline->spline;
 									m_working_spline.reset();
 									ImGui::CloseCurrentPopup();
 								}
-
+								ImGui::SameLine();
 								if (ImGui::Button("Cancel"))
 								{
 									m_working_spline.reset();
 									ImGui::CloseCurrentPopup();
 								}
-
+								ImGui::SameLine();
 								if (ImGui::Button("Delete"))
 								{
 									auto found_spline_it = std::find_if(std::begin(m_spline_manager.splines), std::end(m_spline_manager.splines),
@@ -1456,7 +1525,16 @@ namespace spintool
 
 			if (m_selected_brush.IsActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 			{
-				m_selected_brush.Clear();
+				if (m_selected_brush.was_picked_from_layout == true)
+				{
+					m_selected_brush.was_picked_from_layout = false;
+					m_selected_brush.is_picking_from_layout = true;
+					m_selected_brush.tile_brush = nullptr;
+				}
+				else
+				{
+					m_selected_brush.Clear();
+				}
 			}
 		}
 		ImGui::End();

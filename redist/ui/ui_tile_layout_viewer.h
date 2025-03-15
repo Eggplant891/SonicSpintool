@@ -132,6 +132,7 @@ namespace spintool
 		TilesetPreview* tileset = nullptr;
 		TileBrushPreview* tile_brush = nullptr;
 		bool is_picking_from_layout = false;
+		bool was_picked_from_layout = false;
 		bool flip_x = false;
 		bool flip_y = false;
 
