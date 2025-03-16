@@ -19,6 +19,7 @@
 #include <cmath>
 #include <iostream>
 #include "imgui_internal.h"
+#include <cstdio>
 
 
 namespace spintool
@@ -58,7 +59,29 @@ namespace spintool
 							m_level->m_tile_layers[1].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout));
 						}
 					}
-					m_spline_manager.GenerateSplineCullingTable().SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+					const auto original_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+					const auto new_table = m_spline_manager.GenerateSplineCullingTable();
+					char out_buffer[512];
+
+					if (new_table.CalculateTableSize() <= original_table.CalculateTableSize())
+					{
+						new_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+
+						char out_buffer[512];
+						static const char* format_str = "Saved level OK.\n\nOld = %d bytes.\nNew = %d bytes.";
+						sprintf_s(out_buffer, format_str, original_table.CalculateTableSize(), new_table.CalculateTableSize());
+						m_popup_msg.emplace();
+						m_popup_msg->title = "Save Level - OK";
+						m_popup_msg->body = out_buffer;
+					}
+					else
+					{
+						static const char* format_str = "Failed to save level.\n\nThe spline culling table was too big.\n\nOld = %d bytes.\nNew = %d bytes.";
+						sprintf_s(out_buffer, format_str, original_table.CalculateTableSize(), new_table.CalculateTableSize());
+						m_popup_msg.emplace();
+						m_popup_msg->title = "Save Level - FAILED";
+						m_popup_msg->body = out_buffer;
+					}
 				}
 
 				ImGui::EndDisabled();
@@ -236,6 +259,30 @@ namespace spintool
 			if (render_request != RenderRequestType::NONE)
 			{
 				PrepareRenderRequest(render_request);
+			}
+
+			if (m_popup_msg)
+			{
+				if (ImGui::IsPopupOpen(m_popup_msg->title.c_str()) == false)
+				{
+					ImGui::OpenPopup(m_popup_msg->title.c_str());
+				}
+				bool is_open = m_popup_msg.has_value();
+				if (ImGui::BeginPopupModal(m_popup_msg->title.c_str(), &is_open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar))
+				{
+					ImGui::Text(m_popup_msg->body.c_str());
+					if (ImGui::Button("Dismiss"))
+					{
+						m_popup_msg.reset();
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndPopup();
+				}
+
+				if (is_open == false)
+				{
+					m_popup_msg.reset();
+				}
 			}
 			
 			if (render_request == RenderRequestType::LEVEL)

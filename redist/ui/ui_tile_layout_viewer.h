@@ -175,6 +175,12 @@ namespace spintool
 		COUNT
 	};
 
+	struct PopupMessage
+	{
+		std::string title;
+		std::string body;
+	};
+
 	class EditorTileLayoutViewer : public EditorWindowBase
 	{
 	public:
@@ -220,6 +226,8 @@ namespace spintool
 		SpriteObjectPreview m_flipper_preview;
 		SpriteObjectPreview m_ring_preview;
 		SpriteObjectPreview m_game_object_preview;
+
+		std::optional<PopupMessage> m_popup_msg;
 
 		rom::LevelDataOffsets m_level_data_offsets;
 

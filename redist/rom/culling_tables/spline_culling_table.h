@@ -52,7 +52,9 @@ namespace spintool::rom
 
 		std::array<SplineCullingCell, cells_count> cells;
 
+		Uint32 CalculateTableSize() const;
+
 		static SplineCullingTable LoadFromROM(const SpinballROM& rom, Ptr32 offset);
-		void SaveToROM(SpinballROM& rom, Ptr32 offset);
+		void SaveToROM(SpinballROM& rom, Ptr32 offset) const;
 	};
 }

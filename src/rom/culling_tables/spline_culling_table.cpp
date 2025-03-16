@@ -1,6 +1,7 @@
 #include "rom/culling_tables/spline_culling_table.h"
 
 #include "rom/spinball_rom.h"
+#include <numeric>
 
 namespace spintool::rom
 {
@@ -82,12 +83,12 @@ namespace spintool::rom
 		return new_table;
 	}
 
-	void SplineCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset)
+	void SplineCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset) const
 	{
 		Ptr32 jump_table_offset = offset;
 		Ptr32 data_offset = jump_table_offset + static_cast<Uint32>(cells_count) * 2;
 
-		for (SplineCullingCell& cell : cells)
+		for (const SplineCullingCell& cell : cells)
 		{
 			jump_table_offset = rom.WriteUint16(jump_table_offset, (data_offset - offset) / 2);
 			data_offset = rom.WriteUint16(data_offset, static_cast<Uint16>(cell.splines.size()));
@@ -103,6 +104,15 @@ namespace spintool::rom
 			}
 		}
 		rom.WriteUint16(data_offset, (data_offset - jump_table_offset) / 2);
+	}
+
+	Uint32 SplineCullingTable::CalculateTableSize() const
+	{
+		return static_cast<Uint32>(std::size(cells) * 2) + std::accumulate(std::begin(cells), std::end(cells), 0,
+			[](Uint32 current_count, const SplineCullingCell& cell)
+			{
+				return current_count + (static_cast<Uint32>(cell.splines.size()) * CollisionSpline::size_on_rom);
+			});
 	}
 
 }
