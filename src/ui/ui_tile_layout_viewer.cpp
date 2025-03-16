@@ -217,6 +217,7 @@ namespace spintool
 				ImGui::SeparatorText("Layers");
 				ImGui::Checkbox("Collision", &m_layer_settings.collision);
 				ImGui::SeparatorText("Culling Visualisation");
+				ImGui::Checkbox("Spline Culling Sectors", &m_layer_settings.spline_culling);
 				ImGui::Checkbox("Collision Culling Sectors", &m_layer_settings.collision_culling);
 				ImGui::Checkbox("Visibility Culling Sectors", &m_layer_settings.visibility_culling);
 				ImGui::SeparatorText("Tooltips");
@@ -816,7 +817,6 @@ namespace spintool
 
 			constexpr const float zoom = 1.0f;
 			bool has_just_selected_brush = false;
-			static int selected_collision_tile_index = -1;
 
 			ImGui::BeginGroup();
 			{
@@ -979,7 +979,39 @@ namespace spintool
 						constexpr int size_of_preview_collision_boxes = 4;
 						constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
 
-						// Terrain Collision
+						rom::SplineCullingTable culling_table;
+						int selected_collision_tile_index = -1;
+
+						if (current_layer_settings.spline_culling == true)
+						{
+							selected_collision_tile_index = (static_cast<int>(relative_mouse_pos.x / rom::SplineCullingTable::cell_dimensions.x) % (rom::SplineCullingTable::grid_dimensions.x))
+								+ (static_cast<int>(relative_mouse_pos.y / rom::SplineCullingTable::cell_dimensions.y) * (rom::SplineCullingTable::grid_dimensions.x));
+
+							if (selected_collision_tile_index != -1)
+							{
+								const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.x;
+								const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.y;
+
+								ImGui::GetWindowDrawList()->AddRect(
+									ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) },
+									ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + rom::SplineCullingTable::cell_dimensions.x), static_cast<float>(screen_origin.y + collision_tile_origin_y + rom::SplineCullingTable::cell_dimensions.y) },
+									ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
+
+								culling_table = m_spline_manager.GenerateSplineCullingTable();
+							}
+						}
+
+						if (selected_collision_tile_index != -1)
+						{
+							current_layer_settings.collision = true;
+							current_layer_settings.rings = false;
+							current_layer_settings.flippers = false;
+							current_layer_settings.visible_objects = false;
+							current_layer_settings.hover_game_objects = false;
+							current_layer_settings.hover_splines = false;
+							current_layer_settings.hover_radials = false;
+							current_layer_settings.hover_tiles = false;
+						}
 
 						if (m_selected_brush.HasBrushSelected() || m_selected_brush.IsPickingBrushFromLayout())
 						{
@@ -1005,10 +1037,35 @@ namespace spintool
 							current_layer_settings.hover_tiles = false;
 						}
 
+						if (m_working_game_obj)
+						{
+							current_layer_settings.collision = false;
+							current_layer_settings.rings = false;
+							current_layer_settings.flippers = false;
+							current_layer_settings.visible_objects = false;
+							current_layer_settings.hover_game_objects = false;
+							current_layer_settings.hover_splines = false;
+							current_layer_settings.hover_radials = false;
+							current_layer_settings.hover_tiles = false;
+						}
+
 						if (current_layer_settings.collision == true)
 						{
 							for (rom::CollisionSpline& next_spline : m_spline_manager.splines)
 							{
+								if (current_layer_settings.spline_culling && selected_collision_tile_index >= 0 && selected_collision_tile_index < rom::SplineCullingTable::cells_count)
+								{
+									const bool spline_is_visible = std::any_of(std::begin(culling_table.cells[selected_collision_tile_index].splines), std::end(culling_table.cells[selected_collision_tile_index].splines),
+										[&next_spline](const rom::CollisionSpline& spline)
+										{
+											return spline == next_spline;
+										});
+									if (spline_is_visible == false)
+									{
+										continue;
+									}
+								}
+
 								const bool is_working_spline = (m_working_spline.has_value() && m_working_spline->destination == &next_spline && (m_working_spline->dest_spline_point != nullptr || ImGui::IsPopupOpen("spline_popup")));
 								rom::CollisionSpline& spline = is_working_spline ? m_working_spline->spline : next_spline;
 
@@ -1056,6 +1113,11 @@ namespace spintool
 										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x - 2), static_cast<float>(screen_origin.y + spline.spline_vector.min.y - 2) },
 										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x + 3), static_cast<float>(screen_origin.y + spline.spline_vector.min.y + 3) },
 										ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 1.0f);
+
+									if (current_layer_settings.spline_culling == true)
+									{
+										continue;
+									}
 
 									if (is_working_spline || ImGui::IsMouseHoveringRect(
 										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
@@ -1107,6 +1169,11 @@ namespace spintool
 									ImGui::SetCursorPos(ImVec2{ origin.x + spline.spline_vector.min.x, origin.y + spline.spline_vector.min.y });
 									ImGui::Dummy(ImVec2{ static_cast<float>(spline.spline_vector.Width()), static_cast<float>(spline.spline_vector.Height()) });
 
+									if (current_layer_settings.spline_culling == true)
+									{
+										continue;
+									}
+
 									const BoundingBox& original_bbox = spline.spline_vector;
 									BoundingBox fixed_bbox;
 									fixed_bbox.min.x = std::min(spline.spline_vector.min.x, spline.spline_vector.max.x) - 1;
@@ -1123,50 +1190,78 @@ namespace spintool
 										ImU32 start_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,255,255 });
 										ImU32 end_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,255,255 });
 
-										if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y - handle_size) },
-											ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) }))
+										const ImVec2 spline_vector = { static_cast<float>(original_bbox.max.x - original_bbox.min.x), static_cast<float>(original_bbox.max.y - original_bbox.min.y) };
+										const float spline_length = std::sqrtf(std::powf(spline_vector.x, 2) + std::powf(spline_vector.y, 2));
+
+										const ImVec2 spline_to_cursor_vector = { ImGui::GetMousePos().x - (screen_origin.x + original_bbox.min.x), ImGui::GetMousePos().y - (screen_origin.y + original_bbox.min.y) };
+										const float spline_to_cursor_length = std::sqrtf(std::powf(spline_to_cursor_vector.x, 2) + std::powf(spline_to_cursor_vector.y, 2));
+
+										if (spline_to_cursor_length <= spline_length)
 										{
-											start_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
-											if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+											const float distance_delta = spline_to_cursor_length / spline_length;
+											const ImVec2 collision_test_pos = { original_bbox.min.x + spline_vector.x * distance_delta, original_bbox.min.y + spline_vector.y * distance_delta };
+											bool is_hovering_handles = false;
+
+											if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y - handle_size) },
+												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) }))
 											{
-												WorkingSpline new_spline;
-												new_spline.destination = &spline;
-												new_spline.spline = spline;
-												m_working_spline.emplace(new_spline);
-												m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
+												is_hovering_handles = true;
+												start_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
+												if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+												{
+													WorkingSpline new_spline;
+													new_spline.destination = &spline;
+													new_spline.spline = spline;
+													m_working_spline.emplace(new_spline);
+													m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
+												}
 											}
-										}
-										else if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
-											ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) }))
-										{
-											end_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
-											if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+											else if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
+												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) }))
 											{
-												WorkingSpline new_spline;
-												new_spline.destination = &spline;
-												new_spline.spline = spline;
-												m_working_spline.emplace(new_spline);
-												m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.max;
+												is_hovering_handles = true;
+												end_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
+												if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+												{
+													WorkingSpline new_spline;
+													new_spline.destination = &spline;
+													new_spline.spline = spline;
+													m_working_spline.emplace(new_spline);
+													m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.max;
+												}
 											}
-										}
 
-										ImGui::GetForegroundDrawList()->AddRect(
-											ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y - handle_size) },
-											ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) },
-											start_handle_colour, 0, ImDrawFlags_None, 2.0f);
+											ImGui::GetForegroundDrawList()->AddRect(
+												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y - handle_size) },
+												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) },
+												start_handle_colour, 0, ImDrawFlags_None, 2.0f);
 
-										ImGui::GetForegroundDrawList()->AddRect(
-											ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
-											ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) },
-											end_handle_colour, 0, ImDrawFlags_None, 2.0f);
+											ImGui::GetForegroundDrawList()->AddRect(
+												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
+												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) },
+												end_handle_colour, 0, ImDrawFlags_None, 2.0f);
 
-										if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-										{
-											ImGui::OpenPopup("spline_popup");
-											WorkingSpline new_spline;
-											new_spline.destination = &spline;
-											new_spline.spline = spline;
-											m_working_spline.emplace(new_spline);
+											const bool is_able_to_click = is_hovering_handles == false && (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x - handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y - handle_size) },
+												ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x + handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y + handle_size) }));
+
+											if (is_able_to_click)
+											{
+												ImU32 target_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,0,255 });
+
+												ImGui::GetForegroundDrawList()->AddRect(
+													ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x - handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y - handle_size) },
+													ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x + handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y + handle_size) },
+													ImGui::GetColorU32(ImVec4{ 255,0,0,255 }), 0, ImDrawFlags_None, 2.0f);
+
+												if (is_able_to_click && m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+												{
+													ImGui::OpenPopup("spline_popup");
+													WorkingSpline new_spline;
+													new_spline.destination = &spline;
+													new_spline.spline = spline;
+													m_working_spline.emplace(new_spline);
+												}
+											}
 										}
 									}
 								}
@@ -1262,17 +1357,6 @@ namespace spintool
 							{
 								m_selected_brush.flip_y = !m_selected_brush.flip_y;
 							}
-						}
-
-						if (selected_collision_tile_index != -1)
-						{
-							const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.x;
-							const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.y;
-
-							ImGui::GetWindowDrawList()->AddRect(
-								ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) },
-								ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + rom::SplineCullingTable::cell_dimensions.x), static_cast<float>(screen_origin.y + collision_tile_origin_y + rom::SplineCullingTable::cell_dimensions.y) },
-								ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 						}
 
 						if (ImGui::IsPopupOpen("obj_popup") == false)

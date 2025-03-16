@@ -121,6 +121,7 @@ namespace spintool
 		bool invisible_objects = true;
 		bool visible_objects = true;
 		bool collision = true;
+		bool spline_culling = false;
 		bool collision_culling = false;
 		bool visibility_culling = false;
 
