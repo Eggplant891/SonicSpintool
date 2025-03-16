@@ -1014,17 +1014,27 @@ namespace spintool
 
 								const BoundingBox& spline_bbox = spline.spline_vector;
 								ImVec4 colour{ 192,192,0,128 };
-								if (spline.IsRadial() && spline.object_type_flags != 0x8000)
+								if (spline.IsBumper())
 								{
 									colour = ImVec4(255, 0, 255, 255);
 								}
-
-								if (spline.IsTeleporter())
+								else if (spline.IsTeleporter())
 								{
 									colour = ImVec4(0, 255, 255, 255);
 								}
-
-								if (spline.IsUnknown())
+								else if (spline.IsSlippery())
+								{
+									colour = ImVec4(0, 128, 255, 255);
+								}
+								else if (spline.IsRing())
+								{
+									colour = ImVec4(255, 128, 0, 255);
+								}
+								else if (spline.IsWalkable())
+								{
+									colour = ImVec4(128, 128, 255, 255);
+								}
+								else if (spline.IsUnknown())
 								{
 									colour = ImVec4(128, 128, 255, 255);
 								}
@@ -1356,10 +1366,10 @@ namespace spintool
 										}
 										else if (ImGui::BeginTooltip())
 										{
-											ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
-											ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+											ImGui::SeparatorText("Game Object");
 											if (game_obj->ui_sprite)
 											{
+												ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
 												ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
 											}
 											else
@@ -1465,7 +1475,7 @@ namespace spintool
 								m_working_spline->spline.spline_vector.max.x = spline_max[0];
 								m_working_spline->spline.spline_vector.max.y = spline_max[1];
 
-								bool teleporter = m_working_spline->spline.object_type_flags & 0x1000;
+								bool teleporter = m_working_spline->spline.IsTeleporter();
 								if (ImGui::Checkbox("Teleporter", &teleporter))
 								{
 									if (teleporter)
@@ -1478,8 +1488,8 @@ namespace spintool
 									}
 								}
 
-								bool ring = m_working_spline->spline.object_type_flags & 0x2000;
-								if (ImGui::Checkbox("Ring / Collectible", &ring))
+								bool ring = m_working_spline->spline.IsRing();
+								if (ImGui::Checkbox("Ring", &ring))
 								{
 									if (ring)
 									{
@@ -1491,7 +1501,7 @@ namespace spintool
 									}
 								}
 
-								bool radial_collision = m_working_spline->spline.object_type_flags & 0x8000;
+								bool radial_collision = m_working_spline->spline.IsRadial();
 								if (ImGui::Checkbox("Radial Collision", &radial_collision))
 								{
 									if (radial_collision)
@@ -1504,7 +1514,7 @@ namespace spintool
 									}
 								}
 
-								bool can_walk = m_working_spline->spline.object_type_flags & 0x0080;
+								bool can_walk = m_working_spline->spline.IsWalkable();
 								if (ImGui::Checkbox("Can walk", &can_walk))
 								{
 									if (can_walk)
@@ -1517,8 +1527,8 @@ namespace spintool
 									}
 								}
 
-								bool trigger_slide = m_working_spline->spline.object_type_flags & 0x0100;
-								if (ImGui::Checkbox("Trigger Slide Anim", &trigger_slide))
+								bool trigger_slide = m_working_spline->spline.IsSlippery();
+								if (ImGui::Checkbox("Slippery", &trigger_slide))
 								{
 									if (trigger_slide)
 									{
@@ -1530,7 +1540,7 @@ namespace spintool
 									}
 								}
 
-								bool standard_bumper = m_working_spline->spline.object_type_flags & 0x4000;
+								bool standard_bumper = m_working_spline->spline.IsBumper();
 								if (ImGui::Checkbox("Bumper", &standard_bumper))
 								{
 									if (standard_bumper)

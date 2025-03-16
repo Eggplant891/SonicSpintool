@@ -30,9 +30,10 @@ namespace spintool::rom
 
 		bool IsRadial() const;
 		bool IsTeleporter() const;
+		bool IsWalkable() const;
+		bool IsSlippery() const;
 		bool IsBumper() const;
-		bool IsRingOrCollectible() const;
-		bool IsRecognisedButUnknown() const;
+		bool IsRing() const;
 		bool IsUnknown() const;
 
 		bool operator==(const CollisionSpline& rhs) const;

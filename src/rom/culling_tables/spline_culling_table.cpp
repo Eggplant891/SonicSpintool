@@ -10,6 +10,16 @@ namespace spintool::rom
 		return (object_type_flags & 0x8000) == 0x8000;
 	};
 
+	bool CollisionSpline::IsWalkable() const
+	{
+		return (object_type_flags & 0x0080) == 0x0080;
+	}
+
+	bool CollisionSpline::IsSlippery() const
+	{
+		return (object_type_flags & 0x0100) == 0x0100;
+	}
+
 	bool CollisionSpline::IsTeleporter() const
 	{
 		return (object_type_flags & 0x1000) == 0x1000;
@@ -20,19 +30,14 @@ namespace spintool::rom
 		return (object_type_flags & 0x4000) == 0x4000;
 	}
 
-	bool CollisionSpline::IsRingOrCollectible() const
+	bool CollisionSpline::IsRing() const
 	{
 		return (object_type_flags & 0x2000) == 0x2000;
 	}
 
-	bool CollisionSpline::IsRecognisedButUnknown() const
-	{
-		return (object_type_flags & 0x4000) == 0x4000;
-	}
-
 	bool CollisionSpline::IsUnknown() const
 	{
-		return !IsRadial() && !IsTeleporter() && !IsRecognisedButUnknown() && ((object_type_flags & 0x0FFF) != (object_type_flags & 0xFFFF));
+		return !IsRadial() && !IsTeleporter() && !IsBumper() && !IsRing() && ((object_type_flags & 0x0FFF) != (object_type_flags & 0xFFFF));
 	}
 
 	bool CollisionSpline::operator==(const CollisionSpline& rhs) const
