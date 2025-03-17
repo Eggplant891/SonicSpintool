@@ -221,6 +221,7 @@ namespace spintool
 		std::optional<WorkingSpline> m_working_spline;
 
 		TileBrushSelection m_selected_brush;
+		rom::SplineCullingTable m_working_culling_table;
 
 		SDLTextureHandle m_tile_layout_preview_bg;
 		SDLTextureHandle m_tile_layout_preview_fg;

@@ -217,7 +217,13 @@ namespace spintool
 				ImGui::SeparatorText("Layers");
 				ImGui::Checkbox("Collision", &m_layer_settings.collision);
 				ImGui::SeparatorText("Culling Visualisation");
-				ImGui::Checkbox("Spline Culling Sectors", &m_layer_settings.spline_culling);
+				if (ImGui::Checkbox("Spline Culling Sectors", &m_layer_settings.spline_culling))
+				{
+					if (m_layer_settings.spline_culling)
+					{
+						m_working_culling_table = m_spline_manager.GenerateSplineCullingTable();
+					}
+				}
 				ImGui::Checkbox("Collision Culling Sectors", &m_layer_settings.collision_culling);
 				ImGui::Checkbox("Visibility Culling Sectors", &m_layer_settings.visibility_culling);
 				ImGui::SeparatorText("Tooltips");
@@ -979,7 +985,6 @@ namespace spintool
 						constexpr int size_of_preview_collision_boxes = 4;
 						constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
 
-						rom::SplineCullingTable culling_table;
 						int selected_collision_tile_index = -1;
 
 						if (current_layer_settings.spline_culling == true)
@@ -997,7 +1002,11 @@ namespace spintool
 									ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + rom::SplineCullingTable::cell_dimensions.x), static_cast<float>(screen_origin.y + collision_tile_origin_y + rom::SplineCullingTable::cell_dimensions.y) },
 									ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 
-								culling_table = m_spline_manager.GenerateSplineCullingTable();
+							}
+
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+							{
+								m_layer_settings.spline_culling = false;
 							}
 						}
 
@@ -1055,7 +1064,7 @@ namespace spintool
 							{
 								if (current_layer_settings.spline_culling && selected_collision_tile_index >= 0 && selected_collision_tile_index < rom::SplineCullingTable::cells_count)
 								{
-									const bool spline_is_visible = std::any_of(std::begin(culling_table.cells[selected_collision_tile_index].splines), std::end(culling_table.cells[selected_collision_tile_index].splines),
+									const bool spline_is_visible = std::any_of(std::begin(m_working_culling_table.cells[selected_collision_tile_index].splines), std::end(m_working_culling_table.cells[selected_collision_tile_index].splines),
 										[&next_spline](const rom::CollisionSpline& spline)
 										{
 											return spline == next_spline;
