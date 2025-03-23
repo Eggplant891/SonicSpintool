@@ -5,6 +5,7 @@
 
 #include "editor/level.h"
 #include "editor/spline_manager.h"
+#include "editor/game_obj_manager.h"
 #include "rom/rom_asset_definitions.h"
 
 #include "rom/culling_tables/spline_culling_table.h"
@@ -21,6 +22,10 @@
 #include <memory>
 #include <optional>
 #include <string>
+
+namespace spintool { struct TileLayer; }
+
+namespace spintool { class Level; }
 
 namespace spintool
 {
@@ -59,22 +64,6 @@ namespace spintool
 
 		std::shared_ptr<const rom::TileSet>* store_tileset = nullptr;
 		std::shared_ptr<rom::TileLayout>* store_layout = nullptr;
-	};
-
-	struct UIGameObject
-	{
-		rom::GameObjectDefinition obj_definition;
-		ImVec2 GetSpriteDrawPos() const
-		{
-			return ImVec2{ obj_definition.x_pos + sprite_pos_offset.x, obj_definition.y_pos + sprite_pos_offset.y };
-		}
-		ImVec2 sprite_pos_offset = { 0,0 };
-		ImVec2 dimensions = { 0,0 };
-
-		int sprite_table_address = 0;
-		int palette_index = 0;
-
-		std::shared_ptr<UISpriteTexture> ui_sprite;
 	};
 
 	struct TileBrushPreview
@@ -211,10 +200,10 @@ namespace spintool
 		rom::PaletteSet m_working_palette_set;
 		LayerSettings m_layer_settings;
 		SplineManager m_spline_manager;
+		GameObjectManager m_game_object_manager;
 
 		std::vector<RenderTileLayoutRequest> m_tile_layout_render_requests;
 		std::vector<TilesetPreview> m_tileset_preview_list;
-		std::vector<std::unique_ptr<UIGameObject>> m_preview_game_objects;
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 
 		std::optional<WorkingGameObject> m_working_game_obj;

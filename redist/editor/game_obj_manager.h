@@ -1,12 +1,40 @@
 #pragma once
 
+#include "rom/culling_tables/game_obj_collision_culling_table.h"
+#include "rom/culling_tables/animated_object_culling_table.h"
+#include "rom/game_objects/game_object_definition.h"
+
 #include "types/rom_ptr.h"
 #include "types/bounding_box.h"
 
 #include "SDL3/SDL_stdinc.h"
+#include "imgui.h"
+
+#include <memory>
 
 namespace spintool
 {
+	struct UISpriteTexture;
+
+	struct UIGameObject
+	{
+		rom::GameObjectDefinition obj_definition;
+		ImVec2 GetSpriteDrawPos() const
+		{
+			return ImVec2{ obj_definition.x_pos + sprite_pos_offset.x, obj_definition.y_pos + sprite_pos_offset.y };
+		}
+		ImVec2 sprite_pos_offset = { 0,0 };
+		ImVec2 dimensions = { 0,0 };
+
+		int sprite_table_address = 0;
+		int palette_index = 0;
+
+		std::shared_ptr<UISpriteTexture> ui_sprite;
+
+		bool had_collision_sectors_on_rom = false;
+		bool had_culling_sectors_on_rom = false;
+	};
+
 	enum class GameObjectType
 	{
 		ANY,
@@ -24,7 +52,7 @@ namespace spintool
 
 	};
 
-	class AnimationObject
+	class AnimationData
 	{
 		rom::Ptr32 sprite_table = 0;
 		rom::Ptr32 starting_animation = 0;
@@ -38,7 +66,6 @@ namespace spintool
 		void MoveObjectTo(int x, int y);
 		void MoveObjectRelative(int x, int y);
 
-	//private:
 		Point m_origin;
 		BoundingBox m_bbox;
 
@@ -46,11 +73,16 @@ namespace spintool
 		Uint8 m_instance_id = 0;
 		bool m_flip_x = 0;
 		bool m_flip_y = 0;
-		AnimationObject m_animation;
+		AnimationData m_animation;
 	};
 
 	class GameObjectManager
 	{
+	public:
+		rom::GameObjectCullingTable GenerateObjCollisionCullingTable() const;
+		rom::AnimatedObjectCullingTable GenerateAnimObjCullingTable() const;
 
+		//std::vector<GameObject> game_objects;
+		std::vector<std::unique_ptr<UIGameObject>> game_objects;
 	};
 }

@@ -35,7 +35,6 @@ namespace spintool
 		std::vector<rom::FlipperInstance> m_flipper_instances;
 		std::vector<rom::RingInstance> m_ring_instances;
 		std::vector<rom::GameObjectDefinition> m_game_obj_instances;
-		//std::vector<GameObject> m_game_obj_instances;
 		std::vector<rom::AnimObjectDefinition> m_anim_obj_instances;
 	};
 

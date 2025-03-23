@@ -20,6 +20,8 @@
 #include <iostream>
 #include "imgui_internal.h"
 #include <cstdio>
+#include "rom/rom_asset_definitions.h"
+#include "editor/game_obj_manager.h"
 
 
 namespace spintool
@@ -59,29 +61,42 @@ namespace spintool
 							m_level->m_tile_layers[1].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout));
 						}
 					}
-					const auto original_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
-					const auto new_table = m_spline_manager.GenerateSplineCullingTable();
+					const auto original_spline_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+					const auto new_spline_table = m_spline_manager.GenerateSplineCullingTable();
 					char out_buffer[512];
 
-					if (new_table.CalculateTableSize() <= original_table.CalculateTableSize())
+					//if (new_spline_table.CalculateTableSize() <= original_spline_table.CalculateTableSize())
 					{
-						new_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+						const auto original_game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+						const auto new_game_obj_table = m_game_object_manager.GenerateObjCollisionCullingTable();
+						const auto original_anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+						const auto new_anim_obj_table = m_game_object_manager.GenerateAnimObjCullingTable();
+						new_spline_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+						const rom::Ptr32 obj_end = new_game_obj_table.SaveToROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+						m_owning_ui.GetROM().WriteUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
+						new_anim_obj_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
 
-						char out_buffer[512];
-						static const char* format_str = "Saved level OK.\n\nOld = %d bytes.\nNew = %d bytes.";
-						sprintf_s(out_buffer, format_str, original_table.CalculateTableSize(), new_table.CalculateTableSize());
+						static const char* format_str = "Saved level OK.\n\n"
+							"Spline Table:  Old = %d bytes.\nNew = %d bytes.\n"
+							"Object Table:  Old = %d bytes.\nNew = %d bytes.\n"
+							"Anim Table:    Old = %d bytes.\nNew = %d bytes.";
+						sprintf_s(out_buffer, format_str
+							, original_spline_table.CalculateTableSize(), new_spline_table.CalculateTableSize()
+							, original_game_obj_table.CalculateTableSize(), new_game_obj_table.CalculateTableSize()
+							, original_anim_obj_table.CalculateTableSize(), new_anim_obj_table.CalculateTableSize());
+
 						m_popup_msg.emplace();
 						m_popup_msg->title = "Save Level - OK";
 						m_popup_msg->body = out_buffer;
 					}
-					else
-					{
-						static const char* format_str = "Failed to save level.\n\nThe spline culling table was too big.\n\nOld = %d bytes.\nNew = %d bytes.";
-						sprintf_s(out_buffer, format_str, original_table.CalculateTableSize(), new_table.CalculateTableSize());
-						m_popup_msg.emplace();
-						m_popup_msg->title = "Save Level - FAILED";
-						m_popup_msg->body = out_buffer;
-					}
+					//else
+					//{
+					//	static const char* format_str = "Failed to save level.\n\nThe spline culling table was too big.\n\nOld = %d bytes.\nNew = %d bytes.";
+					//	sprintf_s(out_buffer, format_str, original_spline_table.CalculateTableSize(), new_spline_table.CalculateTableSize());
+					//	m_popup_msg.emplace();
+					//	m_popup_msg->title = "Save Level - FAILED";
+					//	m_popup_msg->body = out_buffer;
+					//}
 				}
 
 				ImGui::EndDisabled();
@@ -383,7 +398,7 @@ namespace spintool
 
 				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain)));
 
-				m_preview_game_objects.clear();
+				m_game_object_manager.game_objects.clear();
 				m_anim_sprite_instances.clear();
 				m_level->m_game_obj_instances.clear();
 				m_level->m_game_obj_instances.reserve(m_level_data_offsets.object_instances.count);
@@ -770,7 +785,7 @@ namespace spintool
 						new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
 						new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
 						new_obj->sprite_table_address = animSpriteEntry.sprite_table;
-						m_preview_game_objects.emplace_back(std::move(new_obj));
+						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
 					}
 					else
 					{
@@ -792,7 +807,42 @@ namespace spintool
 						new_obj->dimensions = ImVec2{ static_cast<float>(target_rect.w) , static_cast<float>(target_rect.h) };
 						//new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
 						//new_obj->sprite_table_address = animSpriteEntry.sprite_table;
-						m_preview_game_objects.emplace_back(std::move(new_obj));
+						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
+					}
+				}
+
+				if (m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+				{
+					rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+					for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
+					{
+						const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
+						for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
+						{
+							for (const Uint16 obj_id : cell.obj_instance_ids)
+							{
+								if (obj_id == game_object->obj_definition.instance_id)
+								{
+									game_object->had_collision_sectors_on_rom = true;
+								}
+							}
+						}
+					}
+
+					rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+					for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
+					{
+						const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
+						for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
+						{
+							for (const Uint16 obj_id : cell.obj_instance_ids)
+							{
+								if (obj_id == game_object->obj_definition.instance_id)
+								{
+									game_object->had_culling_sectors_on_rom = true;
+								}
+							}
+						}
 					}
 				}
 			}
@@ -1397,7 +1447,7 @@ namespace spintool
 
 							if (current_layer_settings.hover_game_objects)
 							{
-								for (std::unique_ptr<UIGameObject>& game_obj : m_preview_game_objects)
+								for (std::unique_ptr<UIGameObject>& game_obj : m_game_object_manager.game_objects)
 								{
 									ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->GetSpriteDrawPos().x, origin.y + game_obj->GetSpriteDrawPos().y });
 									ImGui::Dummy(game_obj->dimensions);
@@ -1411,7 +1461,7 @@ namespace spintool
 											for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
 											{
 												const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
-												for (const Uint16 obj_id : cell.obj_ids)
+												for (const Uint8 obj_id : cell.obj_instance_ids)
 												{
 													if (obj_id == game_obj->obj_definition.instance_id)
 													{
@@ -1430,7 +1480,7 @@ namespace spintool
 											for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
 											{
 												const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
-												for (const Uint16 obj_id : cell.obj_ids)
+												for (const Uint16 obj_id : cell.obj_instance_ids)
 												{
 													if (obj_id == game_obj->obj_definition.instance_id)
 													{
@@ -1582,7 +1632,10 @@ namespace spintool
 
 								if (m_working_spline)
 								{
-									ImGui::Text("Obj Flags: 0x%04X", m_working_spline->spline.object_type_flags);
+									int flags_working_info = m_working_spline->spline.object_type_flags;
+									ImGui::InputInt("Obj Flags: 0x%04X", &flags_working_info, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
+									m_working_spline->spline.object_type_flags = (0x0000FFFF & flags_working_info);
+
 									int working_info = m_working_spline->spline.extra_info;
 									ImGui::InputInt("Extra Info: 0x%04X", &working_info, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
 									m_working_spline->spline.extra_info = (0x0000FFFF & working_info);
