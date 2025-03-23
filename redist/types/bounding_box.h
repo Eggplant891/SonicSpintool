@@ -12,6 +12,12 @@ namespace spintool
 		{
 			return x == rhs.x && y == rhs.y;
 		}
+
+		void operator *=(const float scalar)
+		{
+			x = static_cast<int>(x * scalar);
+			y *= static_cast<int>(y * scalar);
+		}
 	};
 
 	struct BoundingBox
@@ -35,6 +41,12 @@ namespace spintool
 		bool operator==(const BoundingBox& rhs) const
 		{
 			return min == rhs.min && max == rhs.max;
+		}
+
+		void operator *=(const float scalar)
+		{
+			min *= scalar;
+			max *= scalar;
 		}
 	};
 }
