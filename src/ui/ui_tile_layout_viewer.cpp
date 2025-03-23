@@ -39,6 +39,7 @@ namespace spintool
 			out_render_request = RenderRequestType::LEVEL;
 		}
 
+
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
@@ -885,6 +886,32 @@ namespace spintool
 
 					if (ImGui::BeginTabBar("sidebar_primary_tabs"))
 					{
+						if (ImGui::BeginTabItem("Objects"))
+						{
+							if (ImGui::BeginTabBar("objects_children"))
+							{
+								if (ImGui::BeginTabItem("Game Objects"))
+								{
+									DrawObjectTable();
+									ImGui::EndTabItem();
+								}
+
+								if (ImGui::BeginTabItem("Flippers"))
+								{
+									DrawFlippersTable();
+									ImGui::EndTabItem();
+								}
+
+								if (ImGui::BeginTabItem("Rings"))
+								{
+									DrawRingsTable();
+									ImGui::EndTabItem();
+								}
+								ImGui::EndTabBar();
+							}
+							ImGui::EndTabItem();
+						}
+
 						if (m_tileset_preview_list.empty() == false && ImGui::BeginTabItem("Brush Previews"))
 						{
 							if (ImGui::BeginTabBar("tile_layers"))
@@ -1804,6 +1831,100 @@ namespace spintool
 			}
 		}
 		ImGui::End();
+	}
+
+	void EditorTileLayoutViewer::DrawObjectTable()
+	{
+		if (ImGui::BeginChild("Object Table"))
+		{
+			if (ImGui::BeginTable("GameObjects", 4))
+			{
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Instance ID");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Type ID");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("X");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Y");
+
+				for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
+				{
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%02X", game_object->obj_definition.instance_id);
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%02X", game_object->obj_definition.type_id);
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%04X", game_object->obj_definition.x_pos);
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%04X", game_object->obj_definition.y_pos);
+				}
+
+				ImGui::EndTable();
+			}
+		}
+		ImGui::EndChild();
+	}
+
+	void EditorTileLayoutViewer::DrawRingsTable()
+	{
+		if (ImGui::BeginChild("Rings Table"))
+		{
+			if (ImGui::BeginTable("Rings", 3))
+			{
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Instance ID");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("X");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Y");
+
+				for (const rom::RingInstance& ring : m_level->m_ring_instances)
+				{
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%02X", ring.instance_id);
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%04X", ring.x_pos);
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%04X", ring.y_pos);
+				}
+
+				ImGui::EndTable();
+			}
+		}
+		ImGui::EndChild();
+	}
+
+	void EditorTileLayoutViewer::DrawFlippersTable()
+	{
+		if (ImGui::BeginChild("Flippers Table"))
+		{
+			if (ImGui::BeginTable("Flippers", 3))
+			{
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Flip X");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("X");
+				ImGui::TableNextColumn();
+				ImGui::TableHeader("Y");
+
+				for (const rom::FlipperInstance& flipper : m_level->m_flipper_instances)
+				{
+					ImGui::TableNextRow();
+					ImGui::TableNextColumn();
+					ImGui::Text("%s", flipper.is_x_flipped ? "true" : "false");
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%04X", flipper.x_pos);
+					ImGui::TableNextColumn();
+					ImGui::Text("0x%04X", flipper.y_pos);
+				}
+
+				ImGui::EndTable();
+			}
+		}
+		ImGui::EndChild();
 	}
 
 	void EditorTileLayoutViewer::PrepareRenderRequest(RenderRequestType render_request)
