@@ -1565,7 +1565,7 @@ namespace spintool
 								m_working_game_obj.reset();
 								ImGui::CloseCurrentPopup();
 							}
-
+							ImGui::SameLine();
 							if (ImGui::Button("Cancel"))
 							{
 								m_working_game_obj.reset();
