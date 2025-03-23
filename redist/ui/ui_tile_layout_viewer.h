@@ -115,6 +115,7 @@ namespace spintool
 		bool visibility_culling = false;
 
 		bool hover_game_objects = true;
+		bool hover_game_objects_tooltip = true;
 		bool hover_splines = true;
 		bool hover_radials = true;
 		bool hover_tiles = false;

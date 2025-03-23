@@ -242,7 +242,8 @@ namespace spintool
 				ImGui::Checkbox("Collision Culling Sectors", &m_layer_settings.collision_culling);
 				ImGui::Checkbox("Visibility Culling Sectors", &m_layer_settings.visibility_culling);
 				ImGui::SeparatorText("Tooltips");
-				ImGui::Checkbox("Game Object Info", &m_layer_settings.hover_game_objects);
+				ImGui::Checkbox("Game Objects", &m_layer_settings.hover_game_objects);
+				ImGui::Checkbox("Game Object Tooltips", &m_layer_settings.hover_game_objects_tooltip);
 				ImGui::Checkbox("Spline Collision Info", &m_layer_settings.hover_splines);
 				ImGui::Checkbox("Radial Collision Info", &m_layer_settings.hover_radials);
 				ImGui::Checkbox("Tile Info", &m_layer_settings.hover_tiles);
@@ -1495,7 +1496,7 @@ namespace spintool
 											m_working_game_obj->game_obj = *game_obj;
 											m_working_game_obj->initial_drag_offset = ImVec2{ (ImGui::GetMousePos().x - screen_origin.x) - m_working_game_obj->game_obj.GetSpriteDrawPos().x, (ImGui::GetMousePos().y - screen_origin.y) - m_working_game_obj->game_obj.GetSpriteDrawPos().y };
 										}
-										else if (ImGui::BeginTooltip())
+										else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
 										{
 											ImGui::SeparatorText("Game Object");
 											if (game_obj->ui_sprite)
