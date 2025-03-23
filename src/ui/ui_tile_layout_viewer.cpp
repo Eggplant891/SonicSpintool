@@ -140,7 +140,7 @@ namespace spintool
 
 					if (level_index != -1 && level_index != previous_level_index)
 					{
-						m_level = std::make_shared<Level>();
+						m_level = std::make_shared<Level>(Level::LoadFromROM(m_owning_ui.GetROM(), level_index));
 						m_level->level_index = level_index;
 						m_level->m_tile_layers.emplace_back();
 						m_level->m_tile_layers.emplace_back();
@@ -372,18 +372,6 @@ namespace spintool
 					ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
 				}
 
-				m_level->m_ring_instances.clear();
-				m_level->m_ring_instances.reserve(m_level_data_offsets.ring_instances.count);
-
-				{
-					Uint32 current_table_offset = m_level_data_offsets.ring_instances.offset;
-
-					for (Uint32 i = 0; i < m_level_data_offsets.ring_instances.count; ++i)
-					{
-						m_level->m_ring_instances.emplace_back(rom::RingInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-						current_table_offset = m_level->m_ring_instances.back().rom_data.rom_offset_end;
-					}
-				}
 				/////////////
 
 				const static size_t game_obj_sprite_offset = 0x0000F6D8;
