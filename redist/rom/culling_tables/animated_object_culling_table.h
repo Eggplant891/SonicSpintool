@@ -1,3 +1,5 @@
+#pragma once
+
 #include "types/bounding_box.h"
 #include "types/rom_ptr.h"
 
@@ -16,7 +18,7 @@ namespace spintool::rom
 	{
 		BoundingBox bbox;
 		Ptr32 jump_offset;
-		std::vector<Uint8> obj_ids;
+		std::vector<Uint8> obj_instance_ids;
 	};
 
 	struct AnimatedObjectCullingTable
@@ -28,6 +30,7 @@ namespace spintool::rom
 		std::array<AnimatedObjectCullingCell, cells_count> cells;
 
 		static AnimatedObjectCullingTable LoadFromROM(const SpinballROM& rom, Ptr32 offset);
-		void SaveToROM(SpinballROM& rom, Ptr32 offset);
+		Ptr32 SaveToROM(SpinballROM& rom, Ptr32 offset) const;
+		Uint32 CalculateTableSize() const;
 	};
 }

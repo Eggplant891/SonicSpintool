@@ -2,6 +2,8 @@
 
 #include "rom/spinball_rom.h"
 
+#include <numeric>
+
 namespace spintool
 {
 
@@ -31,29 +33,39 @@ namespace spintool
 
 			for (Uint32 current_offset = cell_offset; current_offset < cell_offset + num_objs; current_offset += 1)
 			{
-				new_table.cells[i].obj_ids.emplace_back(rom.ReadUint8(current_offset));
+				new_table.cells[i].obj_instance_ids.emplace_back(rom.ReadUint8(current_offset));
 			}
 		}
 
 		return new_table;
 	}
 
-	void rom::AnimatedObjectCullingTable::SaveToROM(SpinballROM& rom, const Ptr32 offset)
+	rom::Ptr32 rom::AnimatedObjectCullingTable::SaveToROM(SpinballROM& rom, const Ptr32 offset) const
 	{
 		Ptr32 jump_table_offset = offset;
-		Ptr32 data_offset = static_cast<Uint32>(cells.size());
+		Ptr32 data_offset = jump_table_offset + static_cast<Uint32>(cells_count);
 
-		for (AnimatedObjectCullingCell& cell : cells)
+		for (const AnimatedObjectCullingCell& cell : cells)
 		{
-			jump_table_offset = rom.WriteUint8(jump_table_offset, data_offset);
-			data_offset = rom.WriteUint8(jump_table_offset, static_cast<Uint8>(cell.obj_ids.size()));
-			for (const Uint8 obj_id : cell.obj_ids)
+			jump_table_offset = rom.WriteUint8(jump_table_offset, (data_offset - offset));
+			data_offset = rom.WriteUint8(data_offset, static_cast<Uint8>(cell.obj_instance_ids.size()));
+			for (const Uint8 obj_id : cell.obj_instance_ids)
 			{
 				data_offset = rom.WriteUint8(data_offset, obj_id);
 			}
-
-			rom.WriteUint8(data_offset, data_offset - jump_table_offset);
 		}
+		rom.WriteUint8(data_offset, (data_offset - jump_table_offset));
+		data_offset += 1;
+
+		return data_offset;
 	}
 
+	Uint32 rom::AnimatedObjectCullingTable::CalculateTableSize() const
+	{
+		return static_cast<Uint32>(std::size(cells)) + std::accumulate(std::begin(cells), std::end(cells), 0,
+			[](Uint32 current_count, const AnimatedObjectCullingCell& cell)
+			{
+				return current_count + (static_cast<Uint32>(cell.obj_instance_ids.size()));
+			});
+	}
 }
