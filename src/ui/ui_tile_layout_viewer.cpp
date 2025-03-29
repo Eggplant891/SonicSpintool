@@ -22,6 +22,7 @@
 #include <cstdio>
 #include "rom/rom_asset_definitions.h"
 #include "editor/game_obj_manager.h"
+#include <numeric>
 
 
 namespace spintool
@@ -69,13 +70,26 @@ namespace spintool
 					//if (new_spline_table.CalculateTableSize() <= original_spline_table.CalculateTableSize())
 					{
 						const auto original_game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
-						const auto new_game_obj_table = m_game_object_manager.GenerateObjCollisionCullingTable();
 						const auto original_anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+						const auto new_game_obj_table = m_game_object_manager.GenerateObjCollisionCullingTable();
 						const auto new_anim_obj_table = m_game_object_manager.GenerateAnimObjCullingTable();
+
 						new_spline_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
 						const rom::Ptr32 obj_end = new_game_obj_table.SaveToROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+
 						m_owning_ui.GetROM().WriteUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
 						new_anim_obj_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+
+						const Uint8 num_emeralds = std::accumulate(std::begin(m_game_object_manager.game_objects), std::end(m_game_object_manager.game_objects), static_cast<Uint8>(0),
+							[](const Uint8 running_val, const std::unique_ptr<UIGameObject>& game_obj)
+							{
+								if (game_obj->obj_definition.instance_id != 0 && game_obj->obj_definition.type_id == 0x6)
+								{
+									return running_val + 1;
+								}
+								return running_val + 0;
+							});
+						m_owning_ui.GetROM().WriteUint8(m_level_data_offsets.emerald_count, num_emeralds);
 
 						static const char* format_str = "Saved level OK.\n\n"
 							"Spline Table:  Old = %d bytes.\nNew = %d bytes.\n"
@@ -398,7 +412,16 @@ namespace spintool
 
 					for (Uint32 i = 0; i < m_level_data_offsets.object_instances.count; ++i)
 					{
-						m_level->m_game_obj_instances.emplace_back(rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+						{
+							auto new_def = rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset);
+							m_level->m_game_obj_instances.emplace_back(std::move(new_def));
+							if (new_def.instance_id == 0)
+							{
+								current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
+								continue;
+							}
+						}
+
 						const rom::Ptr32 anim_def_offset = m_level->m_game_obj_instances.back().animation_definition;
 						rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
 
@@ -738,6 +761,15 @@ namespace spintool
 				for (size_t i = 0; i < m_level->m_game_obj_instances.size(); ++i)
 				{
 					const rom::GameObjectDefinition& game_obj = m_level->m_game_obj_instances[i];
+
+					if(game_obj.instance_id == 0)
+					{
+						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+						new_obj->obj_definition = game_obj;
+						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
+						continue;
+					}
+
 					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_level->m_game_obj_instances[i].animation_definition);
 
 					auto anim_entry = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
@@ -1465,6 +1497,11 @@ namespace spintool
 							{
 								for (std::unique_ptr<UIGameObject>& game_obj : m_game_object_manager.game_objects)
 								{
+									if (game_obj->obj_definition.instance_id == 0)
+									{
+										continue;
+									}
+
 									ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->GetSpriteDrawPos().x, origin.y + game_obj->GetSpriteDrawPos().y });
 									ImGui::Dummy(game_obj->dimensions);
 									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
@@ -1598,6 +1635,37 @@ namespace spintool
 							{
 								m_working_game_obj.reset();
 								ImGui::CloseCurrentPopup();
+							}
+
+							if (ImGui::Button("Create duplicate here"))
+							{
+								if (UIGameObject* new_obj = m_game_object_manager.DuplicateGameObject(m_working_game_obj->game_obj, m_level_data_offsets))
+								{
+									new_obj->had_collision_sectors_on_rom = true;
+									new_obj->had_culling_sectors_on_rom = true;
+									new_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
+									m_render_from_edit = true;
+								}
+								m_working_game_obj.reset();
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::SameLine();
+							if (ImGui::Button("Delete"))
+							{
+								if (UIGameObject* removed_obj = m_game_object_manager.DeleteGameObject(m_working_game_obj->game_obj))
+								{
+									removed_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
+									m_render_from_edit = true;
+								}
+								m_working_game_obj.reset();
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::SameLine();
+							if (ImGui::Button("Force save collision"))
+							{
+								m_working_game_obj->destination->had_collision_sectors_on_rom = true;
+								m_working_game_obj->destination->had_culling_sectors_on_rom = true;
+								m_working_game_obj->destination->obj_definition.SaveToROM(m_owning_ui.GetROM());
 							}
 
 							if (m_working_game_obj)
@@ -1850,6 +1918,10 @@ namespace spintool
 
 				for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
 				{
+					if (game_object->obj_definition.instance_id == 0)
+					{
+						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 192, 0, 192));
+					}
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%02X", game_object->obj_definition.instance_id);
@@ -1859,6 +1931,11 @@ namespace spintool
 					ImGui::Text("0x%04X", game_object->obj_definition.x_pos);
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%04X", game_object->obj_definition.y_pos);
+
+					if (game_object->obj_definition.instance_id == 0)
+					{
+						ImGui::PopStyleColor();
+					}
 				}
 
 				ImGui::EndTable();

@@ -104,4 +104,48 @@ namespace spintool
 		return new_table;
 	}
 
+	UIGameObject* GameObjectManager::DeleteGameObject(const UIGameObject& obj_to_remove)
+	{
+		auto erase_it = std::find_if(std::begin(game_objects), std::end(game_objects),
+			[&obj_to_remove](const std::unique_ptr<UIGameObject>& game_obj)
+			{
+				return game_obj->obj_definition.instance_id == obj_to_remove.obj_definition.instance_id;
+			});
+
+		if (erase_it != std::end(game_objects))
+		{
+			(*erase_it)->obj_definition.instance_id = 0;
+			return erase_it->get();
+		}
+
+		return nullptr;
+	}
+
+	UIGameObject* GameObjectManager::DuplicateGameObject(const UIGameObject& obj_to_duplicate, const rom::LevelDataOffsets& level_data)
+	{
+		std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>(obj_to_duplicate);
+		
+		constexpr Uint8 min_id = 0x01;
+		constexpr Uint8 max_id = 0xFF;
+		Uint8 previous_id = 0;
+		auto empty_slot_it = std::find_if(std::begin(game_objects), std::end(game_objects),
+			[&previous_id](const std::unique_ptr<UIGameObject>& game_obj)
+			{
+				++previous_id;
+				return game_obj->obj_definition.instance_id == 0;
+			});
+
+		if( empty_slot_it != std::end(game_objects))
+		{
+			new_obj->obj_definition.rom_data = (*empty_slot_it)->obj_definition.rom_data;
+			new_obj->obj_definition.instance_id = previous_id;
+			new_obj->had_collision_sectors_on_rom = true;
+			new_obj->had_culling_sectors_on_rom = true;
+			(*empty_slot_it) = std::move(new_obj);
+			return (*empty_slot_it).get();
+		}
+
+		return nullptr;
+	}
+
 }

@@ -12,6 +12,11 @@
 
 #include <memory>
 
+namespace spintool::rom
+{
+	struct LevelDataOffsets;
+}
+
 namespace spintool
 {
 	struct UISpriteTexture;
@@ -81,6 +86,9 @@ namespace spintool
 	public:
 		rom::GameObjectCullingTable GenerateObjCollisionCullingTable() const;
 		rom::AnimatedObjectCullingTable GenerateAnimObjCullingTable() const;
+
+		UIGameObject* DeleteGameObject(const UIGameObject& obj_to_remove);
+		UIGameObject* DuplicateGameObject(const UIGameObject& obj_to_duplicate, const rom::LevelDataOffsets& level_data);
 
 		//std::vector<GameObject> game_objects;
 		std::vector<std::unique_ptr<UIGameObject>> game_objects;
