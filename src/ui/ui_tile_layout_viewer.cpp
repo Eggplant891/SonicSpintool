@@ -75,9 +75,12 @@ namespace spintool
 						const auto new_anim_obj_table = m_game_object_manager.GenerateAnimObjCullingTable();
 
 						new_spline_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
-						const rom::Ptr32 obj_end = new_game_obj_table.SaveToROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+						if (m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+						{
+							const rom::Ptr32 obj_end = new_game_obj_table.SaveToROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+							m_owning_ui.GetROM().WriteUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
+						}
 
-						m_owning_ui.GetROM().WriteUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
 						new_anim_obj_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
 
 						const Uint8 num_emeralds = std::accumulate(std::begin(m_game_object_manager.game_objects), std::end(m_game_object_manager.game_objects), static_cast<Uint8>(0),
@@ -850,19 +853,19 @@ namespace spintool
 							}
 						}
 					}
+				}
 
-					rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
-					for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
+				rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+				for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
+				{
+					const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
+					for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
 					{
-						const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
-						for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
+						for (const Uint16 obj_id : cell.obj_instance_ids)
 						{
-							for (const Uint16 obj_id : cell.obj_instance_ids)
+							if (obj_id == game_object->obj_definition.instance_id)
 							{
-								if (obj_id == game_object->obj_definition.instance_id)
-								{
-									game_object->had_culling_sectors_on_rom = true;
-								}
+								game_object->had_culling_sectors_on_rom = true;
 							}
 						}
 					}
