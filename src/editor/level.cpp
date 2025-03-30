@@ -1,6 +1,7 @@
 #include "editor/level.h"
 
 #include "rom/rom_asset_definitions.h"
+#include "rom/spinball_rom.h"
 
 namespace spintool
 {
@@ -10,6 +11,13 @@ namespace spintool
 		Level new_level;
 
 		rom::LevelDataOffsets level_data_offsets{ level_index };
+
+		rom::Ptr32 level_name_offset = rom.ReadUint32(level_data_offsets.level_name);
+		const char* level_name = reinterpret_cast<const char*>(&rom.m_buffer[level_name_offset]);
+
+		char buffer[256];
+		sprintf_s(buffer, "%s", level_name);
+		new_level.m_level_name = buffer;
 
 		new_level.m_ring_instances.clear();
 		new_level.m_ring_instances.reserve(level_data_offsets.ring_instances.count);

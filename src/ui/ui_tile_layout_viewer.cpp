@@ -918,6 +918,15 @@ namespace spintool
 
 					if (ImGui::BeginTabBar("sidebar_primary_tabs"))
 					{
+						if (ImGui::BeginTabItem("Level Info"))
+						{
+							if (m_level != nullptr)
+							{
+								DrawLevelInfo();
+							}
+							ImGui::EndTabItem();
+						}
+
 						if (ImGui::BeginTabItem("Objects"))
 						{
 							if (ImGui::BeginTabBar("objects_children"))
@@ -1909,6 +1918,32 @@ namespace spintool
 			}
 		}
 		ImGui::End();
+	}
+
+	void EditorTileLayoutViewer::DrawLevelInfo()
+	{
+		char working_buffer[256];
+
+		sprintf_s(working_buffer, "%s", m_level->m_level_name.c_str());
+		ImGui::InputText("Level Name", working_buffer, std::size(working_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
+		int emerald_count = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.emerald_count);
+		ImGui::InputInt("Emeralds", &emerald_count);
+		int flipper_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.flipper_count));
+		ImGui::InputInt("Flippers", &flipper_count);
+		int ring_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.ring_count));
+		ImGui::InputInt("Rings", &ring_count);
+		int music_id = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.music_id);
+		ImGui::InputInt("Music Bank", &music_id, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
+		int player_start_x = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.player_start_position_x);
+		int player_start_y = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.player_start_position_y);
+		int player_start[2] = { player_start_x, player_start_y };
+		ImGui::InputInt2("Player Start Pos", player_start, ImGuiInputTextFlags_CharsHexadecimal);
+		int level_width = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.tile_layout_width);
+		int level_height = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.tile_layout_height);
+		int level_dimensions[2] = { level_width * 128, level_height * 128 };
+		int level_dimensions_tiles[2] = { level_width, level_height };
+		ImGui::InputInt2("Dimensions", level_dimensions);
+		ImGui::InputInt2("Dim. 128x128 tiles", level_dimensions_tiles);
 	}
 
 	void EditorTileLayoutViewer::DrawObjectTable()

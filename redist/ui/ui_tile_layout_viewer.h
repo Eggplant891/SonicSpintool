@@ -177,6 +177,7 @@ namespace spintool
 	public:
 		EditorTileLayoutViewer(EditorUI& owning_ui);
 		void Update() override;
+		void DrawLevelInfo();
 		void DrawObjectTable();
 		void DrawRingsTable();
 		RenderRequestType DrawMenuBar();
