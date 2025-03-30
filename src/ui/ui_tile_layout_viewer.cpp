@@ -1466,7 +1466,7 @@ namespace spintool
 							}
 						}
 
-						if (ImGui::IsPopupOpen("obj_popup") == false)
+						if (ImGui::IsPopupOpen("obj_popup") == false && m_request_open_obj_popup == false)
 						{
 							if (m_working_game_obj)
 							{
@@ -1487,7 +1487,7 @@ namespace spintool
 									}
 									else if (m_working_game_obj->initial_drag_offset)
 									{
-										ImGui::OpenPopup("obj_popup");
+										m_request_open_obj_popup = true;
 										m_working_game_obj->initial_drag_offset.reset();
 									}
 								}
@@ -1548,7 +1548,7 @@ namespace spintool
 
 										if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 										{
-											ImGui::OpenPopup("obj_popup");
+											m_request_open_obj_popup = true;
 											m_working_game_obj.emplace();
 											m_working_game_obj->destination = game_obj.get();
 											m_working_game_obj->game_obj = *game_obj;
@@ -1611,6 +1611,16 @@ namespace spintool
 						if (m_working_game_obj.has_value() == false && (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr))
 						{
 							ImGui::CloseCurrentPopup();
+						}
+
+						if (m_request_open_obj_popup)
+						{
+							const UIGameObject& dest_obj = *m_working_game_obj->destination;
+							const ImVec2 origin_pos{ screen_origin.x + dest_obj.GetSpriteDrawPos().x, screen_origin.y + dest_obj.GetSpriteDrawPos().y };
+							ImGui::ScrollToRect(ImGui::GetCurrentWindow(), ImRect{ origin_pos, ImVec2{origin_pos.x + dest_obj.dimensions.x, origin_pos.y + dest_obj.dimensions.y} }, ImGuiScrollFlags_KeepVisibleEdgeX | ImGuiScrollFlags_KeepVisibleEdgeY);
+
+							ImGui::OpenPopup("obj_popup");
+							m_request_open_obj_popup = false;
 						}
 
 						if (m_working_game_obj && ImGui::IsPopupOpen("obj_popup"))
@@ -1905,7 +1915,7 @@ namespace spintool
 	{
 		if (ImGui::BeginChild("Object Table"))
 		{
-			if (ImGui::BeginTable("GameObjects", 4))
+			if (ImGui::BeginTable("GameObjects", 4, ImGuiTableFlags_RowBg))
 			{
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("Instance ID");
@@ -1916,12 +1926,35 @@ namespace spintool
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("Y");
 
+				const std::unique_ptr<UIGameObject>* previous_game_object = nullptr;
+
 				for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
 				{
 					if (game_object->obj_definition.instance_id == 0)
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 192, 0, 192));
 					}
+					const bool is_hovered = (ImGui::TableGetHoveredRow() == ImGui::TableGetRowIndex());
+					const bool is_selected = (previous_game_object && m_working_game_obj && m_working_game_obj->destination == previous_game_object->get());
+					if (is_hovered || is_selected)
+					{
+						ImGui::PushStyleColor(ImGuiCol_TableRowBg, ImVec4(0.0f, 0.5f, 0.0f, 1.0f));
+						ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, ImVec4(0.0f, 0.3f, 0.0f, 1.0f));
+
+						if (is_selected)
+						{
+							ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleCenterY);
+						}
+
+						if (previous_game_object && is_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+						{
+							m_request_open_obj_popup = true;
+							m_working_game_obj.emplace();
+							m_working_game_obj->destination = previous_game_object->get();
+							m_working_game_obj->game_obj = **previous_game_object;
+						}
+					}
+
 					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%02X", game_object->obj_definition.instance_id);
@@ -1931,11 +1964,16 @@ namespace spintool
 					ImGui::Text("0x%04X", game_object->obj_definition.x_pos);
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%04X", game_object->obj_definition.y_pos);
-
+					if (is_hovered || is_selected)
+					{
+						ImGui::PopStyleColor(2);
+					}
 					if (game_object->obj_definition.instance_id == 0)
 					{
 						ImGui::PopStyleColor();
 					}
+
+					previous_game_object = &game_object;
 				}
 
 				ImGui::EndTable();

@@ -229,6 +229,7 @@ namespace spintool
 		bool m_export_result = false;
 		bool m_preview_bonus_alt_palette = false;
 		bool m_render_from_edit = false;
+		bool m_request_open_obj_popup = false;
 
 	};
 }
