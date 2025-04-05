@@ -2022,6 +2022,11 @@ namespace spintool
 
 	void EditorTileLayoutViewer::DrawRingsTable()
 	{
+		if (m_level == nullptr)
+		{
+			return;
+		}
+
 		if (ImGui::BeginChild("Rings Table"))
 		{
 			if (ImGui::BeginTable("Rings", 3))
@@ -2052,6 +2057,11 @@ namespace spintool
 
 	void EditorTileLayoutViewer::DrawFlippersTable()
 	{
+		if (m_level == nullptr)
+		{
+			return;
+		}
+
 		if (ImGui::BeginChild("Flippers Table"))
 		{
 			if (ImGui::BeginTable("Flippers", 3))
