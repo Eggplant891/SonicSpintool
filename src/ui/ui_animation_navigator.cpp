@@ -72,76 +72,81 @@ namespace spintool
 
 			if (m_animations.empty() == false)
 			{
-				if (ImGui::TreeNode("Animations"))
+				for (UIAnimationSequence& anim : m_animations)
 				{
-					for (UIAnimationSequence& anim : m_animations)
+					char id_buffer[64];
+					sprintf_s(id_buffer, "0x%08X", static_cast<rom::Ptr32>(anim.anim_sequence->rom_data.rom_offset));
+					if (ImGui::TreeNode(id_buffer))
 					{
-						char id_buffer[64];
-						sprintf_s(id_buffer, "0x%08X", static_cast<rom::Ptr32>(anim.anim_sequence->rom_data.rom_offset));
-						if (ImGui::TreeNode(id_buffer))
+						for (const rom::AnimationCommand& command : anim.anim_sequence->command_sequence)
 						{
+							ImGui::Text("0x%08X", command.command_data);
+							ImGui::SameLine();
+							ImGui::Text("<%s>", rom::AnimationCommandTypeToString(command.command_type));
+							if (command.ui_frame_sprite != nullptr)
+							{
+								command.ui_frame_sprite->DrawForImGui(2.0f);
+							}
+						}
+						ImGui::TreePop();
+					}
+					else
+					{
+						if (tick_this_frame)
+						{
+							auto current_command_index = anim.current_command;
+							while (true)
+							{
+								current_command_index = (current_command_index + 1) % anim.anim_sequence->command_sequence.size();
+								if (current_command_index == anim.current_command)
+								{
+									break;
+								}
+
+								if (anim.anim_sequence->command_sequence.at(current_command_index).command_type == rom::AnimationCommandType::NORMAL_FRAME)
+								{
+									anim.current_command = current_command_index;
+									break;
+								}
+							}
+						}
+
+						if (anim.anim_sequence->command_sequence.at(anim.current_command).command_type == rom::AnimationCommandType::NORMAL_FRAME)
+						{
+							float m_zoom = 2.0f;
+							auto& current_command = anim.anim_sequence->command_sequence.at(anim.current_command);
+							float smallest_offset_x = std::numeric_limits<float>::max();
+							float smallest_offset_y = std::numeric_limits<float>::max();
+							float biggest_offset_x = std::numeric_limits<float>::min();
+							float biggest_offset_y = std::numeric_limits<float>::min();
+							float largest_width = std::numeric_limits<float>::min();
+							float largest_height = std::numeric_limits<float>::min();
 							for (const rom::AnimationCommand& command : anim.anim_sequence->command_sequence)
 							{
-								ImGui::Text("0x%08X", command.command_data);
-								ImGui::SameLine();
-								ImGui::Text("<%s>", rom::AnimationCommandTypeToString(command.command_type));
-								if (command.ui_frame_sprite != nullptr)
+								const std::shared_ptr<UISpriteTexture>& frame_sprite = command.ui_frame_sprite;
+								if (frame_sprite != nullptr)
 								{
-									command.ui_frame_sprite->DrawForImGui(2.0f);
+									smallest_offset_x = std::min<float>(smallest_offset_x, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
+									smallest_offset_y = std::min<float>(smallest_offset_y, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
+									biggest_offset_x = std::max<float>(biggest_offset_x, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
+									biggest_offset_y = std::max<float>(biggest_offset_y, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
+									largest_width = std::max<float>(largest_width, static_cast<float>(frame_sprite->dimensions.x));
+									largest_height = std::max<float>(largest_height, static_cast<float>(frame_sprite->dimensions.y));
 								}
 							}
-							ImGui::TreePop();
-						}
-						else
-						{
-							if (tick_this_frame)
-							{
-								auto current_command_index = anim.current_command;
-								while (true)
-								{
-									current_command_index = (current_command_index + 1) % anim.anim_sequence->command_sequence.size();
-									if (current_command_index == anim.current_command)
-									{
-										break;
-									}
-
-									if (anim.anim_sequence->command_sequence.at(current_command_index).command_type == rom::AnimationCommandType::NORMAL_FRAME)
-									{
-										anim.current_command = current_command_index;
-										break;
-									}
-								}
-							}
-
-							if (anim.anim_sequence->command_sequence.at(anim.current_command).command_type == rom::AnimationCommandType::NORMAL_FRAME)
-							{
-								float m_zoom = 2.0f;
-								auto& current_command = anim.anim_sequence->command_sequence.at(anim.current_command);
-								float biggest_offset_x = std::numeric_limits<float>::min();
-								float biggest_offset_y = std::numeric_limits<float>::min();
-								float largest_width = std::numeric_limits<float>::min();
-								float largest_height = std::numeric_limits<float>::min();
-								for (const rom::AnimationCommand& command : anim.anim_sequence->command_sequence)
-								{
-									if (command.ui_frame_sprite != nullptr)
-									{
-										biggest_offset_x = std::max<float>(biggest_offset_x, static_cast<float>(command.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
-										biggest_offset_y = std::max<float>(biggest_offset_y, static_cast<float>(command.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
-										largest_width = std::max<float>(largest_width, std::max<float>(static_cast<float>(command.ui_frame_sprite->dimensions.y), static_cast<float>(command.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds().x)));
-										largest_height = std::max<float>(largest_height, static_cast<float>(command.ui_frame_sprite->dimensions.y));
-									}
-								}
-
-								ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (biggest_offset_y * m_zoom));
-								ImGui::Dummy(ImVec2(8 + biggest_offset_x * m_zoom, (largest_height * m_zoom) - ImGui::GetStyle().ItemSpacing.y * 2));
-								ImGui::SameLine();
-								ImGui::SameLine();
-								current_command.ui_frame_sprite->DrawForImGuiWithOffset(m_zoom);
-							}
+							const ImVec2 start_cursor_pos = ImGui::GetCursorPos();
+							const ImVec2 start_cursor_screen_pos = ImGui::GetCursorScreenPos();
+							ImGui::Dummy(ImVec2{
+								(std::abs(biggest_offset_x - smallest_offset_x) + largest_width) * m_zoom ,
+								(std::abs(biggest_offset_y - smallest_offset_y + largest_height) * m_zoom) });
+							ImGui::SameLine();
+							ImGui::SameLine();
+							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255,0,0,255));
+							ImGui::SetCursorPos(ImVec2{ start_cursor_pos.x + ImGui::GetItemRectMin().x - start_cursor_screen_pos.x + (biggest_offset_x * m_zoom),start_cursor_pos.y + ImGui::GetItemRectMin().y - start_cursor_screen_pos.y + (biggest_offset_y * m_zoom)});
+							current_command.ui_frame_sprite->DrawForImGuiWithOffset(m_zoom);
+							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 255, 0, 255));
 						}
 					}
-
-					ImGui::TreePop();
 				}
 			}
 		}
