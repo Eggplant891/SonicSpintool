@@ -204,6 +204,9 @@
     <ClCompile Include="src\editor\spline_manager.cpp">
       <Filter>Source Files\editor</Filter>
     </ClCompile>
+    <ClCompile Include="ui_tile_editor.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\imconfig.h">
@@ -358,6 +361,9 @@
     </ClInclude>
     <ClInclude Include="redist\editor\spline_manager.h">
       <Filter>Header Files\editor</Filter>
+    </ClInclude>
+    <ClInclude Include="ui_tile_editor.h">
+      <Filter>Header Files\ui</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

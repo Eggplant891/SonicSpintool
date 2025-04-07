@@ -10,6 +10,7 @@
 
 #include "editor/game_obj_manager.h"
 #include "types/rom_ptr.h"
+#include "types/sdl_handle_defs.h"
 
 #include <string>
 #include <vector>
@@ -27,6 +28,14 @@ namespace spintool
 		std::shared_ptr<const rom::TileSet> tileset;
 		std::shared_ptr<rom::TileLayout> tile_layout;
 		rom::PaletteSet palette_set;
+	};
+
+	struct TileBrushPreview
+	{
+		SDLSurfaceHandle surface;
+		SDLTextureHandle texture;
+
+		Uint32 brush_index;
 	};
 
 	class Level

@@ -59,8 +59,8 @@ namespace spintool
 					{
 						//for (TileLayer& layer : m_level->m_tile_layers)
 						{
-							m_level->m_tile_layers[0].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_layout));
-							m_level->m_tile_layers[1].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout));
+							m_level->m_tile_layers[0].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_layout));
+							m_level->m_tile_layers[1].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout));
 						}
 					}
 					const auto original_spline_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
@@ -289,6 +289,19 @@ namespace spintool
 		{
 			return;
 		}
+
+		if (m_brush_editor && m_brush_editor->IsOpen())
+		{
+			m_brush_editor->Update();
+			return;
+		}
+		else if(m_brush_editor)
+		{
+			m_brush_editor.reset();
+			m_working_brush.reset();
+			m_working_layer_index.reset();
+		}
+
 		ImGui::SetNextWindowPos(ImVec2{ 0,16 });
 		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
@@ -590,9 +603,6 @@ namespace spintool
 					current_preview_data->tile_layout_address = m_working_tile_layout->rom_data.rom_offset;
 					current_preview_data->tile_layout_address_end = m_working_tile_layout->rom_data.rom_offset_end;
 				}
-				std::shared_ptr<const rom::Sprite> tileset_sprite = m_working_tileset->CreateSpriteFromTile(0);
-				std::shared_ptr<const rom::Sprite> tile_layout_sprite = std::make_unique<rom::Sprite>();
-
 
 				const int brush_width = static_cast<int>(request.tile_brush_width * rom::TileSet::s_tile_width);
 				const int brush_height = static_cast<int>(request.tile_brush_height * rom::TileSet::s_tile_height);
@@ -956,6 +966,8 @@ namespace spintool
 							ImGui::EndTabItem();
 						}
 
+						bool request_open_brush_popup = false;
+
 						if (m_tileset_preview_list.empty() == false && ImGui::BeginTabItem("Brush Previews"))
 						{
 							if (ImGui::BeginTabBar("tile_layers"))
@@ -967,7 +979,7 @@ namespace spintool
 								};
 								int tab_index = 0;
 								constexpr size_t num_previews_per_page = 8 * 16;
-								for (size_t layer_index = 0; layer_index < m_tileset_preview_list.size(); ++layer_index)
+								for (Uint16 layer_index = 0; layer_index < m_tileset_preview_list.size(); ++layer_index)
 								{
 									TilesetPreview& tileset_preview = m_tileset_preview_list[layer_index];
 									if (ImGui::BeginTabItem(layer_names[tab_index++]))
@@ -988,7 +1000,6 @@ namespace spintool
 											tileset_preview.current_page = std::min<int>((static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page), tileset_preview.current_page + 1);
 										}
 										ImGui::EndDisabled();
-										ImGui::SameLine();
 										if (ImGui::Button("Pick from layout"))
 										{
 											m_selected_brush.is_picking_from_layout = true;
@@ -1014,10 +1025,21 @@ namespace spintool
 													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
 													has_just_selected_brush = true;
 												}
-												if (ImGui::BeginItemTooltip())
+
+												if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
 												{
-													ImGui::Text("Tile Index: 0x%02X", page_index);
-													ImGui::EndTooltip();
+													m_working_brush = preview_brush.brush_index;
+													m_working_layer_index = layer_index;
+													request_open_brush_popup = true;
+												}
+												
+												if (m_working_brush.has_value() == false)
+												{
+													if (ImGui::BeginItemTooltip())
+													{
+														ImGui::Text("Tile Index: 0x%02X", page_index);
+														ImGui::EndTooltip();
+													}
 												}
 											}
 										}
@@ -1028,6 +1050,30 @@ namespace spintool
 								ImGui::EndTabBar();
 							}
 							ImGui::EndTabItem();
+						}
+
+						if (request_open_brush_popup == true)
+						{
+							ImGui::OpenPopup("brush_edit_popup");
+						}
+
+						if (m_working_brush.has_value() && m_working_layer_index.has_value())
+						{
+							if (ImGui::IsPopupOpen("brush_edit_popup") == false)
+							{
+								m_working_brush.reset();
+								m_working_layer_index.reset();
+							}
+
+							if (ImGui::BeginPopup("brush_edit_popup"))
+							{
+								if (ImGui::Selectable("Edit brush"))
+								{
+									m_brush_editor.emplace(m_owning_ui, m_level->m_tile_layers[m_working_layer_index.value()], m_working_brush.value());
+									m_brush_editor->m_visible = true;
+								}
+								ImGui::EndPopup();
+							}
 						}
 					
 						if (ImGui::BeginTabItem("Palettes"))

@@ -104,9 +104,33 @@ namespace spintool::rom
 		return new_layout;
 	}
 
-	void TileLayout::SaveToROM(SpinballROM& src_rom, Uint32 layout_offset)
+	void TileLayout::SaveToROM(SpinballROM& src_rom, Uint32 brushes_offset, Uint32 layout_offset)
 	{
-		Uint32 current_offset = layout_offset;
+		Uint32 current_offset = brushes_offset;
+
+		for (std::unique_ptr<TileBrushBase>& current_brush : tile_brushes)
+		{
+			current_brush = std::make_unique<TileBrush<4, 4>>();
+			for (size_t i = 0; i < current_brush->TotalTiles(); ++i)
+			{
+				Uint8 first_byte = 0;
+				Uint8 second_byte = 0;
+
+				for (const TileInstance& tile : current_brush->tiles)
+				{
+					first_byte |= tile.is_high_priority ? 0x80 : 0x00;
+					first_byte |= (0x40 | 0x20) & (tile.palette_line >> 5);
+					first_byte |= tile.is_flipped_vertically ? 0x10 : 0x00;
+					first_byte |= tile.is_flipped_vertically ? 0x08 : 0x00;
+					first_byte |= ((tile.tile_index) & static_cast<Uint16>((0x0100 | 0x0200 | 0x0400))) >> 8;
+
+					current_offset = src_rom.WriteUint8(current_offset, first_byte);
+					current_offset = src_rom.WriteUint8(current_offset, tile.tile_index & 0x00FF);
+				}
+			}
+		}
+
+		current_offset = layout_offset;
 		for (TileBrushInstance& brush_instance : tile_brush_instances)
 		{
 			//brush_instance.is_high_priority = (0x80 & first_byte) != 0;

@@ -22,6 +22,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include "../ui_tile_editor.h"
 
 namespace spintool { struct TileLayer; }
 
@@ -64,14 +65,6 @@ namespace spintool
 
 		std::shared_ptr<const rom::TileSet>* store_tileset = nullptr;
 		std::shared_ptr<rom::TileLayout>* store_layout = nullptr;
-	};
-
-	struct TileBrushPreview
-	{
-		SDLSurfaceHandle surface;
-		SDLTextureHandle texture;
-
-		Uint32 brush_index;
 	};
 
 	struct WorkingGameObject
@@ -215,6 +208,11 @@ namespace spintool
 		std::optional<WorkingSpline> m_working_spline;
 
 		TileBrushSelection m_selected_brush;
+		std::optional<Uint32> m_working_layer_index;
+		std::optional<Uint32> m_working_brush;
+
+		std::optional<EditorTileEditor> m_brush_editor;
+
 		rom::SplineCullingTable m_working_culling_table;
 
 		SDLTextureHandle m_tile_layout_preview_bg;
