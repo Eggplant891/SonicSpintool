@@ -66,6 +66,13 @@ namespace spintool
 		return selection_changed;
 	}
 
+	bool DrawPaletteLineSelector(int& chosen_palette_line, const rom::PaletteSet& palette_set, const EditorUI& owning_ui)
+	{
+		ImGui::SetNextItemWidth(256);
+		const bool selection_changed = ImGui::SliderInt("###Palette Line", &chosen_palette_line, 0, static_cast<int>(palette_set.palette_lines.size() - 1));
+		return selection_changed;
+	}
+
 	void EditorPaletteViewer::Update()
 	{
 		if (m_visible == false)
