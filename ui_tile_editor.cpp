@@ -60,10 +60,9 @@ namespace spintool
 			}
 
 			const size_t current_brush_offset = i;
-			const Uint32 picker_width = 16;
 
-			sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % picker_width) * rom::TileSet::s_tile_width;
-			sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % picker_width)) / picker_width) * rom::TileSet::s_tile_height;
+			sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % m_tile_picker.picker_width) * rom::TileSet::s_tile_width;
+			sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % m_tile_picker.picker_width)) / m_tile_picker.picker_width) * rom::TileSet::s_tile_height;
 
 			max_x_size = std::max(max_x_size, sprite_tile->x_offset + rom::TileSet::s_tile_width);
 			max_y_size = std::max(max_x_size, sprite_tile->y_offset + rom::TileSet::s_tile_height);
@@ -91,7 +90,6 @@ namespace spintool
 
 	void EditorTileEditor::DrawTilePicker()
 	{
-		const float zoom = 4.0f;
 		if (spintool::DrawPaletteLineSelector(m_tile_picker.current_palette_line, m_tile_layer->palette_set, m_owning_ui))
 		{
 			RenderTileset();
@@ -99,9 +97,40 @@ namespace spintool
 
 		if (m_tile_picker.texture != nullptr)
 		{
+			const ImVec2 cursor_start_pos = ImGui::GetCursorScreenPos();
 			ImGui::Image((ImTextureID)m_tile_picker.texture.get(),
-				ImVec2{ static_cast<float>(m_tile_picker.texture->w) * zoom, static_cast<float>(m_tile_picker.texture->h) * zoom },
+				ImVec2{ static_cast<float>(m_tile_picker.texture->w) * m_tile_picker.zoom, static_cast<float>(m_tile_picker.texture->h) * m_tile_picker.zoom },
 				ImVec2{ 0,0 }, ImVec2{static_cast<float>(m_tile_picker.surface->w) / m_tile_picker.texture->w, static_cast<float>(m_tile_picker.surface->h) / m_tile_picker.texture->h });
+
+			for (unsigned int grid_y = 0; grid_y < m_tile_picker.picker_width; ++grid_y)
+			{
+				for (unsigned int grid_x = 0; grid_x < m_tile_picker.picker_width; ++grid_x)
+				{
+					const unsigned int target_index = (grid_y * m_tile_picker.picker_width) + grid_x;
+
+					if (target_index >= m_tile_picker.tiles.size())
+					{
+						continue;
+					}
+					const rom::SpriteTile& tile = *m_tile_picker.tiles[target_index];
+
+					const ImVec2 min = ImVec2{ static_cast<float>(cursor_start_pos.x + (tile.x_offset * m_tile_picker.zoom)), static_cast<float>(cursor_start_pos.y + (tile.y_offset * m_tile_picker.zoom)) };
+					const ImVec2 max = ImVec2{ static_cast<float>(min.x + (tile.x_size * m_tile_picker.zoom) + 1), static_cast<float>(min.y + (tile.y_size * m_tile_picker.zoom) + 1) };
+					const bool is_hovered = ImGui::IsMouseHoveringRect(min, max);
+
+					if (is_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+					{
+						m_tile_picker.currently_selected_tile = &tile;
+					}
+
+					if (is_hovered || &tile == m_tile_picker.currently_selected_tile)
+					{
+						const ImU32 colour = is_hovered ? ImGui::GetColorU32(ImVec4(255, 255, 0, 255)) : ImGui::GetColorU32(ImVec4(0, 255, 0, 255));
+
+						ImGui::GetWindowDrawList()->AddRect(min, max, colour);
+					}
+				}
+			}
 		}
 		else
 		{
@@ -125,6 +154,11 @@ namespace spintool
 				ImGui::Text("<INVALID BRUSH TARGET>");
 			}
 
+			if (ImGui::Button("Save Tile"))
+			{
+				m_visible = false;
+			}
+			ImGui::SameLine();
 			if (ImGui::Button("Close Window"))
 			{
 				m_visible = false;
@@ -138,6 +172,8 @@ namespace spintool
 
 			const ImVec2 tile_origin_screen = ImGui::GetCursorScreenPos();
 
+			const ImVec2 cursor_start_pos = ImGui::GetCursorScreenPos();
+
 			for (; zoom >= 1.0f; zoom = zoom / 2.0f)
 			{
 				ImGui::Image((ImTextureID)m_brush_preview.texture.get(), ImVec2{ 32 * zoom ,  32 * zoom }); ImGui::SameLine();
@@ -147,13 +183,53 @@ namespace spintool
 			{
 				for (unsigned int grid_x = 0; grid_x < m_target_brush->BrushWidth(); ++grid_x)
 				{
-					ImGui::GetWindowDrawList()->AddRect(
-						ImVec2{ tile_origin_screen.x + (grid_x * 8 * max_zoom), tile_origin_screen.y + (grid_y * 8 * max_zoom) },
-						ImVec2{ tile_origin_screen.x + ((grid_x + 1) * 8 * max_zoom), tile_origin_screen.y + ((grid_y + 1) * 8 * max_zoom) }, ImGui::GetColorU32(ImVec4(255,0,0,255)));
+					const unsigned int target_index = (grid_y * m_target_brush->BrushWidth()) + grid_x;
+
+					if (target_index >= m_target_brush->tiles.size())
+					{
+						continue;
+					}
+
+					const ImVec2 min = ImVec2{ tile_origin_screen.x + (grid_x * 8 * max_zoom), tile_origin_screen.y + (grid_y * 8 * max_zoom) };
+					const ImVec2 max = ImVec2{ tile_origin_screen.x + ((grid_x + 1) * 8 * max_zoom), tile_origin_screen.y + ((grid_y + 1) * 8 * max_zoom) };
+					if (m_tile_picker.currently_selected_tile != nullptr)
+					{
+						const auto& tile = *m_tile_picker.currently_selected_tile;
+						const bool is_hovered = ImGui::IsMouseHoveringRect(min, max);
+
+						if (is_hovered)
+						{
+							ImGui::SetCursorScreenPos(min);
+							ImGui::Image((ImTextureID)m_tile_picker.texture.get(),
+								ImVec2{ (max.x - min.x), (max.y - min.y) },
+								ImVec2{ static_cast<float>(tile.x_offset) / m_tile_picker.texture->w , static_cast<float>(tile.y_offset) / m_tile_picker.texture->h },
+								ImVec2{ static_cast<float>(tile.x_offset + tile.x_size) / m_tile_picker.texture->w, static_cast<float>(tile.y_offset + tile.y_size) / m_tile_picker.texture->h });
+
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+							{
+								m_target_brush->tiles[target_index].tile_index = static_cast<int>(std::distance(std::begin(m_tile_picker.tiles)
+									, std::find_if(std::begin(m_tile_picker.tiles), std::end(m_tile_picker.tiles),
+										[this](const std::shared_ptr<rom::SpriteTile>& tile)
+										{
+											return m_tile_picker.currently_selected_tile == tile.get();
+										})));
+
+								m_target_brush->tiles[target_index].palette_line = m_tile_picker.current_palette_line;
+								m_tile_brush_changed = true;
+							}
+						}
+					}
+					ImGui::GetWindowDrawList()->AddRect(min, max, ImGui::GetColorU32(ImVec4(255, 0, 0, 255)));
 				}
 			}
 		}
 		ImGui::End();
+
+		if (m_tile_brush_changed)
+		{
+			RenderBrush();
+			m_tile_brush_changed = false;
+		}
 	}
 
 	EditorTileEditor::EditorTileEditor(EditorUI& owning_ui, TileLayer& tile_layer, Uint32 brush_index)

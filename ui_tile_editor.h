@@ -28,9 +28,12 @@ namespace spintool
 	struct TilePicker
 	{
 		std::vector<std::shared_ptr<rom::SpriteTile>> tiles;
+		const rom::SpriteTile* currently_selected_tile = nullptr;
 		SDLSurfaceHandle surface;
 		SDLTextureHandle texture;
 		int current_palette_line = 0;
+		static constexpr Uint32 picker_width = 16;
+		static constexpr float zoom = 4.0f;
 	};
 
 	class EditorTileEditor : public EditorWindowBase
@@ -52,5 +55,7 @@ namespace spintool
 
 		TilePicker m_tile_picker;
 		Uint32 m_brush_index = 0;
+
+		bool m_tile_brush_changed = false;
 	};
 }
