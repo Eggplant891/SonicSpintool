@@ -78,6 +78,8 @@ namespace spintool
 		SDL_SetSurfaceColorKey(m_tile_picker.surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_tile_picker.surface->format), nullptr, 0, 0, 0, 0));
 		SDL_ClearSurface(m_tile_picker.surface.get(), 0.0f, 0, 0, 0);
 
+		m_tile_picker.picker_height = m_tile_layer->tileset->num_tiles / m_tile_picker.picker_width;
+
 		BoundingBox picker_bbox{ 0, 0, m_tile_picker.surface->w, m_tile_picker.surface->h };
 
 		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : m_tile_picker.tiles)
@@ -102,7 +104,7 @@ namespace spintool
 				ImVec2{ static_cast<float>(m_tile_picker.texture->w) * m_tile_picker.zoom, static_cast<float>(m_tile_picker.texture->h) * m_tile_picker.zoom },
 				ImVec2{ 0,0 }, ImVec2{static_cast<float>(m_tile_picker.surface->w) / m_tile_picker.texture->w, static_cast<float>(m_tile_picker.surface->h) / m_tile_picker.texture->h });
 
-			for (unsigned int grid_y = 0; grid_y < m_tile_picker.picker_width; ++grid_y)
+			for (unsigned int grid_y = 0; grid_y < m_tile_picker.picker_height; ++grid_y)
 			{
 				for (unsigned int grid_x = 0; grid_x < m_tile_picker.picker_width; ++grid_x)
 				{
@@ -192,13 +194,14 @@ namespace spintool
 
 					const ImVec2 min = ImVec2{ tile_origin_screen.x + (grid_x * 8 * max_zoom), tile_origin_screen.y + (grid_y * 8 * max_zoom) };
 					const ImVec2 max = ImVec2{ tile_origin_screen.x + ((grid_x + 1) * 8 * max_zoom), tile_origin_screen.y + ((grid_y + 1) * 8 * max_zoom) };
-					if (m_tile_picker.currently_selected_tile != nullptr)
-					{
-						const auto& tile = *m_tile_picker.currently_selected_tile;
-						const bool is_hovered = ImGui::IsMouseHoveringRect(min, max);
+					const bool is_hovered = ImGui::IsMouseHoveringRect(min, max);
 
-						if (is_hovered)
+					if (is_hovered)
+					{
+						if (m_tile_picker.currently_selected_tile != nullptr)
 						{
+							const auto& tile = *m_tile_picker.currently_selected_tile;
+
 							ImGui::SetCursorScreenPos(min);
 							ImGui::Image((ImTextureID)m_tile_picker.texture.get(),
 								ImVec2{ (max.x - min.x), (max.y - min.y) },
@@ -218,8 +221,37 @@ namespace spintool
 								m_tile_brush_changed = true;
 							}
 						}
+
+						if (ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+						{
+							m_tile_picker.currently_selected_tile = m_tile_picker.tiles[m_target_brush->tiles[target_index].tile_index].get();
+						}
+
+						if (ImGui::IsKeyPressed(ImGuiKey_R, false))
+						{
+							m_target_brush->tiles[target_index].is_flipped_horizontally = !m_target_brush->tiles[target_index].is_flipped_horizontally;
+							m_tile_brush_changed = true;
+						}
+
+						if (ImGui::IsKeyPressed(ImGuiKey_F, false))
+						{
+							m_target_brush->tiles[target_index].is_flipped_vertically = !m_target_brush->tiles[target_index].is_flipped_vertically;
+							m_tile_brush_changed = true;
+						}
+
+						if (ImGui::IsKeyPressed(ImGuiKey_H, false))
+						{
+							m_target_brush->tiles[target_index].is_high_priority = !m_target_brush->tiles[target_index].is_high_priority;
+							m_tile_brush_changed = true;
+						}
 					}
-					ImGui::GetWindowDrawList()->AddRect(min, max, ImGui::GetColorU32(ImVec4(255, 0, 0, 255)));
+					const bool is_high_priority = m_target_brush->tiles[target_index].is_high_priority;
+					ImGuiCol grid_colour = is_high_priority == false ? ImGui::GetColorU32(ImVec4(255, 0, 0, 255)) : ImGui::GetColorU32(ImVec4(255, 0, 255, 255));
+					if (is_hovered)
+					{
+						grid_colour = is_high_priority == false ? ImGui::GetColorU32(ImVec4(255, 255, 0, 255)) : ImGui::GetColorU32(ImVec4(255, 255, 255, 255));
+					}
+					ImGui::GetWindowDrawList()->AddRect(min, max, grid_colour);
 				}
 			}
 		}

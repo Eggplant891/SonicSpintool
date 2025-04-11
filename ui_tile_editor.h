@@ -33,6 +33,7 @@ namespace spintool
 		SDLTextureHandle texture;
 		int current_palette_line = 0;
 		static constexpr Uint32 picker_width = 16;
+		Uint32 picker_height = 1;
 		static constexpr float zoom = 4.0f;
 	};
 
