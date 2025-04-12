@@ -26,4 +26,21 @@ namespace spintool::rom
 
 		return new_instance;
 	}
+
+	Uint32 FlipperInstance::SaveToROM(rom::SpinballROM& writeable_rom)
+	{
+		Uint32 current_offset = rom_data.rom_offset;
+
+		current_offset = writeable_rom.WriteUint32(current_offset, animated_obj_ptr);
+		current_offset = writeable_rom.WriteUint16(current_offset, x_pos);
+		current_offset = writeable_rom.WriteUint16(current_offset, y_pos);
+		Uint16 flags = 0;
+		if (is_x_flipped)
+		{
+			flags |= (0x4000);
+		}
+		current_offset = writeable_rom.WriteUint16(current_offset, flags);
+
+		return current_offset;
+	}
 }

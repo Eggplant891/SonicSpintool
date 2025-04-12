@@ -736,7 +736,7 @@ namespace spintool
 						x_off = -20;
 					}
 
-					SDL_Rect target_rect{ flipper.x_pos + x_off, flipper.y_pos - 31, 44, 31 };
+					SDL_Rect target_rect{ flipper.x_pos + x_off, flipper.y_pos - rom::FlipperInstance::height, rom::FlipperInstance::width, rom::FlipperInstance::height };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 				}
@@ -1544,6 +1544,35 @@ namespace spintool
 								}
 							}
 
+							if (m_working_flipper)
+							{
+								if (m_working_flipper->initial_drag_offset.has_value() == false)
+								{
+									m_working_flipper.reset();
+								}
+								else
+								{
+									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+									{
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset;
+										m_working_flipper->flipper_obj.x_pos = static_cast<Uint16>(pos.x);
+										m_working_flipper->flipper_obj.y_pos = static_cast<Uint16>(pos.y);
+
+										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.draw_pos_offset.x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.draw_pos_offset.y) } * m_zoom));
+										ImGui::Dummy(m_working_flipper->flipper_obj.dimensions * m_zoom);
+										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+									}
+									else if (m_working_flipper->initial_drag_offset)
+									{
+										m_working_flipper->initial_drag_offset.reset();
+										*m_working_flipper->destination = m_working_flipper->flipper_obj;
+										m_working_flipper->destination->SaveToROM(m_owning_ui.GetROM());
+										m_render_from_edit = true;
+										m_working_flipper.reset();
+									}
+								}
+							}
+
 							if (current_layer_settings.hover_game_objects)
 							{
 								for (std::unique_ptr<UIGameObject>& game_obj : m_game_object_manager.game_objects)
@@ -1638,6 +1667,45 @@ namespace spintool
 										}
 									}
 								}
+							
+								for (rom::FlipperInstance& flipper_obj : m_level->m_flipper_instances)
+								{
+									const ImVec2 flipper_realpos{ static_cast<float>(flipper_obj.x_pos + flipper_obj.draw_pos_offset.x), static_cast<float>(flipper_obj.y_pos + flipper_obj.draw_pos_offset.y) };
+									const ImVec2 flipper_dimensions{ rom::FlipperInstance::width, rom::FlipperInstance::height };
+
+									ImGui::SetCursorPos(origin + (flipper_realpos * m_zoom));
+									ImGui::Dummy(flipper_dimensions* m_zoom);
+									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+									{
+										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+
+										//if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+										//{
+										//	m_request_open_obj_popup = true;
+										//	m_working_flipper.emplace();
+										//	m_working_flipper->destination = &flipper_obj;
+										//	m_working_flipper->flipper_obj = flipper_obj;
+										//}
+										//else
+											if (IsDraggingObject() == false && IsObjectPopupOpen() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+										{
+											m_working_flipper.emplace();
+											m_working_flipper->destination = &flipper_obj;
+											m_working_flipper->flipper_obj = flipper_obj;
+											m_working_flipper->initial_drag_offset = (ImGui::GetMousePos() - screen_origin) - (flipper_realpos * m_zoom);
+										}
+										else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
+										{
+											ImGui::SeparatorText("Flipper Object");
+
+											ImGui::Text("X: 0x%04X",  flipper_obj.x_pos);
+											ImGui::Text("Y: 0x%04X",  flipper_obj.y_pos);
+											ImGui::Text("Flip X: %d", flipper_obj.is_x_flipped);
+
+											ImGui::EndTooltip();
+										}
+									}
+								}
 							}
 						}
 
@@ -1655,7 +1723,7 @@ namespace spintool
 							}
 						}
 
-						if (m_working_game_obj.has_value() == false && (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr))
+						if (m_working_game_obj.has_value() == false && m_working_flipper.has_value() == false && (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr))
 						{
 							ImGui::CloseCurrentPopup();
 						}

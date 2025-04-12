@@ -74,6 +74,13 @@ namespace spintool
 		UIGameObject game_obj;
 	};
 
+	struct WorkingFlipperObject
+	{
+		std::optional<ImVec2> initial_drag_offset;
+		rom::FlipperInstance* destination = nullptr;
+		rom::FlipperInstance flipper_obj;
+	};
+
 	struct WorkingSpline
 	{
 		rom::CollisionSpline* destination = nullptr;
@@ -205,6 +212,7 @@ namespace spintool
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 
 		std::optional<WorkingGameObject> m_working_game_obj;
+		std::optional<WorkingFlipperObject> m_working_flipper;
 		std::optional<WorkingSpline> m_working_spline;
 
 		TileBrushSelection m_selected_brush;

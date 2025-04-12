@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rom/rom_data.h"
+#include "types/bounding_box.h"
 
 namespace spintool::rom
 {
@@ -22,6 +23,14 @@ namespace spintool::rom
 
 		constexpr static const size_t s_size_on_rom = 0xA;
 
+		static constexpr int width = 44;
+		static constexpr int height = 31;
+
+		static constexpr Point dimensions{ width, height };
+		Point draw_pos_offset{ is_x_flipped ? - 20 : -24, -31 };
+
 		static FlipperInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
+		Uint32 SaveToROM(rom::SpinballROM& writeable_rom);
+
 	};
 }
