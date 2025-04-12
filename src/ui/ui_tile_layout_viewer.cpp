@@ -1132,8 +1132,8 @@ namespace spintool
 						const float max_layout_height = m_level == nullptr ? 0.0f : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * brush_dimensions.y);
 						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
-						const ImVec2 grid_pos{ (relative_mouse_pos / m_zoom) / brush_dimensions };
-						const ImVec2 snapped_pos{ grid_pos * brush_dimensions * m_zoom };
+						const ImVec2 grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / brush_dimensions.x)), static_cast<float>(static_cast<int>(relative_mouse_pos.y / brush_dimensions.y)) };
+						const ImVec2 snapped_pos{ (grid_pos * brush_dimensions) * m_zoom };
 						const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
 						if (ImGui::IsKeyDown(ImGuiKey_ModCtrl))
