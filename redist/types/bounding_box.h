@@ -1,5 +1,7 @@
 #pragma once
 #include <algorithm>
+#include "imgui.h"
+#include "imgui_internal.h"
 
 namespace spintool
 {
@@ -8,17 +10,30 @@ namespace spintool
 		int x = 0;
 		int y = 0;
 
+		void operator+=(const Point& rhs) { x += rhs.x; y += rhs.y; }
+		void operator-=(const Point& rhs) { x -= rhs.x; y -= rhs.y; }
+		void operator*=(const int rhs) { x *= rhs; y *= rhs; }
+		void operator/=(const int rhs) { x /= rhs; y /= rhs; }
+
 		bool operator==(const Point& rhs) const
 		{
 			return x == rhs.x && y == rhs.y;
 		}
 
-		void operator *=(const float scalar)
+		operator ImVec2()
 		{
-			x = static_cast<int>(x * scalar);
-			y *= static_cast<int>(y * scalar);
+			return ImVec2{ static_cast<float>(x), static_cast<float>(y) };
 		}
 	};
+
+	static Point operator+(const Point& lhs, const Point& rhs) { return Point{ lhs.x + rhs.x, lhs.y + rhs.y }; }
+	static Point operator-(const Point& lhs, const Point& rhs) { return Point{ lhs.x - rhs.x, lhs.y - rhs.y }; }
+	static Point operator+(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
+	static Point operator-(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
+	static Point operator+(const ImVec2& rhs, const Point& lhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
+	static Point operator-(const ImVec2& rhs, const Point& lhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
+	static Point operator*(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x * rhs), static_cast<int>(lhs.y * rhs) }; }
+	static Point operator/(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x / rhs), static_cast<int>(lhs.y / rhs) }; }
 
 	struct BoundingBox
 	{
@@ -38,6 +53,11 @@ namespace spintool
 			return Point{ std::max(min.x, max.x), std::max(min.y, max.y) };
 		}
 
+		operator ImRect()
+		{
+			return ImRect{ min, max };
+		}
+
 		bool operator==(const BoundingBox& rhs) const
 		{
 			return min == rhs.min && max == rhs.max;
@@ -45,8 +65,8 @@ namespace spintool
 
 		void operator *=(const float scalar)
 		{
-			min *= scalar;
-			max *= scalar;
+			min = min * scalar;
+			max = max * scalar;
 		}
 	};
 }
