@@ -225,6 +225,8 @@ namespace spintool
 
 		rom::LevelDataOffsets m_level_data_offsets;
 
+		float m_zoom = 1.0f;
+
 		bool m_export_result = false;
 		bool m_preview_bonus_alt_palette = false;
 		bool m_render_from_edit = false;

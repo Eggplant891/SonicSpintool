@@ -906,14 +906,15 @@ namespace spintool
 				m_tile_layout_preview_fg = Renderer::RenderToTexture(layout_preview_fg_surface.get());
 			}
 
-			constexpr const float zoom = 1.0f;
 			bool has_just_selected_brush = false;
+
+			//////////// BEGIN IMGUI ///////////////////////////////////
 
 			ImGui::BeginGroup();
 			{
 				if (ImGui::BeginChild("InfoSizebar", ImVec2{ 340, -1 }, 0, ImGuiWindowFlags_AlwaysVerticalScrollbar))
 				{
-					//ImGui::SliderInt("Collision Tile", &selected_collision_tile_index, -1, 0x0FF - 1);
+					ImGui::SliderFloat ("Zoom", &m_zoom, -1, 8.0f, "%.1f");
 
 					constexpr size_t preview_brushes_per_row = 8;
 					if (current_preview_data && ImGui::TreeNode("ROM Info"))
@@ -1017,7 +1018,7 @@ namespace spintool
 													ImGui::SameLine();
 												}
 
-												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * zoom, static_cast<float>(preview_brush.texture->h) * zoom));
+												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * m_zoom, static_cast<float>(preview_brush.texture->h) * m_zoom));
 												if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 												{
 													m_selected_brush.tileset = &tileset_preview;
@@ -1122,18 +1123,27 @@ namespace spintool
 					{
 						LayerSettings current_layer_settings = m_layer_settings;
 
-						const ImVec2 origin = ImGui::GetCursorPos();
-						const ImVec2 screen_origin = ImGui::GetCursorScreenPos();
-						const ImVec2 mouse_pos = ImGui::GetMousePos();
-						const ImVec2 relative_mouse_pos{ (mouse_pos.x - panel_screen_origin.x) + origin.x, (mouse_pos.y - panel_screen_origin.y) + origin.x };
+						const ImVec2 origin{ ImGui::GetCursorPos() };
+						ImVec2 screen_origin{ ImGui::GetCursorScreenPos() };
+						const ImVec2 mouse_pos{ ImGui::GetMousePos() };
+						const ImVec2 relative_mouse_pos{ (mouse_pos - panel_screen_origin) + origin };
 						const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
-						const Point grid_pos{ static_cast<int>(relative_mouse_pos.x / brush_dimensions.x), static_cast<int>(relative_mouse_pos.y / brush_dimensions.y) };
-						const ImVec2 snapped_pos{ static_cast<float>(grid_pos.x) * brush_dimensions.x, static_cast<float>(grid_pos.y) * brush_dimensions.y };
-						const ImVec2 final_snapped_pos{ snapped_pos.x + screen_origin.x + (panel_screen_origin.x - screen_origin.x), snapped_pos.y + screen_origin.y + (panel_screen_origin.y - screen_origin.y) };
+						const float max_layout_width = m_level == nullptr ? 0.0f : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * brush_dimensions.y);
+						const float max_layout_height = m_level == nullptr ? 0.0f : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * brush_dimensions.y);
+						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
+						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
+						const ImVec2 grid_pos{ (relative_mouse_pos / m_zoom) / brush_dimensions };
+						const ImVec2 snapped_pos{ grid_pos * brush_dimensions * m_zoom };
+						const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
-						ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_bg->w) * zoom, static_cast<float>(m_tile_layout_preview_bg->h) * zoom));
+						if (ImGui::IsKeyDown(ImGuiKey_ModCtrl))
+						{
+							m_zoom += ImGui::GetIO().MouseWheel / 10.0f;
+						}
+
+						ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_bg->w),  static_cast<float>(m_tile_layout_preview_bg->h) });
 						ImGui::SetCursorPos(origin);
-						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), ImVec2(static_cast<float>(m_tile_layout_preview_fg->w) * zoom, static_cast<float>(m_tile_layout_preview_fg->h) * zoom));
+						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_bg->w),  static_cast<float>(m_tile_layout_preview_bg->h) });
 
 						// Visualise collision vectors
 						constexpr int tile_width = 128;
@@ -1145,8 +1155,8 @@ namespace spintool
 
 						if (current_layer_settings.spline_culling == true)
 						{
-							selected_collision_tile_index = (static_cast<int>(relative_mouse_pos.x / rom::SplineCullingTable::cell_dimensions.x) % (rom::SplineCullingTable::grid_dimensions.x))
-								+ (static_cast<int>(relative_mouse_pos.y / rom::SplineCullingTable::cell_dimensions.y) * (rom::SplineCullingTable::grid_dimensions.x));
+							selected_collision_tile_index = (static_cast<int>((relative_mouse_pos.x / m_zoom) / rom::SplineCullingTable::cell_dimensions.x) % (rom::SplineCullingTable::grid_dimensions.x))
+								+ (static_cast<int>((relative_mouse_pos.y / m_zoom) / rom::SplineCullingTable::cell_dimensions.y) * (rom::SplineCullingTable::grid_dimensions.x));
 
 							if (selected_collision_tile_index != -1)
 							{
@@ -1154,8 +1164,8 @@ namespace spintool
 								const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.y;
 
 								ImGui::GetWindowDrawList()->AddRect(
-									ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x), static_cast<float>(screen_origin.y + collision_tile_origin_y) },
-									ImVec2{ static_cast<float>(screen_origin.x + collision_tile_origin_x + rom::SplineCullingTable::cell_dimensions.x), static_cast<float>(screen_origin.y + collision_tile_origin_y + rom::SplineCullingTable::cell_dimensions.y) },
+									ImVec2{ static_cast<float>(screen_origin.x + (collision_tile_origin_x * m_zoom)), static_cast<float>(screen_origin.y + (collision_tile_origin_y * m_zoom)) },
+									ImVec2{ static_cast<float>(screen_origin.x + ((collision_tile_origin_x + rom::SplineCullingTable::cell_dimensions.x) * m_zoom)), static_cast<float>(screen_origin.y + ((collision_tile_origin_y + rom::SplineCullingTable::cell_dimensions.y) * m_zoom)) },
 									ImGui::GetColorU32(ImVec4{ 64,64,64,255 }), 0, ImDrawFlags_None, 1.0f);
 
 							}
@@ -1270,13 +1280,12 @@ namespace spintool
 									fixed_bbox.min.y = spline.spline_vector.min.y - spline.spline_vector.max.x - 2;
 									fixed_bbox.max.y = spline.spline_vector.min.y + spline.spline_vector.max.x + 2;
 
-									ImGui::GetWindowDrawList()->AddCircle(
-										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
-										static_cast<float>(spline.spline_vector.max.x), ImGui::GetColorU32(colour), 16, spline.object_type_flags != 0x8000 ? 1.0f : 2.0f);
+									ImGui::GetWindowDrawList()->AddCircle( screen_origin + (spline.spline_vector.min * m_zoom), static_cast<float>(spline.spline_vector.max.x) * m_zoom
+										, ImGui::GetColorU32(colour), 16, spline.object_type_flags != 0x8000 ? 1.0f : 2.0f);
 
 									ImGui::GetWindowDrawList()->AddRect(
-										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x - 2), static_cast<float>(screen_origin.y + spline.spline_vector.min.y - 2) },
-										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x + 3), static_cast<float>(screen_origin.y + spline.spline_vector.min.y + 3) },
+										ImVec2{ static_cast<float>(screen_origin.x + (spline.spline_vector.min.x * m_zoom) - 2), static_cast<float>(screen_origin.y + (spline.spline_vector.min.y * m_zoom) - 2) },
+										ImVec2{ static_cast<float>(screen_origin.x + (spline.spline_vector.min.x * m_zoom) + 3), static_cast<float>(screen_origin.y + (spline.spline_vector.min.y * m_zoom) + 3) },
 										ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 1.0f);
 
 									if (current_layer_settings.spline_culling == true)
@@ -1284,13 +1293,9 @@ namespace spintool
 										continue;
 									}
 
-									if (is_working_spline || ImGui::IsMouseHoveringRect(
-										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
-										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) }))
+									if (is_working_spline || ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)))
 									{
-										ImGui::GetWindowDrawList()->AddRect(
-											ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
-											ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) },
+										ImGui::GetWindowDrawList()->AddRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom),
 											ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 3.0f);
 
 										if (m_working_spline.has_value() == false && current_layer_settings.hover_radials && ImGui::BeginTooltip())
@@ -1326,13 +1331,10 @@ namespace spintool
 								}
 								else
 								{
-									ImGui::GetWindowDrawList()->AddLine(
-										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.min.x), static_cast<float>(screen_origin.y + spline.spline_vector.min.y) },
-										ImVec2{ static_cast<float>(screen_origin.x + spline.spline_vector.max.x), static_cast<float>(screen_origin.y + spline.spline_vector.max.y) },
-										ImGui::GetColorU32(colour), 2.0f);
-
-									ImGui::SetCursorPos(ImVec2{ origin.x + spline.spline_vector.min.x, origin.y + spline.spline_vector.min.y });
-									ImGui::Dummy(ImVec2{ static_cast<float>(spline.spline_vector.Width()), static_cast<float>(spline.spline_vector.Height()) });
+									ImGui::GetWindowDrawList()->AddLine(screen_origin + (spline.spline_vector.min * m_zoom), screen_origin + (spline.spline_vector.max * m_zoom)
+										, ImGui::GetColorU32(colour), 2.0f);
+									ImGui::SetCursorPos(origin + (spline.spline_vector.min * m_zoom));
+									ImGui::Dummy(ImVec2{ static_cast<float>(spline.spline_vector.Width()), static_cast<float>(spline.spline_vector.Height()) } * m_zoom);
 
 									if (current_layer_settings.spline_culling == true)
 									{
@@ -1346,29 +1348,27 @@ namespace spintool
 									fixed_bbox.min.y = std::min(spline.spline_vector.min.y, spline.spline_vector.max.y) - 1;
 									fixed_bbox.max.y = std::max(spline.spline_vector.min.y, spline.spline_vector.max.y) + 1;
 
-									if (is_working_spline || ImGui::IsMouseHoveringRect(
-										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.min.x), static_cast<float>(screen_origin.y + fixed_bbox.min.y) },
-										ImVec2{ static_cast<float>(screen_origin.x + fixed_bbox.max.x), static_cast<float>(screen_origin.y + fixed_bbox.max.y) }))
+									if (is_working_spline || ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)))
 									{
 										constexpr float handle_size = 4.0f;
+										constexpr ImVec2 handle_dimensions{ 4.0f, 4.0f };
 
 										ImU32 start_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,255,255 });
 										ImU32 end_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,255,255 });
 
-										const ImVec2 spline_vector = { static_cast<float>(original_bbox.max.x - original_bbox.min.x), static_cast<float>(original_bbox.max.y - original_bbox.min.y) };
+										const ImVec2 spline_vector{ (original_bbox.max - original_bbox.min) * m_zoom };
 										const float spline_length = std::sqrtf(std::powf(spline_vector.x, 2) + std::powf(spline_vector.y, 2));
 
-										const ImVec2 spline_to_cursor_vector = { ImGui::GetMousePos().x - (screen_origin.x + original_bbox.min.x), ImGui::GetMousePos().y - (screen_origin.y + original_bbox.min.y) };
+										const ImVec2 spline_to_cursor_vector{ ImGui::GetMousePos() - (screen_origin + (original_bbox.min * m_zoom)) };
 										const float spline_to_cursor_length = std::sqrtf(std::powf(spline_to_cursor_vector.x, 2) + std::powf(spline_to_cursor_vector.y, 2));
 
 										if (spline_to_cursor_length <= spline_length)
 										{
 											const float distance_delta = spline_to_cursor_length / spline_length;
-											const ImVec2 collision_test_pos = { original_bbox.min.x + spline_vector.x * distance_delta, original_bbox.min.y + spline_vector.y * distance_delta };
+											const ImVec2 collision_test_pos{ (original_bbox.min * m_zoom) + (spline_vector * distance_delta) };
 											bool is_hovering_handles = false;
 
-											if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y - handle_size) },
-												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) }))
+											if (ImGui::IsMouseHoveringRect((screen_origin + (original_bbox.min * m_zoom)) - handle_dimensions, (screen_origin + (original_bbox.min * m_zoom)) + handle_dimensions))
 											{
 												is_hovering_handles = true;
 												start_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
@@ -1381,8 +1381,7 @@ namespace spintool
 													m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
 												}
 											}
-											else if (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
-												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) }))
+											else if (ImGui::IsMouseHoveringRect((screen_origin + (original_bbox.max * m_zoom)) - handle_dimensions, (screen_origin + (original_bbox.max * m_zoom)) + handle_dimensions))
 											{
 												is_hovering_handles = true;
 												end_handle_colour = ImGui::GetColorU32(ImVec4{ 128,255,128,255 });
@@ -1396,29 +1395,22 @@ namespace spintool
 												}
 											}
 
-											ImGui::GetForegroundDrawList()->AddRect(
-												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y - handle_size) },
-												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.min.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.min.y + handle_size) },
+											ImGui::GetForegroundDrawList()->AddRect((screen_origin + (original_bbox.min * m_zoom)) - handle_dimensions, (screen_origin + (original_bbox.min * m_zoom)) + handle_dimensions,
 												start_handle_colour, 0, ImDrawFlags_None, 2.0f);
 
-											ImGui::GetForegroundDrawList()->AddRect(
-												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x - handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y - handle_size) },
-												ImVec2{ static_cast<float>(screen_origin.x + original_bbox.max.x + handle_size), static_cast<float>(screen_origin.y + original_bbox.max.y + handle_size) },
+											ImGui::GetForegroundDrawList()->AddRect((screen_origin + (original_bbox.max * m_zoom)) - handle_dimensions, (screen_origin + (original_bbox.max * m_zoom)) + handle_dimensions,
 												end_handle_colour, 0, ImDrawFlags_None, 2.0f);
 
-											const bool is_able_to_click = is_hovering_handles == false && (ImGui::IsMouseHoveringRect(ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x - handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y - handle_size) },
-												ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x + handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y + handle_size) }));
+											const bool is_able_to_click = is_hovering_handles == false && (ImGui::IsMouseHoveringRect(screen_origin + collision_test_pos - handle_dimensions, screen_origin + collision_test_pos + handle_dimensions));
 
 											if (is_able_to_click)
 											{
 												ImU32 target_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,0,255 });
 
-												ImGui::GetForegroundDrawList()->AddRect(
-													ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x - handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y - handle_size) },
-													ImVec2{ static_cast<float>(screen_origin.x + collision_test_pos.x + handle_size), static_cast<float>(screen_origin.y + collision_test_pos.y + handle_size) },
+												ImGui::GetForegroundDrawList()->AddRect((screen_origin + collision_test_pos) - handle_dimensions, (screen_origin + collision_test_pos) + handle_dimensions,
 													ImGui::GetColorU32(ImVec4{ 255,0,0,255 }), 0, ImDrawFlags_None, 2.0f);
 
-												if (is_able_to_click && m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+												if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 												{
 													ImGui::OpenPopup("spline_popup");
 													WorkingSpline new_spline;
@@ -1435,7 +1427,7 @@ namespace spintool
 
 						if (m_level && has_just_selected_brush == false)
 						{
-							const int grid_ref = (grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + grid_pos.x;
+							const int grid_ref = static_cast<int>((grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + grid_pos.x);
 
 							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && grid_ref >= 0 && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 							{
@@ -1536,11 +1528,12 @@ namespace spintool
 								{
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
-										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>((ImGui::GetMousePos().x - screen_origin.x) - m_working_game_obj->game_obj.sprite_pos_offset.x - m_working_game_obj->initial_drag_offset->x);
-										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>((ImGui::GetMousePos().y - screen_origin.y) - m_working_game_obj->game_obj.sprite_pos_offset.y - m_working_game_obj->initial_drag_offset->y);
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - (m_working_game_obj->game_obj.sprite_pos_offset - *m_working_game_obj->initial_drag_offset);
+										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x);
+										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>(pos.y);
 
-										ImGui::SetCursorPos(ImVec2{ origin.x + m_working_game_obj->game_obj.GetSpriteDrawPos().x, origin.y + m_working_game_obj->game_obj.GetSpriteDrawPos().y });
-										ImGui::Dummy(ImVec2{ (float)m_working_game_obj->game_obj.dimensions.x, (float)m_working_game_obj->game_obj.dimensions.y });
+										ImGui::SetCursorPos(origin + (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom));
+										ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
 										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 									}
 									else if (m_working_game_obj->initial_drag_offset)
@@ -1560,8 +1553,8 @@ namespace spintool
 										continue;
 									}
 
-									ImGui::SetCursorPos(ImVec2{ origin.x + game_obj->GetSpriteDrawPos().x, origin.y + game_obj->GetSpriteDrawPos().y });
-									ImGui::Dummy(game_obj->dimensions);
+									ImGui::SetCursorPos(origin + (game_obj->GetSpriteDrawPos() * m_zoom));
+									ImGui::Dummy(game_obj->dimensions* m_zoom);
 									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 									{
 										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
@@ -1576,9 +1569,7 @@ namespace spintool
 												{
 													if (obj_id == game_obj->obj_definition.instance_id)
 													{
-														ImGui::GetWindowDrawList()->AddRect(
-															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+														ImGui::GetWindowDrawList()->AddRect(screen_origin + (cell.bbox.min * m_zoom), screen_origin + (cell.bbox.max * m_zoom),
 															ImGui::GetColorU32(ImVec4{ 255,255,255,255 }), 0, ImDrawFlags_None, 1.0f);
 													}
 												}
@@ -1595,9 +1586,7 @@ namespace spintool
 												{
 													if (obj_id == game_obj->obj_definition.instance_id)
 													{
-														ImGui::GetWindowDrawList()->AddRect(
-															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.min.x), static_cast<float>(screen_origin.y + cell.bbox.min.y) },
-															ImVec2{ static_cast<float>(screen_origin.x + cell.bbox.max.x), static_cast<float>(screen_origin.y + cell.bbox.max.y) },
+														ImGui::GetWindowDrawList()->AddRect(screen_origin + (cell.bbox.min* m_zoom), screen_origin + (cell.bbox.max * m_zoom),
 															ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
 													}
 												}
@@ -1616,7 +1605,7 @@ namespace spintool
 											m_working_game_obj.emplace();
 											m_working_game_obj->destination = game_obj.get();
 											m_working_game_obj->game_obj = *game_obj;
-											m_working_game_obj->initial_drag_offset = ImVec2{ (ImGui::GetMousePos().x - screen_origin.x) - m_working_game_obj->game_obj.GetSpriteDrawPos().x, (ImGui::GetMousePos().y - screen_origin.y) - m_working_game_obj->game_obj.GetSpriteDrawPos().y };
+											m_working_game_obj->initial_drag_offset = (ImGui::GetMousePos() - screen_origin) - (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom);
 										}
 										else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
 										{
@@ -1656,8 +1645,8 @@ namespace spintool
 						{
 							if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 							{
-								m_working_spline->dest_spline_point->x = static_cast<int>(ImGui::GetMousePos().x - screen_origin.x);
-								m_working_spline->dest_spline_point->y = static_cast<int>(ImGui::GetMousePos().y - screen_origin.y);
+								m_working_spline->dest_spline_point->x = static_cast<int>((ImGui::GetMousePos().x - screen_origin.x) / m_zoom);
+								m_working_spline->dest_spline_point->y = static_cast<int>((ImGui::GetMousePos().y - screen_origin.y) / m_zoom);
 							}
 							else
 							{
@@ -1683,8 +1672,8 @@ namespace spintool
 
 						if (m_working_game_obj && ImGui::IsPopupOpen("obj_popup"))
 						{
-							ImGui::SetCursorPos(ImVec2{ origin.x + m_working_game_obj->game_obj.GetSpriteDrawPos().x, origin.y + m_working_game_obj->game_obj.GetSpriteDrawPos().y });
-							ImGui::Dummy(ImVec2{ (float)m_working_game_obj->game_obj.dimensions.x, (float)m_working_game_obj->game_obj.dimensions.y });
+							ImGui::SetCursorPos((origin + m_working_game_obj->game_obj.GetSpriteDrawPos()) * m_zoom);
+							ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
 							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 						}
 
@@ -1911,8 +1900,7 @@ namespace spintool
 
 						if (is_dragging)
 						{
-							tile_area->Scroll.x = scroll_start_pos.x + (drag_start_pos.x - ImGui::GetMousePos().x);
-							tile_area->Scroll.y = scroll_start_pos.y + (drag_start_pos.y - ImGui::GetMousePos().y);
+							tile_area->Scroll = scroll_start_pos + (drag_start_pos - ImGui::GetMousePos());
 						}
 					}
 					else

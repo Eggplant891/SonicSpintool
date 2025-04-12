@@ -97,7 +97,7 @@ namespace spintool
 						const auto matched_colour = std::find_if(std::begin(swatches), std::end(swatches),
 							[&pixel](const rom::Swatch& swatch)
 							{
-								return swatch.AsImColor() == pixel;
+								return swatch.AsImColor() == ImVec4{ pixel };
 							});
 
 						const Uint8 mapped_palette_index = (matched_colour != std::end(swatches)) ? static_cast<Uint8>(std::distance(std::begin(swatches), matched_colour)) : 0;
