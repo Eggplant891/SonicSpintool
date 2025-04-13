@@ -91,6 +91,21 @@ namespace spintool
 
 						new_anim_obj_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
 
+						for (auto& game_obj : m_game_object_manager.game_objects)
+						{
+							game_obj->obj_definition.SaveToROM(m_owning_ui.GetROM());
+						}
+
+						for (auto& obj : m_level->m_flipper_instances)
+						{
+							obj.SaveToROM(m_owning_ui.GetROM());
+						}
+
+						//for (auto& obj : m_level->m_ring_instances)
+						//{
+						//	obj.SaveToROM(m_owning_ui.GetROM());
+						//}
+
 						const Uint8 num_emeralds = std::accumulate(std::begin(m_game_object_manager.game_objects), std::end(m_game_object_manager.game_objects), static_cast<Uint8>(0),
 							[](const Uint8 running_val, const std::unique_ptr<UIGameObject>& game_obj)
 							{
