@@ -40,6 +40,8 @@ namespace spintool
 			out_render_request = RenderRequestType::LEVEL;
 		}
 
+		const int previous_level_index = m_level != nullptr ? m_level->level_index : -1;
+		int level_index = -1;
 
 		if (ImGui::BeginMenuBar())
 		{
@@ -50,6 +52,12 @@ namespace spintool
 				if (ImGui::Selectable("Repaint Level"))
 				{
 					m_render_from_edit = true;
+					out_render_request = RenderRequestType::LEVEL;
+				}
+
+				if (ImGui::Selectable("Reload Level"))
+				{
+					level_index = previous_level_index;
 					out_render_request = RenderRequestType::LEVEL;
 				}
 
@@ -130,8 +138,6 @@ namespace spintool
 			{
 				if (ImGui::BeginMenu("Level"))
 				{
-					const int previous_level_index = m_level != nullptr ? m_level->level_index : -1;
-					int level_index = -1;
 					if (ImGui::Selectable("Toxic Caves"))
 					{
 						out_render_request = RenderRequestType::LEVEL;
@@ -156,18 +162,11 @@ namespace spintool
 						level_index = 3;
 					}
 
-					if (level_index != -1 && level_index != previous_level_index)
-					{
-						m_level = std::make_shared<Level>(Level::LoadFromROM(m_owning_ui.GetROM(), level_index));
-						m_level->level_index = level_index;
-						m_level->m_tile_layers.emplace_back();
-						m_level->m_tile_layers.emplace_back();
-						m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
-					}
-					else if (level_index != -1)
+					if (level_index != -1 && level_index == previous_level_index)
 					{
 						m_render_from_edit = true;
 					}
+
 					ImGui::EndMenu();
 				}
 
@@ -278,6 +277,18 @@ namespace spintool
 			}
 
 			ImGui::EndMenuBar();
+		}
+
+		if (level_index != -1)
+		{
+			m_level = std::make_shared<Level>(Level::LoadFromROM(m_owning_ui.GetROM(), level_index));
+			m_level->level_index = level_index;
+			m_level->m_tile_layers.emplace_back();
+			m_level->m_tile_layers.emplace_back();
+			m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
+			m_selected_brush.Clear();
+			m_working_brush.reset();
+			m_working_flipper.reset();
 		}
 
 		return out_render_request;
@@ -1469,7 +1480,7 @@ namespace spintool
 								{
 									if (m_selected_brush.IsPickingBrushFromLayout())
 									{
-										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false)
+										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 										{
 											const int selected_index = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
 											m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
