@@ -1554,7 +1554,7 @@ namespace spintool
 								{
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
-										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - (m_working_game_obj->game_obj.sprite_pos_offset - *m_working_game_obj->initial_drag_offset);
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_game_obj->initial_drag_offset - m_working_game_obj->destination->sprite_pos_offset;
 										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x);
 										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>(pos.y);
 
@@ -1660,7 +1660,7 @@ namespace spintool
 											m_working_game_obj.emplace();
 											m_working_game_obj->destination = game_obj.get();
 											m_working_game_obj->game_obj = *game_obj;
-											m_working_game_obj->initial_drag_offset = (ImGui::GetMousePos() - screen_origin) - (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom);
+											m_working_game_obj->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - m_working_game_obj->game_obj.GetSpriteDrawPos();
 										}
 										else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
 										{
@@ -1760,7 +1760,7 @@ namespace spintool
 						if (m_request_open_obj_popup)
 						{
 							const UIGameObject& dest_obj = *m_working_game_obj->destination;
-							const ImVec2 origin_pos{ screen_origin.x + dest_obj.GetSpriteDrawPos().x, screen_origin.y + dest_obj.GetSpriteDrawPos().y };
+							const ImVec2 origin_pos{ screen_origin.x + (dest_obj.GetSpriteDrawPos().x * m_zoom), (screen_origin.y + dest_obj.GetSpriteDrawPos().y * m_zoom) };
 							ImGui::ScrollToRect(ImGui::GetCurrentWindow(), ImRect{ origin_pos, ImVec2{origin_pos.x + dest_obj.dimensions.x, origin_pos.y + dest_obj.dimensions.y} }, ImGuiScrollFlags_KeepVisibleEdgeX | ImGuiScrollFlags_KeepVisibleEdgeY);
 
 							ImGui::OpenPopup("obj_popup");
