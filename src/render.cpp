@@ -94,7 +94,11 @@ namespace spintool
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 
-		s_window_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(s_renderer, s_window_surface) };
+		SDL_Surface* window_surface = nullptr;
+
+		SDL_LockTextureToSurface(s_window_texture.get(), nullptr, &window_surface);
+		SDL_BlitSurface(s_window_surface, nullptr, window_surface, nullptr);
+		SDL_UnlockTexture(s_window_texture.get());
 	}
 
 	void Renderer::Render()
