@@ -1154,8 +1154,8 @@ namespace spintool
 						const ImVec2 mouse_pos{ ImGui::GetMousePos() };
 						const ImVec2 relative_mouse_pos{ (mouse_pos - panel_screen_origin) + origin };
 						const ImVec2 brush_dimensions{ (rom::TileBrush<4, 4>::s_brush_width * 8), (rom::TileBrush<4,4>::s_brush_height * 8) };
-						const float max_layout_width = m_level == nullptr ? 0.0f : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * brush_dimensions.y);
-						const float max_layout_height = m_level == nullptr ? 0.0f : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * brush_dimensions.y);
+						const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * brush_dimensions.y);
+						const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * brush_dimensions.y);
 						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
 						const ImVec2 grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / brush_dimensions.x)), static_cast<float>(static_cast<int>(relative_mouse_pos.y / brush_dimensions.y)) };
@@ -1169,7 +1169,7 @@ namespace spintool
 
 						ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_bg->w),  static_cast<float>(m_tile_layout_preview_bg->h) });
 						ImGui::SetCursorPos(origin);
-						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_bg->w),  static_cast<float>(m_tile_layout_preview_bg->h) });
+						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_fg->w),  static_cast<float>(m_tile_layout_preview_fg->h) });
 
 						// Visualise collision vectors
 						constexpr int tile_width = 128;
@@ -1693,42 +1693,45 @@ namespace spintool
 										}
 									}
 								}
-							
-								for (rom::FlipperInstance& flipper_obj : m_level->m_flipper_instances)
+								
+								if (m_level != nullptr)
 								{
-									const ImVec2 flipper_realpos{ static_cast<float>(flipper_obj.x_pos + flipper_obj.draw_pos_offset.x), static_cast<float>(flipper_obj.y_pos + flipper_obj.draw_pos_offset.y) };
-									const ImVec2 flipper_dimensions{ rom::FlipperInstance::width, rom::FlipperInstance::height };
-
-									ImGui::SetCursorPos(origin + (flipper_realpos * m_zoom));
-									ImGui::Dummy(flipper_dimensions* m_zoom);
-									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+									for (rom::FlipperInstance& flipper_obj : m_level->m_flipper_instances)
 									{
-										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+										const ImVec2 flipper_realpos{ static_cast<float>(flipper_obj.x_pos + flipper_obj.draw_pos_offset.x), static_cast<float>(flipper_obj.y_pos + flipper_obj.draw_pos_offset.y) };
+										const ImVec2 flipper_dimensions{ rom::FlipperInstance::width, rom::FlipperInstance::height };
 
-										//if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-										//{
-										//	m_request_open_obj_popup = true;
-										//	m_working_flipper.emplace();
-										//	m_working_flipper->destination = &flipper_obj;
-										//	m_working_flipper->flipper_obj = flipper_obj;
-										//}
-										//else
+										ImGui::SetCursorPos(origin + (flipper_realpos * m_zoom));
+										ImGui::Dummy(flipper_dimensions * m_zoom);
+										if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+										{
+											ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+
+											//if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+											//{
+											//	m_request_open_obj_popup = true;
+											//	m_working_flipper.emplace();
+											//	m_working_flipper->destination = &flipper_obj;
+											//	m_working_flipper->flipper_obj = flipper_obj;
+											//}
+											//else
 											if (IsDraggingObject() == false && IsObjectPopupOpen() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-										{
-											m_working_flipper.emplace();
-											m_working_flipper->destination = &flipper_obj;
-											m_working_flipper->flipper_obj = flipper_obj;
-											m_working_flipper->initial_drag_offset = (ImGui::GetMousePos() - screen_origin) - (flipper_realpos * m_zoom);
-										}
-										else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
-										{
-											ImGui::SeparatorText("Flipper Object");
+											{
+												m_working_flipper.emplace();
+												m_working_flipper->destination = &flipper_obj;
+												m_working_flipper->flipper_obj = flipper_obj;
+												m_working_flipper->initial_drag_offset = (ImGui::GetMousePos() - screen_origin) - (flipper_realpos * m_zoom);
+											}
+											else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
+											{
+												ImGui::SeparatorText("Flipper Object");
 
-											ImGui::Text("X: 0x%04X",  flipper_obj.x_pos);
-											ImGui::Text("Y: 0x%04X",  flipper_obj.y_pos);
-											ImGui::Text("Flip X: %d", flipper_obj.is_x_flipped);
+												ImGui::Text("X: 0x%04X", flipper_obj.x_pos);
+												ImGui::Text("Y: 0x%04X", flipper_obj.y_pos);
+												ImGui::Text("Flip X: %d", flipper_obj.is_x_flipped);
 
-											ImGui::EndTooltip();
+												ImGui::EndTooltip();
+											}
 										}
 									}
 								}
@@ -2314,7 +2317,7 @@ namespace spintool
 
 		case RenderRequestType::OPTIONS:
 		{
-			m_level.reset();
+			Reset();
 
 			RenderTileLayoutRequest request;
 
@@ -2342,7 +2345,7 @@ namespace spintool
 		case RenderRequestType::INTRO:
 		{
 			{
-				m_level.reset();
+				Reset();
 				{
 					RenderTileLayoutRequest request;
 
@@ -2406,7 +2409,8 @@ namespace spintool
 
 		case RenderRequestType::INTRO_SHIP:
 		{
-			m_level.reset();
+			Reset();
+
 			RenderTileLayoutRequest request;
 
 			request.tileset_address = 0x000A3124 + 2;
@@ -2435,7 +2439,7 @@ namespace spintool
 
 		case RenderRequestType::INTRO_WATER:
 		{
-			m_level.reset();
+			Reset();
 			{
 				RenderTileLayoutRequest request;
 
@@ -2466,7 +2470,7 @@ namespace spintool
 
 		case RenderRequestType::MENU:
 		{
-			m_level.reset();
+			Reset();
 			{
 				RenderTileLayoutRequest request;
 
@@ -2518,7 +2522,7 @@ namespace spintool
 
 		case RenderRequestType::BONUS:
 		{
-			m_level.reset();
+			Reset();
 			{
 				RenderTileLayoutRequest request;
 
@@ -2585,7 +2589,7 @@ namespace spintool
 
 		case RenderRequestType::SEGA_LOGO:
 		{
-			m_level.reset();
+			Reset();
 			{
 				RenderTileLayoutRequest request;
 
@@ -2714,4 +2718,12 @@ namespace spintool
 
 		}
 	}
+
+	void EditorTileLayoutViewer::Reset()
+	{
+		m_level.reset();
+		m_spline_manager = {};
+		m_game_object_manager = {};
+	}
+
 }

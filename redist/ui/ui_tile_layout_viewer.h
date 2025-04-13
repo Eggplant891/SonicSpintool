@@ -198,6 +198,7 @@ namespace spintool
 
 	private:
 		void TestCollisionCullingResults() const;
+		void Reset();
 
 		std::shared_ptr<Level> m_level;
 		std::shared_ptr<const rom::TileSet> m_working_tileset;
