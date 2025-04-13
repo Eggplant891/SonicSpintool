@@ -1821,8 +1821,8 @@ namespace spintool
 
 							if (m_working_game_obj)
 							{
-								const auto origin_offset = m_working_game_obj->destination->ui_sprite != nullptr ? m_working_game_obj->destination->ui_sprite->sprite->GetOriginOffsetFromMinBounds() : Point{ 0,0 };
-								int pos[2] = { static_cast<int>(m_working_game_obj->game_obj.GetSpriteDrawPos().x), static_cast<int>(m_working_game_obj->game_obj.GetSpriteDrawPos().y) };
+								const Point origin_offset{ m_working_game_obj->game_obj.obj_definition.x_pos,m_working_game_obj->game_obj.obj_definition.y_pos };
+								int pos[2] = { static_cast<int>(origin_offset.x), static_cast<int>(origin_offset.y) };
 								if (ImGui::InputInt2("Object Pos", pos))
 								{
 									m_working_game_obj->game_obj.obj_definition.x_pos = pos[0];
