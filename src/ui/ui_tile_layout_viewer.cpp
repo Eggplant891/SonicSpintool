@@ -394,8 +394,8 @@ namespace spintool
 					m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
 					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_palette[m_level->m_level_index]]);
 					SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
-					SDL_ClearSurface(m_flipper_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_flipper_preview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
+					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
+					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
 					flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
 				}
 				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->m_level_index));
@@ -423,8 +423,8 @@ namespace spintool
 					m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(ring_sprite->GetBoundingBox().Width(), ring_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
 					m_ring_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[3].get());
 					SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
-					SDL_ClearSurface(m_ring_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-					SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_ring_preview.sprite->format), nullptr, 0, 0, 0, 0));
+					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
+					SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, 0);
 					ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
 				}
 
@@ -489,8 +489,8 @@ namespace spintool
 								auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
 								entry.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get());
 								SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
-								SDL_ClearSurface(new_sprite_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_sprite_surface->format), nullptr, 0, 0, 0, 0));
+								SDL_FillSurfaceRect(new_sprite_surface.get(), nullptr, 0);
+								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, 0);
 								first_frame_sprite->RenderToSurface(new_sprite_surface.get());
 
 								entry.sprite_surface = std::move(new_sprite_surface);
@@ -667,8 +667,8 @@ namespace spintool
 						}
 						brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
 						SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-						SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
-						SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
+						SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, 0);
+						SDL_FillSurfaceRect(new_surface.get(), nullptr, 0);
 						brush_sprite.RenderToSurface(new_surface.get());
 						SDL_Surface* the_surface = new_surface.get();
 						brush_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface), static_cast<Uint32>(brush_index) });
@@ -835,7 +835,7 @@ namespace spintool
 							sprite_target_rect.y = game_obj.y_pos - (anim_entry->sprite_surface->h - origin_offset.y);
 						}
 
-						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_sprite_surface->format), nullptr, 0, 0, 0, 255));
+						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, 0);
 						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_bg_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
 
 						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
