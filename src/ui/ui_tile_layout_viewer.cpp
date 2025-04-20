@@ -296,7 +296,7 @@ namespace spintool
 
 		if (level_index != -1)
 		{
-			m_level = std::make_shared<Level>(Level::LoadFromROM(m_owning_ui.GetROM(), level_index));
+			m_level = std::make_shared<rom::Level>(rom::Level::LoadFromROM(m_owning_ui.GetROM(), level_index));
 			m_level->level_index = level_index;
 			m_level->m_tile_layers.emplace_back();
 			m_level->m_tile_layers.emplace_back();

@@ -37,7 +37,10 @@ namespace spintool
 
 		Uint32 brush_index;
 	};
+}
 
+namespace spintool::rom
+{
 	class Level
 	{
 	public:

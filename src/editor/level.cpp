@@ -3,7 +3,7 @@
 #include "rom/rom_asset_definitions.h"
 #include "rom/spinball_rom.h"
 
-namespace spintool
+namespace spintool::rom
 {
 
 	Level Level::LoadFromROM(const rom::SpinballROM& rom, int level_index)

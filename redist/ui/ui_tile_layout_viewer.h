@@ -200,7 +200,7 @@ namespace spintool
 		void TestCollisionCullingResults() const;
 		void Reset();
 
-		std::shared_ptr<Level> m_level;
+		std::shared_ptr<rom::Level> m_level;
 		std::shared_ptr<const rom::TileSet> m_working_tileset;
 		std::shared_ptr<rom::TileLayout> m_working_tile_layout;
 		rom::PaletteSet m_working_palette_set;
