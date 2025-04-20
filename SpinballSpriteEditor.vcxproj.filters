@@ -198,13 +198,13 @@
     <ClCompile Include="src\editor\game_obj_manager.cpp">
       <Filter>Source Files\editor</Filter>
     </ClCompile>
-    <ClCompile Include="src\editor\level.cpp">
-      <Filter>Source Files\editor</Filter>
-    </ClCompile>
     <ClCompile Include="src\editor\spline_manager.cpp">
       <Filter>Source Files\editor</Filter>
     </ClCompile>
-    <ClCompile Include="ui_tile_editor.cpp">
+    <ClCompile Include="src\rom\level.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ui\ui_tile_editor.cpp">
       <Filter>Source Files\ui</Filter>
     </ClCompile>
   </ItemGroup>
@@ -356,13 +356,13 @@
     <ClInclude Include="redist\editor\game_obj_manager.h">
       <Filter>Header Files\editor</Filter>
     </ClInclude>
-    <ClInclude Include="redist\editor\level.h">
-      <Filter>Header Files\editor</Filter>
-    </ClInclude>
     <ClInclude Include="redist\editor\spline_manager.h">
       <Filter>Header Files\editor</Filter>
     </ClInclude>
-    <ClInclude Include="ui_tile_editor.h">
+    <ClInclude Include="redist\rom\level.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_tile_editor.h">
       <Filter>Header Files\ui</Filter>
     </ClInclude>
   </ItemGroup>

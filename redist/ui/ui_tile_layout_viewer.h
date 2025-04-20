@@ -3,7 +3,7 @@
 #include "ui/ui_editor_window.h"
 #include "types/sdl_handle_defs.h"
 
-#include "editor/level.h"
+#include "rom/level.h"
 #include "editor/spline_manager.h"
 #include "editor/game_obj_manager.h"
 #include "rom/rom_asset_definitions.h"
@@ -22,7 +22,7 @@
 #include <memory>
 #include <optional>
 #include <string>
-#include "../ui_tile_editor.h"
+#include "ui/ui_tile_editor.h"
 
 namespace spintool { struct TileLayer; }
 

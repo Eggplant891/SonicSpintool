@@ -1,6 +1,6 @@
-#include "ui_tile_editor.h"
+#include "ui/ui_tile_editor.h"
 
-#include "editor/level.h"
+#include "rom/level.h"
 #include "imgui.h"
 #include "render.h"
 #include "ui/ui_palette_viewer.h"

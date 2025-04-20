@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ui/ui_editor_window.h"
-#include "editor/level.h"
+#include "rom/level.h"
 #include "rom/sprite.h"
 #include "rom/sprite_tile.h"
 #include "types/sdl_handle_defs.h"

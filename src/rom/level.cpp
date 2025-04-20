@@ -1,4 +1,4 @@
-#include "editor/level.h"
+#include "rom/level.h"
 
 #include "rom/rom_asset_definitions.h"
 #include "rom/spinball_rom.h"

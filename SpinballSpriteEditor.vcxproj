@@ -208,7 +208,6 @@
     <ClCompile Include="external\imgui\imgui_tables.cpp" />
     <ClCompile Include="external\imgui\imgui_widgets.cpp" />
     <ClCompile Include="src\editor\game_obj_manager.cpp" />
-    <ClCompile Include="src\editor\level.cpp" />
     <ClCompile Include="src\editor\spline_manager.cpp" />
     <ClCompile Include="src\editor\tile_brush_manager.cpp" />
     <ClCompile Include="src\editor\tile_layout_manager.cpp" />
@@ -216,6 +215,7 @@
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\rom\animated_object.cpp" />
     <ClCompile Include="src\rom\animation_sequence.cpp" />
+    <ClCompile Include="src\rom\level.cpp" />
     <ClCompile Include="src\rom\lzss_decompressor.cpp" />
     <ClCompile Include="src\rom\collision_tile.cpp" />
     <ClCompile Include="src\rom\colour.cpp" />
@@ -247,8 +247,8 @@
     <ClCompile Include="src\ui\ui_sprite_navigator.cpp" />
     <ClCompile Include="src\ui\ui_sprite_viewer.cpp" />
     <ClCompile Include="src\ui\ui_tileset_navigator.cpp" />
+    <ClCompile Include="src\ui\ui_tile_editor.cpp" />
     <ClCompile Include="src\ui\ui_tile_layout_viewer.cpp" />
-    <ClCompile Include="ui_tile_editor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\backends\imgui_impl_sdl3.h" />
@@ -260,13 +260,13 @@
     <ClInclude Include="external\imgui\imstb_textedit.h" />
     <ClInclude Include="external\imgui\imstb_truetype.h" />
     <ClInclude Include="redist\editor\game_obj_manager.h" />
-    <ClInclude Include="redist\editor\level.h" />
     <ClInclude Include="redist\editor\spline_manager.h" />
     <ClInclude Include="redist\editor\tile_brush_manager.h" />
     <ClInclude Include="redist\editor\tile_layout_manager.h" />
     <ClInclude Include="redist\render.h" />
     <ClInclude Include="redist\rom\animated_object.h" />
     <ClInclude Include="redist\rom\animation_sequence.h" />
+    <ClInclude Include="redist\rom\level.h" />
     <ClInclude Include="redist\rom\lzss_decompressor.h" />
     <ClInclude Include="redist\rom\bounding_box.h" />
     <ClInclude Include="redist\rom\collision_tile.h" />
@@ -301,8 +301,8 @@
     <ClInclude Include="redist\ui\ui_sprite_navigator.h" />
     <ClInclude Include="redist\ui\ui_sprite_viewer.h" />
     <ClInclude Include="redist\ui\ui_tileset_navigator.h" />
+    <ClInclude Include="redist\ui\ui_tile_editor.h" />
     <ClInclude Include="redist\ui\ui_tile_layout_viewer.h" />
-    <ClInclude Include="ui_tile_editor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
