@@ -21,4 +21,15 @@ namespace spintool::rom
 		return new_instance;
 	}
 
+	Uint32 RingInstance::SaveToROM(rom::SpinballROM& writeable_rom) const
+	{
+		Uint32 current_offset = rom_data.rom_offset;
+
+		current_offset = writeable_rom.WriteUint16(current_offset, instance_id);
+		current_offset = writeable_rom.WriteUint16(current_offset, x_pos);
+		current_offset = writeable_rom.WriteUint16(current_offset, y_pos);
+
+		return current_offset;
+	}
+
 }

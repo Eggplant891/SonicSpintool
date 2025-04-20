@@ -20,5 +20,6 @@ namespace spintool::rom
 		constexpr static const Uint32 s_size_on_rom = 0x4;
 
 		static RingInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
-	};
+		Uint32 SaveToROM(rom::SpinballROM& writeable_rom) const;
+	}
 }
