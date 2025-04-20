@@ -878,7 +878,8 @@ namespace spintool
 			{
 				if (ImGui::BeginChild("InfoSizebar", ImVec2{ 340, -1 }, 0, ImGuiWindowFlags_AlwaysVerticalScrollbar))
 				{
-					ImGui::SliderFloat ("Zoom", &m_zoom, -1, 8.0f, "%.1f");
+					ImGui::SliderFloat("Zoom", &m_zoom, 0, 8.0f, "%.1f");
+					ImGui::SliderInt("Grid Snap", &m_grid_snap, 1, 128);
 
 					constexpr size_t preview_brushes_per_row = 8;
 					if (current_preview_data && ImGui::TreeNode("ROM Info"))
@@ -1301,7 +1302,6 @@ namespace spintool
 									ImGui::GetWindowDrawList()->AddLine(screen_origin + (spline.spline_vector.min * m_zoom), screen_origin + (spline.spline_vector.max * m_zoom)
 										, ImGui::GetColorU32(colour), 2.0f);
 									ImGui::SetCursorPos(origin + (spline.spline_vector.min * m_zoom));
-									ImGui::Dummy(ImVec2{ static_cast<float>(spline.spline_vector.Width()), static_cast<float>(spline.spline_vector.Height()) } * m_zoom);
 
 									if (current_layer_settings.spline_culling == true)
 									{
@@ -1496,8 +1496,8 @@ namespace spintool
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_game_obj->initial_drag_offset - m_working_game_obj->destination->sprite_pos_offset;
-										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x);
-										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>(pos.y);
+										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
+										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom));
 										ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
@@ -1522,8 +1522,8 @@ namespace spintool
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset;
-										m_working_flipper->flipper_obj.x_pos = static_cast<Uint16>(pos.x);
-										m_working_flipper->flipper_obj.y_pos = static_cast<Uint16>(pos.y);
+										m_working_flipper->flipper_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
+										m_working_flipper->flipper_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.draw_pos_offset.x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.draw_pos_offset.y) } * m_zoom));
 										ImGui::Dummy(m_working_flipper->flipper_obj.dimensions * m_zoom);
@@ -1551,8 +1551,8 @@ namespace spintool
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_ring->initial_drag_offset;
-										m_working_ring->ring_obj.x_pos = static_cast<Uint16>(pos.x);
-										m_working_ring->ring_obj.y_pos = static_cast<Uint16>(pos.y);
+										m_working_ring->ring_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
+										m_working_ring->ring_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_ring->ring_obj.x_pos + m_working_ring->ring_obj.draw_pos_offset.x), static_cast<float>(m_working_ring->ring_obj.y_pos + m_working_ring->ring_obj.draw_pos_offset.y) } *m_zoom));
 										ImGui::Dummy(m_working_ring->ring_obj.dimensions * m_zoom);
@@ -1690,7 +1690,7 @@ namespace spintool
 												m_working_flipper.emplace();
 												m_working_flipper->destination = &flipper_obj;
 												m_working_flipper->flipper_obj = flipper_obj;
-												m_working_flipper->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - (flipper_realpos * m_zoom);
+												m_working_flipper->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - flipper_realpos;
 											}
 											else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
 											{

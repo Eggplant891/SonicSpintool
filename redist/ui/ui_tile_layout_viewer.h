@@ -239,6 +239,7 @@ namespace spintool
 		std::optional<PopupMessage> m_popup_msg;
 
 		float m_zoom = 1.0f;
+		int m_grid_snap = 8;
 
 		bool m_export_result = false;
 		bool m_preview_bonus_alt_palette = false;
