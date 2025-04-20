@@ -201,9 +201,7 @@ namespace spintool
 		void Reset();
 
 		std::shared_ptr<rom::Level> m_level;
-		std::shared_ptr<const rom::TileSet> m_working_tileset;
-		std::shared_ptr<rom::TileLayout> m_working_tile_layout;
-		rom::PaletteSet m_working_palette_set;
+
 		LayerSettings m_layer_settings;
 		SplineManager m_spline_manager;
 		GameObjectManager m_game_object_manager;
@@ -212,6 +210,9 @@ namespace spintool
 		std::vector<TilesetPreview> m_tileset_preview_list;
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 
+		std::shared_ptr<const rom::TileSet> m_working_tileset;
+		std::shared_ptr<rom::TileLayout> m_working_tile_layout;
+		rom::PaletteSet m_working_palette_set;
 		std::optional<WorkingGameObject> m_working_game_obj;
 		std::optional<WorkingFlipperObject> m_working_flipper;
 		std::optional<WorkingSpline> m_working_spline;
