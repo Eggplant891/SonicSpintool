@@ -30,7 +30,7 @@ namespace spintool::rom
 		Point draw_pos_offset{ is_x_flipped ? - 20 : -24, -31 };
 
 		static FlipperInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
-		Uint32 SaveToROM(rom::SpinballROM& writeable_rom);
+		Uint32 SaveToROM(rom::SpinballROM& writeable_rom) const;
 
 	};
 }

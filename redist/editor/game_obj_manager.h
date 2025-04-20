@@ -84,8 +84,8 @@ namespace spintool
 	class GameObjectManager
 	{
 	public:
-		rom::GameObjectCullingTable GenerateObjCollisionCullingTable() const;
-		rom::AnimatedObjectCullingTable GenerateAnimObjCullingTable() const;
+		std::unique_ptr<rom::GameObjectCullingTable> GenerateObjCollisionCullingTable() const;
+		std::unique_ptr<rom::AnimatedObjectCullingTable> GenerateAnimObjCullingTable() const;
 
 		UIGameObject* DeleteGameObject(const UIGameObject& obj_to_remove);
 		UIGameObject* DuplicateGameObject(const UIGameObject& obj_to_duplicate, const rom::LevelDataOffsets& level_data);

@@ -27,7 +27,7 @@ namespace spintool::rom
 		return new_instance;
 	}
 
-	Uint32 FlipperInstance::SaveToROM(rom::SpinballROM& writeable_rom)
+	Uint32 FlipperInstance::SaveToROM(rom::SpinballROM& writeable_rom) const
 	{
 		Uint32 current_offset = rom_data.rom_offset;
 

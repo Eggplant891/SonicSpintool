@@ -17,6 +17,9 @@
 namespace spintool::rom
 {
 	class SpinballROM;
+	struct AnimatedObjectCullingTable;
+	struct GameObjectCullingTable;
+	struct SplineCullingTable;
 }
 
 namespace spintool::rom
@@ -31,20 +34,22 @@ namespace spintool::rom
 	class Level
 	{
 	public:
-
 		//private:
 		rom::LevelDataOffsets m_data_offsets;
 		std::string m_level_name;
 		int m_level_index = -1;
-		std::vector<TileLayer> m_tile_layers;
-
+		std::vector<rom::TileLayer> m_tile_layers;
 		std::vector<rom::FlipperInstance> m_flipper_instances;
 		std::vector<rom::RingInstance> m_ring_instances;
 		std::vector<rom::GameObjectDefinition> m_game_obj_instances;
 		std::vector<rom::AnimObjectDefinition> m_anim_obj_instances;
 
+		std::unique_ptr<rom::GameObjectCullingTable> m_game_object_culling_table;
+		std::unique_ptr<rom::AnimatedObjectCullingTable> m_anim_object_culling_table;
+		std::unique_ptr<rom::SplineCullingTable> m_spline_culling_table;
+
 		static Level LoadFromROM(const rom::SpinballROM& rom, int level_index);
-		rom::Ptr32 SaveToROM(rom::SpinballROM& rom, int level_index) const;
+		rom::Ptr32 SaveToROM(rom::SpinballROM& rom) const;
 	};
 
 	class LevelManager

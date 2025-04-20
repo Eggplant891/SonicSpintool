@@ -25,9 +25,9 @@ namespace spintool
 		}
 	}
 
-	rom::SplineCullingTable SplineManager::GenerateSplineCullingTable() const
+	std::unique_ptr<rom::SplineCullingTable> SplineManager::GenerateSplineCullingTable() const
 	{
-		rom::SplineCullingTable new_table;
+		std::unique_ptr<rom::SplineCullingTable> new_table = std::make_unique<rom::SplineCullingTable>();
 		for (const rom::CollisionSpline& spline : splines)
 		{
 			auto test_cell_and_add = [&spline, &new_table](const float x, const float y)
@@ -35,13 +35,13 @@ namespace spintool
 					const Uint32 cell_x = static_cast<int>(x) / rom::SplineCullingTable::cell_dimensions.x;
 					const Uint32 cell_y = static_cast<int>(y) / rom::SplineCullingTable::cell_dimensions.y;
 					const size_t cell_index = (cell_y * rom::SplineCullingTable::grid_dimensions.x) + cell_x;
-					if (cell_x == rom::SplineCullingTable::grid_dimensions.x || cell_y == rom::SplineCullingTable::grid_dimensions.y || cell_index >= new_table.cells.size())
+					if (cell_x == rom::SplineCullingTable::grid_dimensions.x || cell_y == rom::SplineCullingTable::grid_dimensions.y || cell_index >= new_table->cells.size())
 					{
 						//std::cout << "Discarded spline in cell [" << cell_x << "," << cell_y << "]" << std::endl;
 						return;
 					}
 
-					rom::SplineCullingCell& target_cell = new_table.cells[cell_index];
+					rom::SplineCullingCell& target_cell = new_table->cells[cell_index];
 					if (std::none_of(std::begin(target_cell.splines), std::end(target_cell.splines), [&spline](const rom::CollisionSpline& _spline)
 						{
 							return _spline == spline;
@@ -84,6 +84,6 @@ namespace spintool
 				}
 			}
 		}
-		return new_table;
+		return std::move(new_table);
 	}
 }

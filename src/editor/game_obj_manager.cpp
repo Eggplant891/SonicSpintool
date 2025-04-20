@@ -21,9 +21,9 @@ namespace spintool
 
 	}
 
-	rom::GameObjectCullingTable GameObjectManager::GenerateObjCollisionCullingTable() const
+	std::unique_ptr<rom::GameObjectCullingTable> GameObjectManager::GenerateObjCollisionCullingTable() const
 	{
-		rom::GameObjectCullingTable new_table;
+		std::unique_ptr<rom::GameObjectCullingTable> new_table = std::make_unique<rom::GameObjectCullingTable>();
 
 		for (const std::unique_ptr<UIGameObject>& ui_obj : game_objects)
 		{
@@ -52,19 +52,19 @@ namespace spintool
 				for (int cell_y = cell_range.MinOrdered().y; cell_y <= cell_range.MaxOrdered().y; ++cell_y)
 				{
 					const size_t cell_index = (cell_y * rom::GameObjectCullingTable::grid_dimensions.x) + cell_x;
-					rom::GameObjectCullingCell& target_cell = new_table.cells[cell_index];
+					rom::GameObjectCullingCell& target_cell = new_table->cells[cell_index];
 
 					target_cell.obj_instance_ids.emplace_back(ui_obj->obj_definition.instance_id);
 				}
 			}
 		}
 
-		return new_table;
+		return std::move(new_table);
 	}
 
-	rom::AnimatedObjectCullingTable GameObjectManager::GenerateAnimObjCullingTable() const
+	std::unique_ptr<rom::AnimatedObjectCullingTable> GameObjectManager::GenerateAnimObjCullingTable() const
 	{
-		rom::AnimatedObjectCullingTable new_table;
+		std::unique_ptr<rom::AnimatedObjectCullingTable> new_table = std::make_unique<rom::AnimatedObjectCullingTable>();
 
 		for (const std::unique_ptr<UIGameObject>& ui_obj : game_objects)
 		{
@@ -94,14 +94,14 @@ namespace spintool
 				for (int cell_y = cell_range.MinOrdered().y; cell_y <= cell_range.MaxOrdered().y; ++cell_y)
 				{
 					const size_t cell_index = (cell_y * rom::AnimatedObjectCullingTable::grid_dimensions.x) + cell_x;
-					rom::AnimatedObjectCullingCell& target_cell = new_table.cells[cell_index];
+					rom::AnimatedObjectCullingCell& target_cell = new_table->cells[cell_index];
 
 					target_cell.obj_instance_ids.emplace_back(ui_obj->obj_definition.instance_id);
 				}
 			}
 		}
 
-		return new_table;
+		return std::move(new_table);
 	}
 
 	UIGameObject* GameObjectManager::DeleteGameObject(const UIGameObject& obj_to_remove)
