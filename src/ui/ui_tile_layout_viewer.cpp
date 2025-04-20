@@ -1116,17 +1116,17 @@ namespace spintool
 						constexpr int size_of_preview_collision_boxes = 4;
 						constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
 
-						int selected_collision_tile_index = -1;
+						int selected_spline_culling_cell_index = -1;
 
 						if (current_layer_settings.spline_culling == true)
 						{
-							selected_collision_tile_index = (static_cast<int>((relative_mouse_pos.x / m_zoom) / rom::SplineCullingTable::cell_dimensions.x) % (rom::SplineCullingTable::grid_dimensions.x))
+							selected_spline_culling_cell_index = (static_cast<int>((relative_mouse_pos.x / m_zoom) / rom::SplineCullingTable::cell_dimensions.x) % (rom::SplineCullingTable::grid_dimensions.x))
 								+ (static_cast<int>((relative_mouse_pos.y / m_zoom) / rom::SplineCullingTable::cell_dimensions.y) * (rom::SplineCullingTable::grid_dimensions.x));
 
-							if (selected_collision_tile_index != -1)
+							if (selected_spline_culling_cell_index != -1)
 							{
-								const int collision_tile_origin_x = (static_cast<int>(selected_collision_tile_index) % rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.x;
-								const int collision_tile_origin_y = (static_cast<int>(selected_collision_tile_index) / rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.y;
+								const int collision_tile_origin_x = (static_cast<int>(selected_spline_culling_cell_index) % rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.x;
+								const int collision_tile_origin_y = (static_cast<int>(selected_spline_culling_cell_index) / rom::SplineCullingTable::grid_dimensions.x) * rom::SplineCullingTable::cell_dimensions.y;
 
 								ImGui::GetWindowDrawList()->AddRect(
 									ImVec2{ static_cast<float>(screen_origin.x + (collision_tile_origin_x * m_zoom)), static_cast<float>(screen_origin.y + (collision_tile_origin_y * m_zoom)) },
@@ -1141,7 +1141,7 @@ namespace spintool
 							}
 						}
 
-						if (selected_collision_tile_index != -1)
+						if (selected_spline_culling_cell_index != -1)
 						{
 							current_layer_settings.collision = true;
 							current_layer_settings.rings = false;
@@ -1193,9 +1193,9 @@ namespace spintool
 						{
 							for (rom::CollisionSpline& next_spline : m_spline_manager.splines)
 							{
-								if (current_layer_settings.spline_culling && selected_collision_tile_index >= 0 && selected_collision_tile_index < rom::SplineCullingTable::cells_count)
+								if (current_layer_settings.spline_culling && selected_spline_culling_cell_index >= 0 && selected_spline_culling_cell_index < rom::SplineCullingTable::cells_count)
 								{
-									const bool spline_is_visible = std::any_of(std::begin(m_working_culling_table.cells[selected_collision_tile_index].splines), std::end(m_working_culling_table.cells[selected_collision_tile_index].splines),
+									const bool spline_is_visible = std::any_of(std::begin(m_working_culling_table.cells[selected_spline_culling_cell_index].splines), std::end(m_working_culling_table.cells[selected_spline_culling_cell_index].splines),
 										[&next_spline](const rom::CollisionSpline& spline)
 										{
 											return spline == next_spline;
@@ -1245,6 +1245,10 @@ namespace spintool
 									fixed_bbox.min.y = spline.spline_vector.min.y - spline.spline_vector.max.x - 2;
 									fixed_bbox.max.y = spline.spline_vector.min.y + spline.spline_vector.max.x + 2;
 
+									if (ImGui::IsClippedEx(fixed_bbox + screen_origin, 0) == true)
+									{
+										continue;
+									}
 									ImGui::GetWindowDrawList()->AddCircle( screen_origin + (spline.spline_vector.min * m_zoom), static_cast<float>(spline.spline_vector.max.x) * m_zoom
 										, ImGui::GetColorU32(colour), 16, spline.object_type_flags != 0x8000 ? 1.0f : 2.0f);
 
@@ -1299,6 +1303,11 @@ namespace spintool
 								}
 								else
 								{
+									if (ImGui::IsClippedEx(spline.spline_vector + screen_origin, 0) == true)
+									{
+										continue;
+									}
+
 									ImGui::GetWindowDrawList()->AddLine(screen_origin + (spline.spline_vector.min * m_zoom), screen_origin + (spline.spline_vector.max * m_zoom)
 										, ImGui::GetColorU32(colour), 2.0f);
 									ImGui::SetCursorPos(origin + (spline.spline_vector.min * m_zoom));
