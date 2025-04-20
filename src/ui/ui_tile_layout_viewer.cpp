@@ -713,7 +713,7 @@ namespace spintool
 					const rom::RingInstance& ring = m_level->m_ring_instances[i];
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_ring_preview.sprite.get()) };
-					SDL_Rect target_rect{ ring.x_pos - 8, ring.y_pos - 16, 0x10, 0x10 };
+					SDL_Rect target_rect{ ring.x_pos + ring.draw_pos_offset.x, ring.y_pos + ring.draw_pos_offset.y, ring.dimensions.x, ring.dimensions.y };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 				}
@@ -1276,11 +1276,14 @@ namespace spintool
 
 										if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 										{
-											WorkingSpline new_spline;
-											new_spline.destination = &spline;
-											new_spline.spline = spline;
-											m_working_spline.emplace(new_spline);
-											m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
+											//if (spline.IsRing() == false && spline.IsTeleporter())
+											{
+												WorkingSpline new_spline;
+												new_spline.destination = &spline;
+												new_spline.spline = spline;
+												m_working_spline.emplace(new_spline);
+												m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
+											}
 										}
 
 										if (m_working_spline.has_value() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
@@ -1537,6 +1540,35 @@ namespace spintool
 								}
 							}
 
+							if (m_working_ring)
+							{
+								if (m_working_ring->initial_drag_offset.has_value() == false)
+								{
+									m_working_ring.reset();
+								}
+								else
+								{
+									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+									{
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_ring->initial_drag_offset;
+										m_working_ring->ring_obj.x_pos = static_cast<Uint16>(pos.x);
+										m_working_ring->ring_obj.y_pos = static_cast<Uint16>(pos.y);
+
+										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_ring->ring_obj.x_pos + m_working_ring->ring_obj.draw_pos_offset.x), static_cast<float>(m_working_ring->ring_obj.y_pos + m_working_ring->ring_obj.draw_pos_offset.y) } *m_zoom));
+										ImGui::Dummy(m_working_ring->ring_obj.dimensions * m_zoom);
+										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+									}
+									else if (m_working_ring->initial_drag_offset)
+									{
+										m_working_ring->initial_drag_offset.reset();
+										*m_working_ring->destination = m_working_ring->ring_obj;
+										m_working_ring->destination->SaveToROM(m_owning_ui.GetROM());
+										m_render_from_edit = true;
+										m_working_ring.reset();
+									}
+								}
+							}
+
 							if (current_layer_settings.hover_game_objects)
 							{
 								for (std::unique_ptr<UIGameObject>& game_obj : m_game_object_manager.game_objects)
@@ -1658,7 +1690,7 @@ namespace spintool
 												m_working_flipper.emplace();
 												m_working_flipper->destination = &flipper_obj;
 												m_working_flipper->flipper_obj = flipper_obj;
-												m_working_flipper->initial_drag_offset = (ImGui::GetMousePos() - screen_origin) - (flipper_realpos * m_zoom);
+												m_working_flipper->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - (flipper_realpos * m_zoom);
 											}
 											else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
 											{
@@ -1667,6 +1699,44 @@ namespace spintool
 												ImGui::Text("X: 0x%04X", flipper_obj.x_pos);
 												ImGui::Text("Y: 0x%04X", flipper_obj.y_pos);
 												ImGui::Text("Flip X: %d", flipper_obj.is_x_flipped);
+
+												ImGui::EndTooltip();
+											}
+										}
+									}
+
+									for (rom::RingInstance& ring_obj : m_level->m_ring_instances)
+									{
+										const ImVec2 ring_realpos{ static_cast<float>(ring_obj.x_pos + ring_obj.draw_pos_offset.x), static_cast<float>(ring_obj.y_pos + ring_obj.draw_pos_offset.y) };
+										const ImVec2 ring_dimensions{ rom::RingInstance::width, rom::RingInstance::height };
+
+										ImGui::SetCursorPos(origin + (ring_realpos * m_zoom));
+										ImGui::Dummy(ring_dimensions* m_zoom);
+										if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+										{
+											ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+
+											//if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+											//{
+											//	m_request_open_obj_popup = true;
+											//	m_working_ring.emplace();
+											//	m_working_ring->destination = &ring_obj;
+											//	m_working_ring->flipper_obj = ring_obj;
+											//}
+											//else
+											if (IsDraggingObject() == false && IsObjectPopupOpen() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+											{
+												m_working_ring.emplace();
+												m_working_ring->destination = &ring_obj;
+												m_working_ring->ring_obj = ring_obj;
+												m_working_ring->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - (ring_realpos * m_zoom);
+											}
+											else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
+											{
+												ImGui::SeparatorText("Ring Object");
+
+												ImGui::Text("X: 0x%04X", ring_obj.x_pos);
+												ImGui::Text("Y: 0x%04X", ring_obj.y_pos);
 
 												ImGui::EndTooltip();
 											}
@@ -1783,6 +1853,42 @@ namespace spintool
 							{
 								if (ImGui::Button("Confirm"))
 								{
+									if (m_working_spline->spline.IsRing()|| m_working_spline->spline.IsTeleporter())
+									{
+										const bool is_max_point = true;
+										const Point offset = is_max_point ? Point{ m_working_spline->spline.spline_vector.min - m_working_spline->destination->spline_vector.min } : Point{m_working_spline->spline.spline_vector.max - m_working_spline->destination->spline_vector.max};
+										const Uint16 spline_target_id = m_working_spline->spline.extra_info;
+
+										if (m_working_spline->spline.IsRing())
+										{
+											auto target_ring_obj = std::find_if(std::begin(m_level->m_ring_instances), std::end(m_level->m_ring_instances),
+												[spline_target_id](const rom::RingInstance& ring_obj)
+												{
+													return ring_obj.instance_id == spline_target_id;
+												});
+
+											if (target_ring_obj != std::end(m_level->m_ring_instances))
+											{
+												target_ring_obj->x_pos += offset.x;
+												target_ring_obj->y_pos += offset.y;
+											}
+										}
+										else if (m_working_spline->spline.IsTeleporter())
+										{
+											auto target_game_obj = std::find_if(std::begin(m_game_object_manager.game_objects), std::end(m_game_object_manager.game_objects),
+												[spline_target_id](const std::unique_ptr<UIGameObject>& ui_game_obj)
+												{
+													return static_cast<Uint16>(ui_game_obj->obj_definition.instance_id) == spline_target_id;
+												});
+
+											if (target_game_obj != std::end(m_game_object_manager.game_objects))
+											{
+												target_game_obj->get()->obj_definition.x_pos += offset.x;
+												target_game_obj->get()->obj_definition.y_pos += offset.y;
+												target_game_obj->get()->obj_definition.SaveToROM(m_owning_ui.GetROM());
+											}
+										}
+									}
 									*m_working_spline->destination = m_working_spline->spline;
 									m_working_spline.reset();
 									ImGui::CloseCurrentPopup();

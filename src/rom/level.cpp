@@ -59,18 +59,17 @@ namespace spintool::rom
 			const rom::Ptr32 obj_end = m_game_object_culling_table->SaveToROM(target_rom, m_data_offsets.collision_tile_obj_ids.offset);
 			target_rom.WriteUint32(m_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
 		}
+		m_anim_object_culling_table->SaveToROM(target_rom, target_rom.ReadUint32(m_data_offsets.camera_activation_sector_anim_obj_ids));
 
 		for (const rom::FlipperInstance& obj : m_flipper_instances)
 		{
 			obj.SaveToROM(target_rom);
 		}
 
-		m_anim_object_culling_table->SaveToROM(target_rom, target_rom.ReadUint32(m_data_offsets.camera_activation_sector_anim_obj_ids));
-
-		//for (auto& obj : m_ring_instances)
-		//{
-		//	obj.SaveToROM(target_rom);
-		//}
+		for (const rom::RingInstance& obj : m_ring_instances)
+		{
+			obj.SaveToROM(target_rom);
+		}
 
 		const Uint8 num_emeralds = std::accumulate(std::begin(m_game_obj_instances), std::end(m_game_obj_instances), static_cast<Uint8>(0),
 			[](const Uint8 running_val, const rom::GameObjectDefinition& game_obj)

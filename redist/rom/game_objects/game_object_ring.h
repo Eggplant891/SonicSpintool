@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rom/rom_data.h"
+#include "types/bounding_box.h"
 
 namespace spintool::rom
 {
@@ -19,7 +20,13 @@ namespace spintool::rom
 
 		constexpr static const Uint32 s_size_on_rom = 0x4;
 
+		static constexpr int width = 16;
+		static constexpr int height = 16;
+
+		static constexpr Point dimensions{ width, height };
+		Point draw_pos_offset{ -8 , -16 };
+
 		static RingInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
 		Uint32 SaveToROM(rom::SpinballROM& writeable_rom) const;
-	}
+	};
 }
