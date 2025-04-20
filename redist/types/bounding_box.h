@@ -69,4 +69,13 @@ namespace spintool
 			max = max * scalar;
 		}
 	};
+
+	static BoundingBox operator+(const BoundingBox& lhs, const Point& rhs) { return  BoundingBox{ lhs.min.x + rhs.x, lhs.min.y + rhs.y, lhs.max.x + rhs.x, lhs.max.y + rhs.y }; }
+	static BoundingBox operator-(const BoundingBox& lhs, const Point& rhs) { return  BoundingBox{ lhs.min.x - rhs.x, lhs.min.y - rhs.y, lhs.max.x - rhs.x, lhs.max.y - rhs.y }; }
+	static BoundingBox operator+(const BoundingBox& lhs, const ImVec2& rhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) + rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) + rhs.y) }; }
+	static BoundingBox operator-(const BoundingBox& lhs, const ImVec2& rhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) - rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) - rhs.y) }; }
+	static BoundingBox operator+(const ImVec2& rhs, const BoundingBox& lhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) + rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) + rhs.y) }; }
+	static BoundingBox operator-(const ImVec2& rhs, const BoundingBox& lhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) - rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) - rhs.y) }; }
+	static BoundingBox operator*(const BoundingBox& lhs, const float rhs) { return   BoundingBox{ lhs.min * rhs, lhs.max * rhs }; }
+	static BoundingBox operator/(const BoundingBox& lhs, const float rhs) { return   BoundingBox{ lhs.min / rhs, lhs.max / rhs }; }
 }
