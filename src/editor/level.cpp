@@ -18,7 +18,7 @@ namespace spintool::rom
 		char buffer[256];
 		sprintf_s(buffer, "%s", level_name);
 		new_level.m_level_name = buffer;
-
+		new_level.m_level_index = level_index;
 		new_level.m_ring_instances.clear();
 		new_level.m_ring_instances.reserve(level_data_offsets.ring_instances.count);
 
@@ -31,6 +31,8 @@ namespace spintool::rom
 				current_table_offset = new_level.m_ring_instances.back().rom_data.rom_offset_end;
 			}
 		}
+
+		new_level.m_data_offsets = level_data_offsets;
 
 		return new_level;
 	}

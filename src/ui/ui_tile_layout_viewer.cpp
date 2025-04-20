@@ -40,14 +40,14 @@ namespace spintool
 			out_render_request = RenderRequestType::LEVEL;
 		}
 
-		const int previous_level_index = m_level != nullptr ? m_level->level_index : -1;
+		const int previous_level_index = m_level != nullptr ? m_level->m_level_index : -1;
 		int level_index = -1;
 
 		if (ImGui::BeginMenuBar())
 		{
 			if (ImGui::BeginMenu("File"))
 			{
-				ImGui::BeginDisabled(m_level == nullptr || m_level->level_index == -1);
+				ImGui::BeginDisabled(m_level == nullptr || m_level->m_level_index == -1);
 
 				if (ImGui::Selectable("Repaint Level"))
 				{
@@ -67,29 +67,29 @@ namespace spintool
 					{
 						//for (TileLayer& layer : m_level->m_tile_layers)
 						{
-							m_level->m_tile_layers[0].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_layout));
-							m_level->m_tile_layers[1].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout));
+							m_level->m_tile_layers[0].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout));
+							m_level->m_tile_layers[1].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tile_layout));
 						}
 					}
-					const auto original_spline_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+					const auto original_spline_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain));
 					const auto new_spline_table = m_spline_manager.GenerateSplineCullingTable();
 					char out_buffer[512];
 
 					//if (new_spline_table.CalculateTableSize() <= original_spline_table.CalculateTableSize())
 					{
-						const auto original_game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
-						const auto original_anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+						const auto original_game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_tile_obj_ids.offset);
+						const auto original_anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids));
 						const auto new_game_obj_table = m_game_object_manager.GenerateObjCollisionCullingTable();
 						const auto new_anim_obj_table = m_game_object_manager.GenerateAnimObjCullingTable();
 
-						new_spline_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
-						if (m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+						new_spline_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain));
+						if (m_level->m_data_offsets.collision_tile_obj_ids.offset != 0)
 						{
-							const rom::Ptr32 obj_end = new_game_obj_table.SaveToROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
-							m_owning_ui.GetROM().WriteUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
+							const rom::Ptr32 obj_end = new_game_obj_table.SaveToROM(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_tile_obj_ids.offset);
+							m_owning_ui.GetROM().WriteUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids, obj_end);
 						}
 
-						new_anim_obj_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+						new_anim_obj_table.SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids));
 
 						for (auto& game_obj : m_game_object_manager.game_objects)
 						{
@@ -115,7 +115,7 @@ namespace spintool
 								}
 								return running_val + 0;
 							});
-						m_owning_ui.GetROM().WriteUint8(m_level_data_offsets.emerald_count, num_emeralds);
+						m_owning_ui.GetROM().WriteUint8(m_level->m_data_offsets.emerald_count, num_emeralds);
 
 						static const char* format_str = "Saved level OK.\n\n"
 							"Spline Table:  Old = %d bytes.\nNew = %d bytes.\n"
@@ -297,10 +297,8 @@ namespace spintool
 		if (level_index != -1)
 		{
 			m_level = std::make_shared<rom::Level>(rom::Level::LoadFromROM(m_owning_ui.GetROM(), level_index));
-			m_level->level_index = level_index;
 			m_level->m_tile_layers.emplace_back();
 			m_level->m_tile_layers.emplace_back();
-			m_level_data_offsets = rom::LevelDataOffsets{ m_level->level_index };
 			m_selected_brush.Clear();
 			m_working_brush.reset();
 			m_working_flipper.reset();
@@ -392,16 +390,16 @@ namespace spintool
 
 				if (m_flipper_preview.sprite == nullptr || m_render_from_edit == false)
 				{
-					std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[m_level->level_index]);
+					std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[m_level->m_level_index]);
 					m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_palette[m_level->level_index]]);
+					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_palette[m_level->m_level_index]]);
 					SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
 					SDL_ClearSurface(m_flipper_preview.sprite.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_flipper_preview.sprite->format), nullptr, 0, static_cast<Uint8>(rom::Swatch::Pack(0, rom::Colour::levels_lookup[0x0], rom::Colour::levels_lookup[0x0])), 0, 0));
 					flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
 				}
-				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->level_index));
-				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * m_level->level_index));
+				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->m_level_index));
+				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * m_level->m_level_index));
 
 				m_level->m_flipper_instances.clear();
 				m_level->m_flipper_instances.reserve(num_flippers);
@@ -442,17 +440,17 @@ namespace spintool
 				SDL_SetSurfaceColorKey(m_game_object_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_game_object_preview.sprite->format), nullptr, 255, 0, 0, 255));
 				//LevelGameObjSprite->RenderToSurface(GameObjectPreview.sprite.get());
 
-				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain)));
+				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain)));
 
 				m_game_object_manager.game_objects.clear();
 				m_anim_sprite_instances.clear();
 				m_level->m_game_obj_instances.clear();
-				m_level->m_game_obj_instances.reserve(m_level_data_offsets.object_instances.count);
+				m_level->m_game_obj_instances.reserve(m_level->m_data_offsets.object_instances.count);
 
 				{
-					Uint32 current_table_offset = m_level_data_offsets.object_instances.offset;
+					Uint32 current_table_offset = m_level->m_data_offsets.object_instances.offset;
 
-					for (Uint32 i = 0; i < m_level_data_offsets.object_instances.count; ++i)
+					for (Uint32 i = 0; i < m_level->m_data_offsets.object_instances.count; ++i)
 					{
 						{
 							auto new_def = rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset);
@@ -872,9 +870,9 @@ namespace spintool
 					}
 				}
 
-				if (m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+				if (m_level->m_data_offsets.collision_tile_obj_ids.offset != 0)
 				{
-					rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+					rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_tile_obj_ids.offset);
 					for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
 					{
 						const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
@@ -891,7 +889,7 @@ namespace spintool
 					}
 				}
 
-				rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+				rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids));
 				for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
 				{
 					const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
@@ -1616,7 +1614,7 @@ namespace spintool
 
 										if (current_layer_settings.visibility_culling)
 										{
-											rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.camera_activation_sector_anim_obj_ids));
+											rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids));
 											for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
 											{
 												const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
@@ -1631,9 +1629,9 @@ namespace spintool
 											}
 										}
 
-										if (current_layer_settings.collision_culling && m_level_data_offsets.collision_tile_obj_ids.offset != 0)
+										if (current_layer_settings.collision_culling && m_level->m_data_offsets.collision_tile_obj_ids.offset != 0)
 										{
-											rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.collision_tile_obj_ids.offset);
+											rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_tile_obj_ids.offset);
 											for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
 											{
 												const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
@@ -1793,7 +1791,7 @@ namespace spintool
 
 							if (ImGui::Button("Create duplicate here"))
 							{
-								if (UIGameObject* new_obj = m_game_object_manager.DuplicateGameObject(m_working_game_obj->game_obj, m_level_data_offsets))
+								if (UIGameObject* new_obj = m_game_object_manager.DuplicateGameObject(m_working_game_obj->game_obj, m_level->m_data_offsets))
 								{
 									new_obj->had_collision_sectors_on_rom = true;
 									new_obj->had_culling_sectors_on_rom = true;
@@ -2060,20 +2058,20 @@ namespace spintool
 
 		sprintf_s(working_buffer, "%s", m_level->m_level_name.c_str());
 		ImGui::InputText("Level Name", working_buffer, std::size(working_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
-		int emerald_count = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.emerald_count);
+		int emerald_count = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.emerald_count);
 		ImGui::InputInt("Emeralds", &emerald_count);
-		int flipper_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.flipper_count));
+		int flipper_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_count));
 		ImGui::InputInt("Flippers", &flipper_count);
-		int ring_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.ring_count));
+		int ring_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.ring_count));
 		ImGui::InputInt("Rings", &ring_count);
-		int music_id = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.music_id);
+		int music_id = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.music_id);
 		ImGui::InputInt("Music Bank", &music_id, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
-		int player_start_x = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.player_start_position_x);
-		int player_start_y = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.player_start_position_y);
+		int player_start_x = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.player_start_position_x);
+		int player_start_y = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.player_start_position_y);
 		int player_start[2] = { player_start_x, player_start_y };
 		ImGui::InputInt2("Player Start Pos", player_start, ImGuiInputTextFlags_CharsHexadecimal);
-		int level_width = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.tile_layout_width);
-		int level_height = m_owning_ui.GetROM().ReadUint8(m_level_data_offsets.tile_layout_height);
+		int level_width = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.tile_layout_width);
+		int level_height = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.tile_layout_height);
 		int level_dimensions[2] = { level_width * 128, level_height * 128 };
 		int level_dimensions_tiles[2] = { level_width, level_height };
 		ImGui::InputInt2("Dimensions", level_dimensions);
@@ -2232,14 +2230,14 @@ namespace spintool
 		{
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tileset);
-				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_layout);
-				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.background_tile_brushes);
-				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.foreground_tile_layout);
+				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tileset);
+				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout);
+				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes);
+				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tile_layout);
 
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.tile_layout_width);
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(m_level_data_offsets.tile_layout_height);
+				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_width);
+				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_height);
 
 				RenderTileLayoutRequest request;
 
@@ -2259,12 +2257,12 @@ namespace spintool
 				request.is_chroma_keyed = false;
 				request.compression_algorithm = CompressionAlgorithm::SSC;
 				char levelname_buffer[32];
-				sprintf_s(levelname_buffer, "level_%d", m_level->level_index);
+				sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "bg";
 
-				m_working_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.palette_set);
-				m_level->m_tile_layers[0].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.palette_set);
+				m_working_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
+				m_level->m_tile_layers[0].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
 				request.store_tileset = &m_level->m_tile_layers[0].tileset;
 				request.store_layout = &m_level->m_tile_layers[0].tile_layout;
 
@@ -2273,7 +2271,7 @@ namespace spintool
 
 			{
 				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const rom::LevelDataOffsets level_data_offsets{ m_level->level_index };
+				const rom::LevelDataOffsets level_data_offsets{ m_level->m_level_index };
 				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
 				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
 				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
@@ -2302,11 +2300,11 @@ namespace spintool
 				request.compression_algorithm = CompressionAlgorithm::SSC;
 
 				char levelname_buffer[32];
-				sprintf_s(levelname_buffer, "level_%d", m_level->level_index);
+				sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
 				request.layout_type_name = levelname_buffer;
 				request.layout_layout_name = "fg";
 
-				m_level->m_tile_layers[1].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level_data_offsets.palette_set);
+				m_level->m_tile_layers[1].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
 				request.store_tileset = &m_level->m_tile_layers[1].tileset;
 				request.store_layout = &m_level->m_tile_layers[1].tile_layout;;
 
@@ -2643,7 +2641,7 @@ namespace spintool
 		SplineManager boogaloo;
 		boogaloo.LoadFromSplineCullingTable(m_spline_manager.GenerateSplineCullingTable());
 
-		const auto rom_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level_data_offsets.collision_data_terrain));
+		const auto rom_table = rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain));
 		const auto og_table = m_spline_manager.GenerateSplineCullingTable();
 		const auto new_table = boogaloo.GenerateSplineCullingTable();
 

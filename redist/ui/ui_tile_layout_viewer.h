@@ -232,8 +232,6 @@ namespace spintool
 
 		std::optional<PopupMessage> m_popup_msg;
 
-		rom::LevelDataOffsets m_level_data_offsets;
-
 		float m_zoom = 1.0f;
 
 		bool m_export_result = false;

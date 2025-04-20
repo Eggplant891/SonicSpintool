@@ -4,6 +4,8 @@
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
 #include "rom/game_objects/game_object_definition.h"
+#include "rom/rom_asset_definitions.h"
+
 #include "rom/palette.h"
 #include "rom/tile_layout.h"
 #include "rom/tileset.h"
@@ -45,9 +47,10 @@ namespace spintool::rom
 	{
 	public:
 
-	//private:
+		//private:
+		rom::LevelDataOffsets m_data_offsets;
 		std::string m_level_name;
-		int level_index = -1;
+		int m_level_index = -1;
 		std::vector<TileLayer> m_tile_layers;
 
 		std::vector<rom::FlipperInstance> m_flipper_instances;
