@@ -30,8 +30,8 @@ namespace spintool
 	static Point operator-(const Point& lhs, const Point& rhs) { return Point{ lhs.x - rhs.x, lhs.y - rhs.y }; }
 	static Point operator+(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
 	static Point operator-(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
-	static Point operator+(const ImVec2& rhs, const Point& lhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
-	static Point operator-(const ImVec2& rhs, const Point& lhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
+	static Point operator+(const ImVec2& lhs, const Point& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
+	static Point operator-(const ImVec2& lhs, const Point& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
 	static Point operator*(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x * rhs), static_cast<int>(lhs.y * rhs) }; }
 	static Point operator/(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x / rhs), static_cast<int>(lhs.y / rhs) }; }
 

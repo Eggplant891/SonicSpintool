@@ -1245,7 +1245,7 @@ namespace spintool
 									fixed_bbox.min.y = spline.spline_vector.min.y - spline.spline_vector.max.x - 2;
 									fixed_bbox.max.y = spline.spline_vector.min.y + spline.spline_vector.max.x + 2;
 
-									if (ImGui::IsClippedEx(fixed_bbox + screen_origin, 0) == true)
+									if (ImGui::IsClippedEx((fixed_bbox * m_zoom) + screen_origin, 0) == true)
 									{
 										continue;
 									}
@@ -1303,7 +1303,7 @@ namespace spintool
 								}
 								else
 								{
-									if (ImGui::IsClippedEx(spline.spline_vector + screen_origin, 0) == true)
+									if (ImGui::IsClippedEx((spline.spline_vector * m_zoom) + screen_origin, 0) == true)
 									{
 										continue;
 									}
@@ -1530,7 +1530,7 @@ namespace spintool
 								{
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
-										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset;
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset - m_working_flipper->destination->draw_pos_offset;
 										m_working_flipper->flipper_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
 										m_working_flipper->flipper_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
@@ -1559,7 +1559,7 @@ namespace spintool
 								{
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
-										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_ring->initial_drag_offset;
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_ring->initial_drag_offset - m_working_ring->destination->draw_pos_offset;
 										m_working_ring->ring_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
 										m_working_ring->ring_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
@@ -1738,7 +1738,7 @@ namespace spintool
 												m_working_ring.emplace();
 												m_working_ring->destination = &ring_obj;
 												m_working_ring->ring_obj = ring_obj;
-												m_working_ring->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - (ring_realpos * m_zoom);
+												m_working_ring->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - ring_realpos;
 											}
 											else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
 											{
