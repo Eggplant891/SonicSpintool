@@ -24,10 +24,6 @@
 #include <string>
 #include "ui/ui_tile_editor.h"
 
-namespace spintool { struct TileLayer; }
-
-namespace spintool { class Level; }
-
 namespace spintool
 {
 	class EditorUI;
@@ -40,6 +36,7 @@ namespace spintool::rom
 	struct TileSet;
 	struct AnimationSequence;
 	struct Sprite;
+	struct TileLayer;
 }
 
 namespace spintool
@@ -123,7 +120,7 @@ namespace spintool
 
 	struct TileBrushSelection
 	{
-		TileLayer* tile_layer = nullptr;
+		rom::TileLayer* tile_layer = nullptr;
 		TilesetPreview* tileset = nullptr;
 		TileBrushPreview* tile_brush = nullptr;
 		bool is_picking_from_layout = false;

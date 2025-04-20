@@ -23,6 +23,7 @@
 #include "rom/rom_asset_definitions.h"
 #include "editor/game_obj_manager.h"
 #include <numeric>
+#include "rom/level.h"
 
 
 namespace spintool
@@ -1105,7 +1106,7 @@ namespace spintool
 						{
 							if (m_level != nullptr)
 							{
-								for (const TileLayer& tile_layer : m_level->m_tile_layers)
+								for (const rom::TileLayer& tile_layer : m_level->m_tile_layers)
 								{
 									for (const std::shared_ptr<rom::Palette>& palette : tile_layer.palette_set.palette_lines)
 									{

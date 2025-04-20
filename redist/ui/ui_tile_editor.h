@@ -4,6 +4,7 @@
 #include "rom/level.h"
 #include "rom/sprite.h"
 #include "rom/sprite_tile.h"
+#include "rom/tileset.h"
 #include "types/sdl_handle_defs.h"
 
 #include "SDL3/SDL_stdinc.h"
@@ -40,7 +41,7 @@ namespace spintool
 	class EditorTileEditor : public EditorWindowBase
 	{
 	public:
-		EditorTileEditor(EditorUI& owning_ui, TileLayer& tile_layer, Uint32 brush_index);
+		EditorTileEditor(EditorUI& owning_ui, rom::TileLayer& tile_layer, Uint32 brush_index);
 
 		void RenderBrush();
 		void RenderTileset();
@@ -51,7 +52,7 @@ namespace spintool
 		rom::Sprite m_brush_sprite;
 		TileBrushPreview m_brush_preview;
 		
-		TileLayer* m_tile_layer = nullptr;
+		rom::TileLayer* m_tile_layer = nullptr;
 		rom::TileBrushBase* m_target_brush = nullptr;
 
 		TilePicker m_tile_picker;

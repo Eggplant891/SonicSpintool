@@ -4,15 +4,11 @@
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
 #include "rom/game_objects/game_object_definition.h"
-#include "rom/rom_asset_definitions.h"
-
-#include "rom/palette.h"
 #include "rom/tile_layout.h"
-#include "rom/tileset.h"
+#include "rom/palette.h"
 
-#include "editor/game_obj_manager.h"
+#include "rom/rom_asset_definitions.h"
 #include "types/rom_ptr.h"
-#include "types/sdl_handle_defs.h"
 
 #include <string>
 #include <vector>
@@ -23,7 +19,7 @@ namespace spintool::rom
 	class SpinballROM;
 }
 
-namespace spintool
+namespace spintool::rom
 {
 	struct TileLayer
 	{
@@ -32,17 +28,6 @@ namespace spintool
 		rom::PaletteSet palette_set;
 	};
 
-	struct TileBrushPreview
-	{
-		SDLSurfaceHandle surface;
-		SDLTextureHandle texture;
-
-		Uint32 brush_index;
-	};
-}
-
-namespace spintool::rom
-{
 	class Level
 	{
 	public:

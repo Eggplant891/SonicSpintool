@@ -264,7 +264,7 @@ namespace spintool
 		}
 	}
 
-	EditorTileEditor::EditorTileEditor(EditorUI& owning_ui, TileLayer& tile_layer, Uint32 brush_index)
+	EditorTileEditor::EditorTileEditor(EditorUI& owning_ui, rom::TileLayer& tile_layer, Uint32 brush_index)
 		: EditorWindowBase(owning_ui)
 		, m_tile_layer(&tile_layer)
 		, m_brush_index(brush_index)

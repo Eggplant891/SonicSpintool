@@ -4,6 +4,7 @@
 #include "types/decompression_result.h"
 
 #include "SDL3/SDL_stdinc.h"
+#include "types/sdl_handle_defs.h"
 
 #include <vector>
 #include <memory>
@@ -22,6 +23,14 @@ namespace spintool
 	{
 		std::shared_ptr<const rom::TileSet> tileset;
 		DecompressionResult result;
+	};
+
+	struct TileBrushPreview
+	{
+		SDLSurfaceHandle surface;
+		SDLTextureHandle texture;
+
+		Uint32 brush_index;
 	};
 }
 
