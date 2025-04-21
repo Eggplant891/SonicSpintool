@@ -102,6 +102,7 @@ namespace spintool
 	{
 		SDLSurfaceHandle sprite;
 		SDLPaletteHandle palette;
+		SDLTextureHandle texture;
 	};
 
 	struct LayerSettings

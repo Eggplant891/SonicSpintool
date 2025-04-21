@@ -152,6 +152,7 @@ namespace spintool
 	{
 		auto sprite_atlas_surface = SDL_CreateSurface(sprite.GetBoundingBox().Width(), sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8);
 		SDL_SetSurfacePalette(sprite_atlas_surface, s_current_palette.get());
+		SDL_SetSurfaceColorKey(sprite_atlas_surface, true, 0);
 		sprite.RenderToSurface(sprite_atlas_surface);
 		if (flip_x)
 		{

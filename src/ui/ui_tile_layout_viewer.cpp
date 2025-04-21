@@ -338,6 +338,7 @@ namespace spintool
 					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
 					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
 					flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
+					m_flipper_preview.texture = Renderer::RenderToTexture(m_flipper_preview.sprite.get());
 				}
 				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->m_level_index));
 				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * m_level->m_level_index));
@@ -367,6 +368,7 @@ namespace spintool
 					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
 					SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, 0);
 					ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
+					m_ring_preview.texture = Renderer::RenderToTexture(m_ring_preview.sprite.get());
 				}
 
 				/////////////
@@ -712,7 +714,7 @@ namespace spintool
 					const rom::RingInstance& ring = m_level->m_ring_instances[i];
 
 					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_ring_preview.sprite.get()) };
-					SDL_Rect target_rect{ ring.x_pos + ring.draw_pos_offset.x, ring.y_pos + ring.draw_pos_offset.y, ring.dimensions.x, ring.dimensions.y };
+					SDL_Rect target_rect{ ring.x_pos + ring.draw_pos_offset.x, ring.y_pos + ring.draw_pos_offset.y, static_cast<int>(ring.dimensions.x), static_cast<int>(ring.dimensions.y) };
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 				}
@@ -782,6 +784,7 @@ namespace spintool
 						new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(sprite_target_rect.x) - game_obj.x_pos, static_cast<float>(sprite_target_rect.y) - game_obj.y_pos };
 						new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
 						new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
+						new_obj->ui_sprite->texture = new_obj->ui_sprite->RenderTextureForPalette(UIPalette{ *m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get() });
 						new_obj->sprite_table_address = animSpriteEntry.sprite_table;
 						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
 					}
@@ -1302,7 +1305,14 @@ namespace spintool
 								}
 								else
 								{
-									if (ImGui::IsClippedEx((spline.spline_vector * m_zoom) + screen_origin, 0) == true)
+									const BoundingBox& original_bbox = spline.spline_vector;
+									BoundingBox fixed_bbox;
+									fixed_bbox.min.x = std::min(spline.spline_vector.min.x, spline.spline_vector.max.x) - 1;
+									fixed_bbox.max.x = std::max(spline.spline_vector.min.x, spline.spline_vector.max.x) + 1;
+									fixed_bbox.min.y = std::min(spline.spline_vector.min.y, spline.spline_vector.max.y) - 1;
+									fixed_bbox.max.y = std::max(spline.spline_vector.min.y, spline.spline_vector.max.y) + 1;
+
+									if (ImGui::IsClippedEx((fixed_bbox * m_zoom) + screen_origin, 0) == true)
 									{
 										continue;
 									}
@@ -1315,13 +1325,6 @@ namespace spintool
 									{
 										continue;
 									}
-
-									const BoundingBox& original_bbox = spline.spline_vector;
-									BoundingBox fixed_bbox;
-									fixed_bbox.min.x = std::min(spline.spline_vector.min.x, spline.spline_vector.max.x) - 1;
-									fixed_bbox.max.x = std::max(spline.spline_vector.min.x, spline.spline_vector.max.x) + 1;
-									fixed_bbox.min.y = std::min(spline.spline_vector.min.y, spline.spline_vector.max.y) - 1;
-									fixed_bbox.max.y = std::max(spline.spline_vector.min.y, spline.spline_vector.max.y) + 1;
 
 									if (is_working_spline || ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)))
 									{
@@ -1508,8 +1511,9 @@ namespace spintool
 										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom));
-										ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
-										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+										const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 1.0f : 0.0f };
+										const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 0.0f : 1.0f };
+										ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 									}
 									else if (m_working_game_obj->initial_drag_offset)
 									{
@@ -1534,8 +1538,9 @@ namespace spintool
 										m_working_flipper->flipper_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().y)} *m_zoom));
-										ImGui::Dummy(m_working_flipper->flipper_obj.dimensions * m_zoom);
-										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+										const ImVec2 uv_min{m_working_flipper->flipper_obj.is_x_flipped ? 1.0f : 0.0f, 0.0f };
+										const ImVec2 uv_max{ m_working_flipper->flipper_obj.is_x_flipped ? 0.0f : 1.0f, 1.0f };
+										ImGui::Image((ImTextureID)m_flipper_preview.texture.get(), m_working_flipper->flipper_obj.dimensions, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 									}
 									else if (m_working_flipper->initial_drag_offset)
 									{
@@ -1563,8 +1568,8 @@ namespace spintool
 										m_working_ring->ring_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_ring->ring_obj.x_pos + m_working_ring->ring_obj.draw_pos_offset.x), static_cast<float>(m_working_ring->ring_obj.y_pos + m_working_ring->ring_obj.draw_pos_offset.y) } *m_zoom));
-										ImGui::Dummy(m_working_ring->ring_obj.dimensions * m_zoom);
-										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+										ImGui::Image((ImTextureID)m_ring_preview.texture.get(), m_working_ring->ring_obj.dimensions, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+
 									}
 									else if (m_working_ring->initial_drag_offset)
 									{
@@ -1786,8 +1791,9 @@ namespace spintool
 						if (m_working_game_obj && ImGui::IsPopupOpen("obj_popup"))
 						{
 							ImGui::SetCursorPos((origin + m_working_game_obj->game_obj.GetSpriteDrawPos()) * m_zoom);
-							ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
-							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
+							const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 1.0f : 0.0f };
+							const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 0.0f : 1.0f };
+							ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 						}
 
 						if (m_working_game_obj && ImGui::BeginPopup("obj_popup"))

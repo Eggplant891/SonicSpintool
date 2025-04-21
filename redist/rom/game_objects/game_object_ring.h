@@ -23,7 +23,7 @@ namespace spintool::rom
 		static constexpr int width = 16;
 		static constexpr int height = 16;
 
-		static constexpr Point dimensions{ width, height };
+		static constexpr ImVec2 dimensions{ width, height };
 		Point draw_pos_offset{ -8 , -16 };
 
 		static RingInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);

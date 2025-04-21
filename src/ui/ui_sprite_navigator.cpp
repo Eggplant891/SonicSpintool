@@ -408,6 +408,7 @@ namespace spintool
 							SDLPaletteHandle palette = Renderer::CreateSDLPalette(*m_owning_ui.GetPalettes().at(2));
 							SDLSurfaceHandle out_surface{ SDL_CreateSurface(tex->sprite->GetBoundingBox().Width(), tex->sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8)};
 							SDL_SetSurfacePalette(out_surface.get(), palette.get());
+							SDL_SetSurfaceColorKey(out_surface.get(), true, 0);
 							tex->sprite->RenderToSurface(out_surface.get());
 							assert(IMG_SavePNG(out_surface.get(), export_path.generic_u8string().c_str()));
 						}
