@@ -44,7 +44,7 @@ namespace spintool::rom
 	{
 		return spline_vector == rhs.spline_vector
 			&& object_type_flags == rhs.object_type_flags
-			&& extra_info == rhs.extra_info;
+			&& instance_id_binding == rhs.instance_id_binding;
 	}
 
 	SplineCullingTable SplineCullingTable::LoadFromROM(const SpinballROM& rom, const Ptr32 offset)
@@ -81,7 +81,7 @@ namespace spintool::rom
 				spline.spline_vector.max.y = rom.ReadUint16(data_start_offset + short_offset + 6);
 
 				spline.object_type_flags = rom.ReadUint16(data_start_offset + short_offset + 8);
-				spline.extra_info = rom.ReadUint16(data_start_offset + short_offset + 10);
+				spline.instance_id_binding = rom.ReadUint16(data_start_offset + short_offset + 10);
 			}
 		}
 
@@ -105,7 +105,7 @@ namespace spintool::rom
 				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.max.y);
 
 				data_offset = rom.WriteUint16(data_offset, spline.object_type_flags);
-				data_offset = rom.WriteUint16(data_offset, spline.extra_info);
+				data_offset = rom.WriteUint16(data_offset, spline.instance_id_binding);
 			}
 		}
 		rom.WriteUint16(data_offset, (data_offset - jump_table_offset) / 2);

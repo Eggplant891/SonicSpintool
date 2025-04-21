@@ -27,7 +27,7 @@ namespace spintool::rom
 		static constexpr int height = 31;
 
 		static constexpr Point dimensions{ width, height };
-		Point draw_pos_offset{ is_x_flipped ? - 20 : -24, -31 };
+		Point GetDrawPosOffset() const;
 
 		static FlipperInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
 		Uint32 SaveToROM(rom::SpinballROM& writeable_rom) const;

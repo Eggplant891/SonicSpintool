@@ -242,6 +242,7 @@ namespace spintool
 			m_selected_brush.Clear();
 			m_working_brush.reset();
 			m_working_flipper.reset();
+			m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain)));
 		}
 
 		return out_render_request;
@@ -379,8 +380,6 @@ namespace spintool
 				SDL_ClearSurface(m_game_object_preview.sprite.get(), 255, 255, 255, 255);
 				SDL_SetSurfaceColorKey(m_game_object_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_game_object_preview.sprite->format), nullptr, 255, 0, 0, 255));
 				//LevelGameObjSprite->RenderToSurface(GameObjectPreview.sprite.get());
-
-				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain)));
 
 				m_game_object_manager.game_objects.clear();
 				m_anim_sprite_instances.clear();
@@ -1274,7 +1273,7 @@ namespace spintool
 											ImGui::Text("Radius: 0x%04X", spline.spline_vector.max.x);
 											ImGui::Text("Unused Y component: 0x%04X", spline.spline_vector.max.y);
 											ImGui::Text("Obj Type Flags: 0x%04X", spline.object_type_flags);
-											ImGui::Text("Extra Info: 0x%04X", spline.extra_info);
+											ImGui::Text("Instance ID Binding: 0x%04X", spline.instance_id_binding);
 
 											ImGui::EndTooltip();
 										}
@@ -1530,11 +1529,11 @@ namespace spintool
 								{
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
-										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset - m_working_flipper->destination->draw_pos_offset;
+										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset - m_working_flipper->destination->GetDrawPosOffset();
 										m_working_flipper->flipper_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
 										m_working_flipper->flipper_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
-										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.draw_pos_offset.x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.draw_pos_offset.y) } * m_zoom));
+										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().y)} *m_zoom));
 										ImGui::Dummy(m_working_flipper->flipper_obj.dimensions * m_zoom);
 										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 									}
@@ -1677,7 +1676,7 @@ namespace spintool
 								{
 									for (rom::FlipperInstance& flipper_obj : m_level->m_flipper_instances)
 									{
-										const ImVec2 flipper_realpos{ static_cast<float>(flipper_obj.x_pos + flipper_obj.draw_pos_offset.x), static_cast<float>(flipper_obj.y_pos + flipper_obj.draw_pos_offset.y) };
+										const ImVec2 flipper_realpos{ static_cast<float>(flipper_obj.x_pos + flipper_obj.GetDrawPosOffset().x), static_cast<float>(flipper_obj.y_pos + flipper_obj.GetDrawPosOffset().y) };
 										const ImVec2 flipper_dimensions{ rom::FlipperInstance::width, rom::FlipperInstance::height };
 
 										ImGui::SetCursorPos(origin + (flipper_realpos * m_zoom));
@@ -1759,8 +1758,8 @@ namespace spintool
 						{
 							if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 							{
-								m_working_spline->dest_spline_point->x = static_cast<int>((ImGui::GetMousePos().x - screen_origin.x) / m_zoom);
-								m_working_spline->dest_spline_point->y = static_cast<int>((ImGui::GetMousePos().y - screen_origin.y) / m_zoom);
+								m_working_spline->dest_spline_point->x = static_cast<int>(((ImGui::GetMousePos().x - screen_origin.x) / m_zoom) / m_grid_snap) * m_grid_snap;
+								m_working_spline->dest_spline_point->y = static_cast<int>(((ImGui::GetMousePos().y - screen_origin.y) / m_zoom) / m_grid_snap) * m_grid_snap;
 							}
 							else
 							{
@@ -1832,11 +1831,17 @@ namespace spintool
 								ImGui::CloseCurrentPopup();
 							}
 							ImGui::SameLine();
-							if (ImGui::Button("Force save collision"))
+							if (m_working_game_obj)
 							{
-								m_working_game_obj->destination->had_collision_sectors_on_rom = true;
-								m_working_game_obj->destination->had_culling_sectors_on_rom = true;
-								m_working_game_obj->destination->obj_definition.SaveToROM(m_owning_ui.GetROM());
+								ImGui::BeginDisabled(m_working_game_obj->destination->had_collision_sectors_on_rom && m_working_game_obj->destination->had_culling_sectors_on_rom);
+								if (ImGui::Button("Enable culling"))
+								{
+									m_working_game_obj->destination->had_collision_sectors_on_rom = true;
+									m_working_game_obj->destination->had_culling_sectors_on_rom = true;
+									m_working_game_obj->destination->obj_definition.SaveToROM(m_owning_ui.GetROM());
+									m_working_game_obj.reset();
+								}
+								ImGui::EndDisabled();
 							}
 
 							if (m_working_game_obj)
@@ -1862,13 +1867,13 @@ namespace spintool
 							{
 								if (ImGui::Button("Confirm"))
 								{
-									if (m_working_spline->spline.IsRing()|| m_working_spline->spline.IsTeleporter())
+									if (m_working_spline->spline.IsRadial())
 									{
 										const bool is_max_point = true;
 										const Point offset = is_max_point ? Point{ m_working_spline->spline.spline_vector.min - m_working_spline->destination->spline_vector.min } : Point{m_working_spline->spline.spline_vector.max - m_working_spline->destination->spline_vector.max};
-										const Uint16 spline_target_id = m_working_spline->spline.extra_info;
+										const Uint16 spline_target_id = m_working_spline->spline.instance_id_binding;
 
-										if (m_working_spline->spline.IsRing())
+										if (m_working_spline->spline.IsRing() && m_working_spline->spline.instance_id_binding != 0)
 										{
 											auto target_ring_obj = std::find_if(std::begin(m_level->m_ring_instances), std::end(m_level->m_ring_instances),
 												[spline_target_id](const rom::RingInstance& ring_obj)
@@ -1880,9 +1885,10 @@ namespace spintool
 											{
 												target_ring_obj->x_pos += offset.x;
 												target_ring_obj->y_pos += offset.y;
+												m_render_from_edit = true;
 											}
 										}
-										else if (m_working_spline->spline.IsTeleporter())
+										else if (m_working_spline->spline.IsRadial() && m_working_spline->spline.instance_id_binding != 0)
 										{
 											auto target_game_obj = std::find_if(std::begin(m_game_object_manager.game_objects), std::end(m_game_object_manager.game_objects),
 												[spline_target_id](const std::unique_ptr<UIGameObject>& ui_game_obj)
@@ -1895,6 +1901,7 @@ namespace spintool
 												target_game_obj->get()->obj_definition.x_pos += offset.x;
 												target_game_obj->get()->obj_definition.y_pos += offset.y;
 												target_game_obj->get()->obj_definition.SaveToROM(m_owning_ui.GetROM());
+												m_render_from_edit = true;
 											}
 										}
 									}
@@ -1927,9 +1934,9 @@ namespace spintool
 									ImGui::InputInt("Obj Flags: 0x%04X", &flags_working_info, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
 									m_working_spline->spline.object_type_flags = (0x0000FFFF & flags_working_info);
 
-									int working_info = m_working_spline->spline.extra_info;
-									ImGui::InputInt("Extra Info: 0x%04X", &working_info, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
-									m_working_spline->spline.extra_info = (0x0000FFFF & working_info);
+									int working_info = m_working_spline->spline.instance_id_binding;
+									ImGui::InputInt("Instance ID Binding: 0x%04X", &working_info, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
+									m_working_spline->spline.instance_id_binding = (0x0000FFFF & working_info);
 
 									int spline_min[2] = { static_cast<int>(m_working_spline->spline.spline_vector.min.x), static_cast<int>(m_working_spline->spline.spline_vector.min.y) };
 									int spline_max[2] = { static_cast<int>(m_working_spline->spline.spline_vector.max.x), static_cast<int>(m_working_spline->spline.spline_vector.max.y) };

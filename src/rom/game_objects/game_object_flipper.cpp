@@ -43,4 +43,10 @@ namespace spintool::rom
 
 		return current_offset;
 	}
+
+	Point FlipperInstance::GetDrawPosOffset() const
+	{
+		return Point{ is_x_flipped ? -20 : -24, -31 };
+	}
+
 }

@@ -26,7 +26,7 @@ namespace spintool::rom
 
 		BoundingBox spline_vector;
 		Uint16 object_type_flags = 0;
-		Uint16 extra_info = 0;
+		Uint16 instance_id_binding = 0;
 
 		bool IsRadial() const;
 		bool IsTeleporter() const;
