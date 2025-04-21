@@ -10,7 +10,7 @@ namespace spintool::rom
 		switch (command_type)
 		{
 		case AnimationCommandType::NORMAL_FRAME:
-			return "Normal Frame";
+			return "Normal";
 
 		case AnimationCommandType::TERMINATE:
 			return "Terminate / Skip or Pause?";
@@ -24,8 +24,8 @@ namespace spintool::rom
 		case AnimationCommandType::RESTART_ANIMATION:
 			return "Restart Animation";
 
-		case AnimationCommandType::JUMP_TO_LOCATION:
-			return "Jump to location";
+		case AnimationCommandType::WAIT_FOR_N_FRAMES:
+			return "Wait for N frames";
 
 		case AnimationCommandType::EXECUTE_AS_FUNCTION_PTR:
 			return "Execute Function Ptr";
@@ -34,7 +34,7 @@ namespace spintool::rom
 			return "Play Exclusive Audio";
 
 		case AnimationCommandType::SET_HORIZONTAL_SPEED:
-			return "Set XSpeed";
+			return "Set Horizontal Speed";
 
 		case AnimationCommandType::PLAY_AUDIO:
 			return "Play Audio";
@@ -50,6 +50,30 @@ namespace spintool::rom
 
 		case AnimationCommandType::SET_Y_OFFSET:
 			return "Set YOffset";
+
+		case AnimationCommandType::NORMAL_FRAME_FLIPPED:
+			return "Normal (XFlip)";
+
+		case AnimationCommandType::TILED_ANIM_OBJ_THING:
+			return "Tiled anim obj thing";
+
+		case AnimationCommandType::SET_REMAINING_FRAME_TIME:
+			return "Set remaining frame time";
+
+		case AnimationCommandType::SET_ANIM_TICKS_PER_FRAME:
+			return "Set anim ticks per frame";
+
+		case AnimationCommandType::UNK_INVERT_SOMETHING:
+			return "Unk Invert something";
+
+		case AnimationCommandType::END:
+			return "END";
+
+		case AnimationCommandType::FRAME_JUMP_QUESTION:
+			return "Frame Jump?";
+
+		case AnimationCommandType::COMMAND_MASK:
+			return "Command Mask?";
 		}
 
 		return "Unknown";
@@ -92,26 +116,24 @@ namespace spintool::rom
 
 			}
 
-			AnimationCommandCode command = DecodeCommand(command_code);
-			if ((command_code == 0x00 || command_code == 0x40 || command_code == 0x87) && command_data < 0x80)
+			//AnimationCommandCode command_code = DecodeCommand(command_code);
+			AnimationCommand command;
+			command.command_type = static_cast<AnimationCommandType>(command_code & 0x1F);
+			
+			if (command.command_type == AnimationCommandType::NORMAL_FRAME)
 			{
-
-				AnimationCommand command;
-				const auto start_offset = current_offset;
-				command.command_type = AnimationCommandType::NORMAL_FRAME;
-				if ((command_code & 0x80) == 0x80)
-				{
-					current_offset += 2;
-				}
-				command.command_data = src_rom.ReadUint16(current_offset);
 				command.flip_x = command_code == 0x40;
+				command_code &= ~0x40;
+
+				const auto start_offset = current_offset;
+				command.command_data = src_rom.ReadUint8(current_offset + 1);
 				current_offset += 2;
 
 				{
 					std::shared_ptr<const rom::Sprite> current_sprite = nullptr;
 
 					const Uint16 num_sprites_in_table = src_rom.ReadUint16(sprite_table_offset);
-					const Uint16 target_sprite_index = (command.command_data & 0x00FF);
+					const Uint16 target_sprite_index = command.command_data;
 					if (target_sprite_index < num_sprites_in_table)
 					{
 						const Ptr32 offset_table = sprite_table_offset + 4;
@@ -135,27 +157,16 @@ namespace spintool::rom
 				continue;
 			}
 
-			if ((command_code & 0xD0) == 0xD0)
-			{
-				current_offset += 2;
-				current_offset += 4;
-				continue;
-			}
-
-			if ((command_code & 0x87) == 0x87)
+			if (command.command_type == AnimationCommandType::TILED_ANIM_OBJ_THING)
 			{
 				const auto start_offset = current_offset;
 				{
-					AnimationCommand command;
-					command.command_type = AnimationCommandType::UNKNOWN;
 					command.command_data = src_rom.ReadUint16(current_offset);
 					current_offset += 2;
 					command.rom_data.SetROMData(start_offset, current_offset);
 					result_data.emplace_back(command);
 				}
 				{
-					AnimationCommand command;
-					command.command_type = AnimationCommandType::UNKNOWN;
 					command.command_data = src_rom.ReadUint16(current_offset);
 					current_offset += 2;
 					command.rom_data.SetROMData(start_offset, current_offset);
@@ -173,75 +184,108 @@ namespace spintool::rom
 				continue;
 			}
 
-			if (command_code == 0x81)
+			if (command.command_type == AnimationCommandType::SKIP_FRAME_OR_PAUSE_ANIM)
 			{
-				Uint8 code_2 = src_rom.ReadUint8(current_offset+1);
-				if (code_2 == 0x00)
+				const auto start_offset = current_offset;
+				if ((command_code & 0x40) == 0x40)
 				{
-					AnimationCommand command;
-					const auto start_offset = current_offset;
-					command.command_type = AnimationCommandType::TERMINATE;
-					command.command_data = src_rom.ReadUint16(current_offset);
-					current_offset += 2;
-					command.rom_data.SetROMData(start_offset, current_offset);
-					result_data.emplace_back(command);
-
-					new_animation->rom_data.SetROMData(offset, current_offset);
-					break;
+					command.command_data = src_rom.ReadUint32(current_offset + 2);
+					current_offset += 6;
 				}
+				else if ((command_code & 0x20) == 0x20)
+				{
+					command.command_data = (src_rom.ReadUint8(current_offset + 1) << 4) | src_rom.ReadUint16(current_offset + 2);
+					current_offset += 4;
+				}
+				else
+				{
+					command.command_data = src_rom.ReadUint8(current_offset + 1);
+					current_offset += 2;
+				}
+				command.rom_data.SetROMData(start_offset, current_offset);
+				result_data.emplace_back(command);
+
+				new_animation->rom_data.SetROMData(offset, current_offset);
+				break;
 			}
 
-			if (command_code == 0xC3)
+			if (command.command_type == AnimationCommandType::END)
 			{
-				Uint8 code_2 = src_rom.ReadUint8(current_offset + 1);
-				if (code_2 == 0)
+				const auto start_offset = current_offset;
+				current_offset += 2;
+				command.rom_data.SetROMData(start_offset, current_offset);
+				result_data.emplace_back(command);
+				break;
+			}
+
+			if (command.command_type == AnimationCommandType::GOTO_PREVIOUS_FRAME)
+			{
+				const auto start_offset = current_offset;
+				// Jumping to another animation
+
+				if ((command_code & 0x40) == 0x40)
 				{
-					const auto start_offset = current_offset;
-					current_offset += 2;
-					// Jumping to another animation
-
-					AnimationCommand command;
-					command.command_type = AnimationCommandType::JUMP_TO_LOCATION;
-					command.command_data = src_rom.ReadUint32(current_offset);
+					command.command_data = src_rom.ReadUint32(current_offset + 2);
+					current_offset += 6;
+				}
+				else if ((command_code & 0x20) == 0x20)
+				{
+					command.command_data = (src_rom.ReadUint8(current_offset + 1) << 4) | src_rom.ReadUint16(current_offset+2);
 					current_offset += 4;
-					command.rom_data.SetROMData(start_offset, current_offset);
-					current_offset = command.command_data;
-
-					const bool has_looped_to_start = std::any_of(std::begin(result_data), std::end(result_data), [&command](const AnimationCommand& _command)
+				}
+				else
+				{
+					command.command_data = src_rom.ReadUint8(current_offset+1);
+					current_offset += 2;
+				}
+				command.rom_data.SetROMData(start_offset, current_offset);
+				current_offset = command.command_data;
+				const bool has_looped_to_start = std::any_of(std::begin(result_data), std::end(result_data), [&command](const AnimationCommand& _command)
 					{
 						return _command.rom_data.rom_offset == command.command_data;
 					});
 
-					result_data.emplace_back(command);
+				result_data.emplace_back(command);
 
-					if (has_looped_to_start)
-					{
-						// we just looped to ourselves, end.
-						new_animation->rom_data.SetROMData(offset, current_offset);
-						break;
-					}
+				if (has_looped_to_start)
+				{
+					// we just looped to ourselves, end.
+					new_animation->rom_data.SetROMData(offset, current_offset);
+					break;
 				}
+
+				continue;
+			}
+
+			
+
+			const auto start_offset = current_offset;
+
+			if (command.command_type == AnimationCommandType::FRAME_JUMP_QUESTION)
+			{
+				current_offset += 4;
 			}
 			else
 			{
-				if ((command_code & 0xC0) == 0xC0)
+				if ((command_code & 0x40) == 0x40)
 				{
+					command.command_data = src_rom.ReadUint32(current_offset + 2);
+					current_offset += 6;
+				}
+				else if ((command_code & 0x20) == 0x20)
+				{
+					command.command_data = src_rom.ReadUint16(current_offset + 2);
 					current_offset += 4;
-					continue;
+				}
+				else
+				{
+					command.command_data = src_rom.ReadUint8(current_offset + 1);
+					current_offset += 2;
 				}
 			}
-
-			current_offset += 2;
-
-			if (current_offset > 0 && current_offset % 2 == 0)
-			{
-				const auto start_offset = current_offset - 2;
-				AnimationCommand command;
-				command.command_type = AnimationCommandType::UNKNOWN;
-				command.command_data = src_rom.ReadUint16(current_offset - 2);
-				command.rom_data.SetROMData(start_offset, current_offset);
-				result_data.emplace_back(command);
-			}
+			command.rom_data.SetROMData(start_offset, current_offset);
+			result_data.emplace_back(command);
+			
 		}
 
 		new_animation->command_sequence = result_data;

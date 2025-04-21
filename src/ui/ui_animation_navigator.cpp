@@ -138,14 +138,15 @@ namespace spintool
 								while (true)
 								{
 									current_command_index = (current_command_index + 1) % anim.anim_sequence->command_sequence.size();
-									if (current_command_index == anim.current_command)
-									{
-										break;
-									}
 
 									if (anim.anim_sequence->command_sequence.at(current_command_index).command_type == rom::AnimationCommandType::NORMAL_FRAME)
 									{
 										anim.current_command = current_command_index;
+										break;
+									}
+
+									if (current_command_index == anim.current_command)
+									{
 										break;
 									}
 								}
