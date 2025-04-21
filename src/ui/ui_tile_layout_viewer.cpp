@@ -1409,11 +1409,14 @@ namespace spintool
 
 							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && grid_ref >= 0 && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 							{
-								const int hovered_index = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
+								const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
+								const int hovered_index = brush_instance.tile_brush_index;
 
 								if (m_selected_brush.tileset != nullptr && hovered_index > 0 && hovered_index < m_selected_brush.tileset->brushes.size() && ImGui::BeginTooltip())
 								{
-									ImGui::Image((ImTextureID)m_selected_brush.tileset->brushes.at(hovered_index).texture.get(), ImVec2{ 64,64 });
+									const ImVec2 uv_min{ brush_instance.is_flipped_horizontally ? 1.0f : 0.0f, brush_instance.is_flipped_vertically ? 1.0f : 0.0f };
+									const ImVec2 uv_max{ brush_instance.is_flipped_horizontally ? 0.0f : 1.0f, brush_instance.is_flipped_vertically ? 0.0f : 1.0f };
+									ImGui::Image((ImTextureID)m_selected_brush.tileset->brushes.at(hovered_index).texture.get(), ImVec2{ 64,64 }, uv_min, uv_max);
 									ImGui::EndTooltip();
 								}
 							}
@@ -1449,10 +1452,13 @@ namespace spintool
 									{
 										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 										{
-											const int selected_index = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref).tile_brush_index;
+											const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
+											const int selected_index = brush_instance.tile_brush_index;
 											m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
 											m_selected_brush.is_picking_from_layout = false;
 											m_selected_brush.was_picked_from_layout = true;
+											m_selected_brush.flip_x = brush_instance.is_flipped_horizontally;
+											m_selected_brush.flip_y = brush_instance.is_flipped_vertically;
 										}
 										else
 										{
@@ -1510,10 +1516,29 @@ namespace spintool
 										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
 										m_working_game_obj->game_obj.obj_definition.y_pos = static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
+										if (ImGui::IsKeyPressed(ImGuiKey_R))
+										{
+											m_working_game_obj->game_obj.obj_definition.flip_x = !m_working_game_obj->game_obj.obj_definition.flip_x;
+										}
+
+										if (ImGui::IsKeyPressed(ImGuiKey_F))
+										{
+											m_working_game_obj->game_obj.obj_definition.flip_y = !m_working_game_obj->game_obj.obj_definition.flip_y;
+										}
+
 										ImGui::SetCursorPos(origin + (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom));
-										const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 1.0f : 0.0f };
-										const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 0.0f : 1.0f };
-										ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions* m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+										const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.flip_x ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.flip_y ? 1.0f : 0.0f };
+										const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.flip_x ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.flip_y ? 0.0f : 1.0f };
+
+										if (m_working_game_obj->destination->ui_sprite)
+										{
+											ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions * m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+										}
+										else
+										{
+											ImGui::Dummy(m_working_game_obj->game_obj.dimensions* m_zoom);
+											ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0.0f,1.0f,0.0f,1.0f }));
+										}
 									}
 									else if (m_working_game_obj->initial_drag_offset)
 									{
@@ -1651,7 +1676,9 @@ namespace spintool
 											if (game_obj->ui_sprite)
 											{
 												ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
-												ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f));
+												const ImVec2 uv_min{ game_obj->obj_definition.FlipX() ? 1.0f : 0.0f, game_obj->obj_definition.FlipY() ? 1.0f : 0.0f };
+												const ImVec2 uv_max{ game_obj->obj_definition.FlipX() ? 0.0f : 1.0f, game_obj->obj_definition.FlipY() ? 0.0f : 1.0f };
+												ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f), uv_min, uv_max);
 											}
 											else
 											{
@@ -1793,7 +1820,15 @@ namespace spintool
 							ImGui::SetCursorPos((origin + m_working_game_obj->game_obj.GetSpriteDrawPos()) * m_zoom);
 							const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 1.0f : 0.0f };
 							const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 0.0f : 1.0f };
-							ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions* m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+							if (m_working_game_obj->destination->ui_sprite != nullptr)
+							{
+								ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions * m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+							}
+							else
+							{
+								ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
+								ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0.0f,1.0f,0.0f,1.0f }));
+							}
 						}
 
 						if (m_working_game_obj && ImGui::BeginPopup("obj_popup"))

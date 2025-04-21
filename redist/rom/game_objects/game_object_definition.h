@@ -25,6 +25,8 @@ namespace spintool::rom
 		Ptr32 animation_definition = 0;
 		Ptr32 animation_ptr = 0;
 		Uint16 flags = 0;
+		bool flip_x = false;
+		bool flip_y = false;
 
 		bool FlipX() const;
 		bool FlipY() const;

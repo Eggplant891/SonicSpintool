@@ -33,6 +33,9 @@ namespace spintool::rom
 		new_instance.flags = rom.ReadUint16(current_offset);
 		current_offset += 2;
 
+		new_instance.flip_x = (new_instance.flags & 0x4000) != 0;
+		new_instance.flip_y = (new_instance.flags & 0x2000) != 0;
+
 		new_instance.rom_data.SetROMData(offset, current_offset);
 		return new_instance;
 	}
@@ -51,6 +54,18 @@ namespace spintool::rom
 		current_offset = writeable_rom.WriteUint8(current_offset, collision_height);
 		current_offset = writeable_rom.WriteUint32(current_offset, animation_definition);
 		current_offset = writeable_rom.WriteUint32(current_offset, animation_ptr);
+
+		flags = flags & ~(0x4000 | 0x2000);
+		if (flip_x)
+		{
+			flags |= 0x4000;
+		}
+
+		if (flip_y)
+		{
+			flags |= 0x2000;
+		}
+
 		current_offset = writeable_rom.WriteUint16(current_offset, flags);
 		
 		return current_offset;
@@ -58,12 +73,12 @@ namespace spintool::rom
 
 	bool GameObjectDefinition::FlipX() const
 	{
-		return (flags & 0x4000) != 0;
+		return flip_x;
 	}
 
 	bool GameObjectDefinition::FlipY() const
 	{
-		return (flags & 0x2000) != 0;
+		return flip_y;
 	}
 
 }
