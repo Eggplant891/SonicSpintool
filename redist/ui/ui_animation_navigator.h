@@ -22,5 +22,6 @@ namespace spintool
 		void LoadLevelAnimations(int level_index);
 
 		std::vector<UIAnimationSequence> m_animations;
+		float m_zoom = 1.0f;
 	};
 }
