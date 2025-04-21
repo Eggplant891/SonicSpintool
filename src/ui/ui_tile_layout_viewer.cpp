@@ -1504,7 +1504,7 @@ namespace spintool
 								}
 								else
 								{
-									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+									if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) == false)
 									{
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_game_obj->initial_drag_offset - m_working_game_obj->destination->sprite_pos_offset;
 										m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
@@ -1513,7 +1513,7 @@ namespace spintool
 										ImGui::SetCursorPos(origin + (m_working_game_obj->game_obj.GetSpriteDrawPos() * m_zoom));
 										const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 1.0f : 0.0f };
 										const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 0.0f : 1.0f };
-										ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+										ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions* m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 									}
 									else if (m_working_game_obj->initial_drag_offset)
 									{
@@ -1540,7 +1540,7 @@ namespace spintool
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().y)} *m_zoom));
 										const ImVec2 uv_min{m_working_flipper->flipper_obj.is_x_flipped ? 1.0f : 0.0f, 0.0f };
 										const ImVec2 uv_max{ m_working_flipper->flipper_obj.is_x_flipped ? 0.0f : 1.0f, 1.0f };
-										ImGui::Image((ImTextureID)m_flipper_preview.texture.get(), m_working_flipper->flipper_obj.dimensions, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+										ImGui::Image((ImTextureID)m_flipper_preview.texture.get(), m_working_flipper->flipper_obj.dimensions * m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 									}
 									else if (m_working_flipper->initial_drag_offset)
 									{
@@ -1568,7 +1568,7 @@ namespace spintool
 										m_working_ring->ring_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_ring->ring_obj.x_pos + m_working_ring->ring_obj.draw_pos_offset.x), static_cast<float>(m_working_ring->ring_obj.y_pos + m_working_ring->ring_obj.draw_pos_offset.y) } *m_zoom));
-										ImGui::Image((ImTextureID)m_ring_preview.texture.get(), m_working_ring->ring_obj.dimensions, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+										ImGui::Image((ImTextureID)m_ring_preview.texture.get(), m_working_ring->ring_obj.dimensions* m_zoom, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 
 									}
 									else if (m_working_ring->initial_drag_offset)
@@ -1782,7 +1782,7 @@ namespace spintool
 						{
 							const UIGameObject& dest_obj = *m_working_game_obj->destination;
 							const ImVec2 origin_pos{ screen_origin.x + (dest_obj.GetSpriteDrawPos().x * m_zoom), (screen_origin.y + dest_obj.GetSpriteDrawPos().y * m_zoom) };
-							ImGui::ScrollToRect(ImGui::GetCurrentWindow(), ImRect{ origin_pos, ImVec2{origin_pos.x + dest_obj.dimensions.x, origin_pos.y + dest_obj.dimensions.y} }, ImGuiScrollFlags_KeepVisibleEdgeX | ImGuiScrollFlags_KeepVisibleEdgeY);
+							ImGui::ScrollToRect(ImGui::GetCurrentWindow(), ImRect{ origin_pos, origin_pos + (dest_obj.dimensions * m_zoom) }, ImGuiScrollFlags_KeepVisibleEdgeX | ImGuiScrollFlags_KeepVisibleEdgeY);
 
 							ImGui::OpenPopup("obj_popup");
 							m_request_open_obj_popup = false;
@@ -1793,7 +1793,7 @@ namespace spintool
 							ImGui::SetCursorPos((origin + m_working_game_obj->game_obj.GetSpriteDrawPos()) * m_zoom);
 							const ImVec2 uv_min{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 1.0f : 0.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 1.0f : 0.0f };
 							const ImVec2 uv_max{ m_working_game_obj->game_obj.obj_definition.FlipX() ? 0.0f : 1.0f, m_working_game_obj->game_obj.obj_definition.FlipY() ? 0.0f : 1.0f };
-							ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+							ImGui::Image((ImTextureID)m_working_game_obj->destination->ui_sprite->texture.get(), m_working_game_obj->game_obj.dimensions* m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 						}
 
 						if (m_working_game_obj && ImGui::BeginPopup("obj_popup"))
