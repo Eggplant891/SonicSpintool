@@ -10,28 +10,32 @@ namespace spintool
 	{
 		const rom::SpinballROM& rom = m_owning_ui.GetROM();
 
-		static Uint32 player_anims_offset = 0x6FE;
-		static Uint32 num_player_anims = 58;
+		static Uint32 anims_offset = 0x6FE;
+		static Uint32 num_anims = 58;
 
-		m_animations.reserve(num_player_anims);
-		for (Uint32 i = 0; i < num_player_anims; ++i)
+		m_animations.reserve(num_anims);
+		for (Uint32 i = 0; i < num_anims; ++i)
 		{
-			UIAnimationSequence sequence = { rom::AnimationSequence::LoadFromROM(rom, rom.ReadUint32(player_anims_offset + (i * 4)), 0x13DC) };
+			UIAnimationSequence sequence = { rom::AnimationSequence::LoadFromROM(rom, rom.ReadUint32(anims_offset + (i * 4)), 0x13DC) };
 			m_animations.emplace_back(std::move(sequence));
 		}
 	}
 
-	void EditorAnimationNavigator::LoadToxicCavesAnimationTables()
+	void EditorAnimationNavigator::LoadLevelAnimations(int level_index)
 	{
+		const rom::LevelDataOffsets level_offsets{ level_index };
+
 		const rom::SpinballROM& rom = m_owning_ui.GetROM();
 
-		static Uint32 player_anims_offset = 0x0003909e;
-		static Uint32 num_player_anims = 0x3E;
+		const Uint32 level_anims_ptr_table_offset = level_offsets.animations;
+		const Uint32 anims_offset = rom.ReadUint32(level_anims_ptr_table_offset); // 0x0003909E;
+		const Uint32 sprite_table_ptr = level_offsets.sprite_table;
+		const Uint32 num_anims = level_offsets.animation_count;
 
-		m_animations.reserve(num_player_anims);
-		for (Uint32 i = 0; i < num_player_anims; ++i)
+		m_animations.reserve(num_anims);
+		for (Uint32 i = 0; i < num_anims; ++i)
 		{
-			UIAnimationSequence sequence = { rom::AnimationSequence::LoadFromROM(rom, rom.ReadUint32(player_anims_offset + (i * 4)), 0x12B0C) };
+			UIAnimationSequence sequence = { rom::AnimationSequence::LoadFromROM(rom, rom.ReadUint32(anims_offset + (i * 4)), sprite_table_ptr) };
 			m_animations.emplace_back(std::move(sequence));
 		}
 	}
@@ -56,18 +60,50 @@ namespace spintool
 		}
 
 		ImGui::SetNextWindowSize(ImVec2(256, 768), ImGuiCond_Appearing);
-		if (ImGui::Begin("Animation Navigator", &m_visible, ImGuiWindowFlags_NoSavedSettings))
+		if (ImGui::Begin("Animation Navigator", &m_visible, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar))
 		{
-			if (ImGui::Button("Load Player Animations"))
+			if (ImGui::BeginMenuBar())
 			{
-				m_animations.clear();
-				LoadPlayerAnimationTables();
-			}
+				if (ImGui::BeginMenu("Load"))
+				{
+					if (ImGui::MenuItem("Player"))
+					{
+						m_animations.clear();
+						LoadPlayerAnimationTables();
+					}
 
-			if (ImGui::Button("Load Toxic Caves Animations"))
-			{
-				m_animations.clear();
-				LoadToxicCavesAnimationTables();
+					if (ImGui::MenuItem("Global"))
+					{
+						m_animations.clear();
+						LoadPlayerAnimationTables();
+					}
+					ImGui::Separator();
+					if (ImGui::MenuItem("Toxic Caves"))
+					{
+						m_animations.clear();
+						LoadLevelAnimations(0);
+					}
+
+					if (ImGui::MenuItem("Lava Powerhouse"))
+					{
+						m_animations.clear();
+						LoadLevelAnimations(1);
+					}
+
+					if (ImGui::MenuItem("The Machine"))
+					{
+						m_animations.clear();
+						LoadLevelAnimations(2);
+					}
+
+					if (ImGui::MenuItem("Showdown"))
+					{
+						m_animations.clear();
+						LoadLevelAnimations(3);
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenuBar();
 			}
 
 			if (m_animations.empty() == false)
@@ -143,8 +179,11 @@ namespace spintool
 							ImGui::SameLine();
 							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255,0,0,255));
 							ImGui::SetCursorPos(ImVec2{ start_cursor_pos.x + ImGui::GetItemRectMin().x - start_cursor_screen_pos.x + (biggest_offset_x * m_zoom),start_cursor_pos.y + ImGui::GetItemRectMin().y - start_cursor_screen_pos.y + (biggest_offset_y * m_zoom)});
-							current_command.ui_frame_sprite->DrawForImGuiWithOffset(m_zoom);
-							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 255, 0, 255));
+							if (current_command.ui_frame_sprite != nullptr)
+							{
+								current_command.ui_frame_sprite->DrawForImGuiWithOffset(m_zoom);
+								ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 255, 0, 255));
+							}
 						}
 					}
 				}

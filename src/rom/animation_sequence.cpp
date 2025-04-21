@@ -63,27 +63,12 @@ namespace spintool::rom
 		// 5 bits - Data?
 		// 8 bits - First byte of data (signed. -1 = invalid. Up to then 0x7F)
 
-		constexpr Uint8 data_size_mask = 0x80 | 0x40 | 0x20;
+		constexpr Uint8 data_size_mask = 0x40 | 0x20;
 		AnimationCommandCode new_command;
 		
-		if ((in_code & 0x20) == 0x20)
-		{
-			new_command.data_size_bytes = 0;
-		}
-		else if ((in_code & data_size_mask) == 0x00)
-		{
-			new_command.data_size_bytes = 1;
-		}
-		
-		if ((in_code & 0x80) == 0x80)
-		{
-			new_command.data_size_bytes += 4;
-		}
+		new_command.data_size_bytes = (in_code & data_size_mask) + 1;
 
-		if ((in_code & 0x40) == 0x40)
-		{
-			new_command.data_size_bytes += 3;
-		}
+		new_command.flip_x = (in_code & 0x40);
 
 		return new_command;
 	}
@@ -98,17 +83,28 @@ namespace spintool::rom
 
 		while (current_offset < src_rom.m_buffer.size() - 2)
 		{
-			Uint8 code = src_rom.ReadUint8(current_offset);
+			Uint8 command_code = src_rom.ReadUint8(current_offset);
+			Uint16 command_data = src_rom.ReadUint8(current_offset + 1);
 
-			AnimationCommandCode command = DecodeCommand(code);
-			if (code == 0x00 || code == 0x40)
+			if (command_code == 0x1F)
+			{
+				command_data = src_rom.ReadUint16(current_offset + 2);
+
+			}
+
+			AnimationCommandCode command = DecodeCommand(command_code);
+			if ((command_code == 0x00 || command_code == 0x40 || command_code == 0x87) && command_data < 0x80)
 			{
 
 				AnimationCommand command;
 				const auto start_offset = current_offset;
 				command.command_type = AnimationCommandType::NORMAL_FRAME;
+				if ((command_code & 0x80) == 0x80)
+				{
+					current_offset += 2;
+				}
 				command.command_data = src_rom.ReadUint16(current_offset);
-				command.flip_x = code == 0x40;
+				command.flip_x = command_code == 0x40;
 				current_offset += 2;
 
 				{
@@ -139,14 +135,14 @@ namespace spintool::rom
 				continue;
 			}
 
-			if ((code & 0xD0) == 0xD0)
+			if ((command_code & 0xD0) == 0xD0)
 			{
 				current_offset += 2;
 				current_offset += 4;
 				continue;
 			}
 
-			if ((code & 0x87) == 0x87)
+			if ((command_code & 0x87) == 0x87)
 			{
 				const auto start_offset = current_offset;
 				{
@@ -177,7 +173,7 @@ namespace spintool::rom
 				continue;
 			}
 
-			if (code == 0x81)
+			if (command_code == 0x81)
 			{
 				Uint8 code_2 = src_rom.ReadUint8(current_offset+1);
 				if (code_2 == 0x00)
@@ -195,7 +191,7 @@ namespace spintool::rom
 				}
 			}
 
-			if (code == 0xC3)
+			if (command_code == 0xC3)
 			{
 				Uint8 code_2 = src_rom.ReadUint8(current_offset + 1);
 				if (code_2 == 0)
@@ -224,6 +220,14 @@ namespace spintool::rom
 						new_animation->rom_data.SetROMData(offset, current_offset);
 						break;
 					}
+				}
+			}
+			else
+			{
+				if ((command_code & 0xC0) == 0xC0)
+				{
+					current_offset += 4;
+					continue;
 				}
 			}
 

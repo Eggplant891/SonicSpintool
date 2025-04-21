@@ -69,6 +69,8 @@ namespace spintool::rom
 		, flipper_collision_unknown(table_offsets.flipper_collision_unknown + (sizeof(Ptr32) * level_index))
 		, level_name(table_offsets.level_name + (sizeof(Ptr32) * level_index))
 		, animations(table_offsets.animations + (sizeof(Ptr32) * level_index))
+		, sprite_table(table_offsets.sprite_table[level_index])
+		, animation_count(table_offsets.animation_count[level_index])
 		, ring_count(table_offsets.ring_count + (sizeof(Ptr32) * level_index))
 		, collision_tile_obj_ids(table_offsets.collision_tile_obj_ids[level_index])
 		, ring_instances(table_offsets.ring_instances[level_index])

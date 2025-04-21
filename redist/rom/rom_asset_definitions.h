@@ -52,11 +52,25 @@ namespace spintool::rom
 		Ptr32 ring_count = 0x000C151C;
 		Ptr32 rom_level_data_BG_tile_vdp_offset = 0x000D8D04;
 
+		Ptr32 sprite_table[4] = {
+			0x12B0C,
+			0x00020666,
+			0x0002B7A4,
+			0x000318EE
+		};
+
+		Uint16 animation_count[4] = {
+			63,
+			36,
+			40,
+			57
+		};
+
 		ArrayOffset collision_tile_obj_ids[4] = {
-			{ 0x000C326E, 0x100 },
-			{ 0x000C1764, 0x100 },
-			{ 0x000C5B9C, 0x100 },
-			{ 0x0, 0x0 }
+			{ 0x000C326E, 0x100 }, // Toxic Caves
+			{ 0x000C1764, 0x100 }, // Lava Powerhouse
+			{ 0x000C5B9C, 0x100 }, // The Machine
+			{ 0x0, 0x0 }		   // Showdown
 		};
 
 		ArrayOffset ring_instances[4] = {
@@ -114,6 +128,8 @@ namespace spintool::rom
 		Ptr32 flipper_collision_unknown = 0;
 		Ptr32 level_name = 0;
 		Ptr32 animations = 0;
+		Ptr32 sprite_table = 0;
+		Ptr32 animation_count = 0;
 		Ptr32 ring_count = 0;
 		ArrayOffset collision_tile_obj_ids;
 		ArrayOffset ring_instances;

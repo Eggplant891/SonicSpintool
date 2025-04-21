@@ -19,8 +19,8 @@ namespace spintool
 
 	private:
 		void LoadPlayerAnimationTables();
+		void LoadLevelAnimations(int level_index);
 
-		void LoadToxicCavesAnimationTables();
 		std::vector<UIAnimationSequence> m_animations;
 	};
 }
