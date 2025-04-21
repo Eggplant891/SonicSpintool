@@ -151,36 +151,32 @@ namespace spintool
 						{
 							float m_zoom = 2.0f;
 							auto& current_command = anim.anim_sequence->command_sequence.at(anim.current_command);
-							float smallest_offset_x = std::numeric_limits<float>::max();
-							float smallest_offset_y = std::numeric_limits<float>::max();
-							float biggest_offset_x = std::numeric_limits<float>::min();
-							float biggest_offset_y = std::numeric_limits<float>::min();
-							float largest_width = std::numeric_limits<float>::min();
-							float largest_height = std::numeric_limits<float>::min();
+							ImVec2 smallest_offset{ std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+							ImVec2 biggest_offset{ std::numeric_limits<float>::min(), std::numeric_limits<float>::min() };
+							ImVec2 largest_dimensions{ std::numeric_limits<float>::min(), std::numeric_limits<float>::min() };
+
 							for (const rom::AnimationCommand& command : anim.anim_sequence->command_sequence)
 							{
 								const std::shared_ptr<UISpriteTexture>& frame_sprite = command.ui_frame_sprite;
 								if (frame_sprite != nullptr)
 								{
-									smallest_offset_x = std::min<float>(smallest_offset_x, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
-									smallest_offset_y = std::min<float>(smallest_offset_y, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
-									biggest_offset_x = std::max<float>(biggest_offset_x, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
-									biggest_offset_y = std::max<float>(biggest_offset_y, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
-									largest_width = std::max<float>(largest_width, static_cast<float>(frame_sprite->dimensions.x));
-									largest_height = std::max<float>(largest_height, static_cast<float>(frame_sprite->dimensions.y));
+									smallest_offset.x = std::min<float>(smallest_offset.x, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
+									smallest_offset.y = std::min<float>(smallest_offset.y, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
+									biggest_offset.x = std::max<float>(biggest_offset.x, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().x));
+									biggest_offset.y = std::max<float>(biggest_offset.y, static_cast<float>(frame_sprite->sprite->GetOriginOffsetFromMinBounds().y));
+									largest_dimensions.x = std::max<float>(largest_dimensions.x, static_cast<float>(frame_sprite->dimensions.x));
+									largest_dimensions.y = std::max<float>(largest_dimensions.y, static_cast<float>(frame_sprite->dimensions.y));
 								}
 							}
 							const ImVec2 start_cursor_pos = ImGui::GetCursorPos();
 							const ImVec2 start_cursor_screen_pos = ImGui::GetCursorScreenPos();
-							ImGui::Dummy(ImVec2{
-								(std::abs(biggest_offset_x - smallest_offset_x) + largest_width) * m_zoom ,
-								(std::abs(biggest_offset_y - smallest_offset_y + largest_height) * m_zoom) });
-							ImGui::SameLine();
-							ImGui::SameLine();
-							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255,0,0,255));
-							ImGui::SetCursorPos(ImVec2{ start_cursor_pos.x + ImGui::GetItemRectMin().x - start_cursor_screen_pos.x + (biggest_offset_x * m_zoom),start_cursor_pos.y + ImGui::GetItemRectMin().y - start_cursor_screen_pos.y + (biggest_offset_y * m_zoom)});
+							ImGui::Dummy(((biggest_offset - smallest_offset) + largest_dimensions) * m_zoom);
+							ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 0, 0, 255));
 							if (current_command.ui_frame_sprite != nullptr)
 							{
+								ImGui::SameLine();
+								ImGui::SameLine();
+								ImGui::SetCursorPos(start_cursor_pos + ImGui::GetItemRectMin() - start_cursor_screen_pos + (biggest_offset * m_zoom));
 								current_command.ui_frame_sprite->DrawForImGuiWithOffset(m_zoom);
 								ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), IM_COL32(255, 255, 0, 255));
 							}
