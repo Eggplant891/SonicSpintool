@@ -23,7 +23,7 @@ namespace spintool::rom
 		Uint8 collision_width = 0;
 		Uint8 collision_height = 0;
 		Ptr32 animation_definition = 0;
-		Ptr32 animation_ptr = 0;
+		Ptr32 collision_bbox_ptr = 0;
 		Uint16 flags = 0;
 		bool flip_x = false;
 		bool flip_y = false;

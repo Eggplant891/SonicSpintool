@@ -1693,8 +1693,8 @@ namespace spintool
 											ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
 											ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
 											ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
-											ImGui::Text("Anim Definition: 0x%08X", game_obj->obj_definition.animation_definition);
-											ImGui::Text("Anim Ptr: 0x%08X", game_obj->obj_definition.animation_ptr);
+											ImGui::Text("Anim Definition ptr: 0x%08X", game_obj->obj_definition.animation_definition);
+											ImGui::Text("Collision Bbox ptr: 0x%08X", game_obj->obj_definition.collision_bbox_ptr);
 											ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
 											ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
 											ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());

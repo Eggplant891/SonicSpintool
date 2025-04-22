@@ -28,7 +28,7 @@ namespace spintool::rom
 		current_offset += 1;
 		new_instance.animation_definition = rom.ReadUint32(current_offset);
 		current_offset += 4;
-		new_instance.animation_ptr = rom.ReadUint32(current_offset);
+		new_instance.collision_bbox_ptr = rom.ReadUint32(current_offset);
 		current_offset += 4;
 		new_instance.flags = rom.ReadUint16(current_offset);
 		current_offset += 2;
@@ -53,7 +53,7 @@ namespace spintool::rom
 		current_offset = writeable_rom.WriteUint8(current_offset, collision_width);
 		current_offset = writeable_rom.WriteUint8(current_offset, collision_height);
 		current_offset = writeable_rom.WriteUint32(current_offset, animation_definition);
-		current_offset = writeable_rom.WriteUint32(current_offset, animation_ptr);
+		current_offset = writeable_rom.WriteUint32(current_offset, collision_bbox_ptr);
 
 		flags = flags & ~(0x4000 | 0x2000);
 		if (flip_x)
