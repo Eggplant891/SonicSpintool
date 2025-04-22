@@ -15,15 +15,15 @@ namespace spintool::rom
 	enum class AnimationCommandType
 	{
 		NORMAL_FRAME = 0x00,
-		NORMAL_FRAME_FLIPPED = 0x40,
-		TERMINATE = 0x01,
 		SKIP_FRAME_OR_PAUSE_ANIM = 0x01,
 		DO_NOTHING = 0x02,
 		GOTO_PREVIOUS_FRAME = 0x03,
-		WAIT_FOR_N_FRAMES = 0x07,
+		LOOP_COUNTER_CHECKPOINT = 0x04,
+		RELATIVE_JUMP = 0x06,
+		DECREMENT_REMAINING_FRAME_TIME = 0x07,
 		SET_REMAINING_FRAME_TIME = 0x08,
 		SET_ANIM_TICKS_PER_FRAME = 0x0B,
-		UNK_INVERT_SOMETHING = 0x0C,
+		CREATE_ANIM_OBJ_INSTANCE = 0x0C,
 		END = 0x0D,
 		RESTART_ANIMATION = 0x0E,
 		FRAME_JUMP_QUESTION = 0x0F,
@@ -55,6 +55,7 @@ namespace spintool::rom
 		AnimationCommandType command_type = AnimationCommandType::NORMAL_FRAME;
 		std::shared_ptr<UISpriteTexture> ui_frame_sprite;
 		Uint32 command_data = 0;
+		Uint8 data_size = 1;
 
 		bool flip_x = false;
 		bool flip_y = false;
