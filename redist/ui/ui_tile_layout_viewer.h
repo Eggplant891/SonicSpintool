@@ -205,6 +205,7 @@ namespace spintool
 		void TestCollisionCullingResults() const;
 		void Reset();
 
+		void DrawCollisionSpline(rom::CollisionSpline& spline, ImVec2 origin, ImVec2 screen_origin, LayerSettings& current_layer_settings, bool is_working_spline);
 		std::shared_ptr<rom::Level> m_level;
 
 		LayerSettings m_layer_settings;
