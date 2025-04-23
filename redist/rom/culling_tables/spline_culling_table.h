@@ -2,6 +2,7 @@
 
 #include "types/bounding_box.h"
 #include "types/rom_ptr.h"
+#include "rom/rom_data.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include <array>
@@ -23,6 +24,8 @@ namespace spintool::rom
 	struct CollisionSpline
 	{
 		static constexpr Uint32 size_on_rom = 12;
+		
+		ROMData rom_data;
 
 		BoundingBox spline_vector;
 		Uint16 object_type_flags = 0;
@@ -37,6 +40,9 @@ namespace spintool::rom
 		bool IsUnknown() const;
 
 		bool operator==(const CollisionSpline& rhs) const;
+
+		static CollisionSpline LoadFromROM(const SpinballROM& rom, Ptr32 offset);
+		Ptr32 SaveToROM(SpinballROM& rom, Ptr32 offset) const;
 	};
 
 	struct SplineCullingCell
@@ -56,6 +62,6 @@ namespace spintool::rom
 		Uint32 CalculateTableSize() const;
 
 		static SplineCullingTable LoadFromROM(const SpinballROM& rom, Ptr32 offset);
-		void SaveToROM(SpinballROM& rom, Ptr32 offset) const;
+		Ptr32 SaveToROM(SpinballROM& rom, Ptr32 offset) const;
 	};
 }

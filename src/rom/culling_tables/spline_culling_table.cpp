@@ -47,6 +47,46 @@ namespace spintool::rom
 			&& instance_id_binding == rhs.instance_id_binding;
 	}
 
+	CollisionSpline CollisionSpline::LoadFromROM(const SpinballROM& rom, Ptr32 offset)
+	{
+		CollisionSpline new_spline;
+
+		Ptr32 current_offset = offset;
+
+		new_spline.spline_vector.min.x = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_spline.spline_vector.min.y = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_spline.spline_vector.max.x = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_spline.spline_vector.max.y = rom.ReadUint16(current_offset);
+		current_offset += 2;
+
+		new_spline.object_type_flags = rom.ReadUint16(current_offset);
+		current_offset += 2;
+		new_spline.instance_id_binding = rom.ReadUint16(current_offset);
+		current_offset += 2;
+
+		new_spline.rom_data.SetROMData(offset, current_offset);
+
+		return new_spline;
+	}
+
+	Ptr32 CollisionSpline::SaveToROM(SpinballROM& rom, Ptr32 offset) const
+	{
+		Ptr32 current_offset = offset;
+
+		current_offset = rom.WriteUint16(current_offset, spline_vector.min.x);
+		current_offset = rom.WriteUint16(current_offset, spline_vector.min.y);
+		current_offset = rom.WriteUint16(current_offset, spline_vector.max.x);
+		current_offset = rom.WriteUint16(current_offset, spline_vector.max.y);
+
+		current_offset = rom.WriteUint16(current_offset, object_type_flags);
+		current_offset = rom.WriteUint16(current_offset, instance_id_binding);
+
+		return current_offset;
+	}
+
 	SplineCullingTable SplineCullingTable::LoadFromROM(const SpinballROM& rom, const Ptr32 offset)
 	{
 		rom; offset;
@@ -73,22 +113,14 @@ namespace spintool::rom
 			for (Uint16 s = 0; s < num_objects; ++s)
 			{
 				const rom::Ptr32 short_offset = s * CollisionSpline::size_on_rom;
-				CollisionSpline& spline = new_table.cells[i].splines[s];
-
-				spline.spline_vector.min.x = rom.ReadUint16(data_start_offset + short_offset + 0);
-				spline.spline_vector.min.y = rom.ReadUint16(data_start_offset + short_offset + 2);
-				spline.spline_vector.max.x = rom.ReadUint16(data_start_offset + short_offset + 4);
-				spline.spline_vector.max.y = rom.ReadUint16(data_start_offset + short_offset + 6);
-
-				spline.object_type_flags = rom.ReadUint16(data_start_offset + short_offset + 8);
-				spline.instance_id_binding = rom.ReadUint16(data_start_offset + short_offset + 10);
+				new_table.cells[i].splines[s] = CollisionSpline::LoadFromROM(rom, data_start_offset + short_offset);
 			}
 		}
 
 		return new_table;
 	}
 
-	void SplineCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset) const
+	Ptr32 SplineCullingTable::SaveToROM(SpinballROM& rom, Ptr32 offset) const
 	{
 		Ptr32 jump_table_offset = offset;
 		Ptr32 data_offset = jump_table_offset + static_cast<Uint32>(cells_count) * 2;
@@ -99,16 +131,11 @@ namespace spintool::rom
 			data_offset = rom.WriteUint16(data_offset, static_cast<Uint16>(cell.splines.size()));
 			for (const CollisionSpline& spline : cell.splines)
 			{
-				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.min.x);
-				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.min.y);
-				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.max.x);
-				data_offset = rom.WriteUint16(data_offset, spline.spline_vector.max.y);
-
-				data_offset = rom.WriteUint16(data_offset, spline.object_type_flags);
-				data_offset = rom.WriteUint16(data_offset, spline.instance_id_binding);
+				data_offset = spline.SaveToROM(rom, data_offset);
 			}
 		}
-		rom.WriteUint16(data_offset, (data_offset - jump_table_offset) / 2);
+		data_offset = rom.WriteUint16(data_offset, (data_offset - jump_table_offset) / 2);
+		return data_offset;
 	}
 
 	Uint32 SplineCullingTable::CalculateTableSize() const
