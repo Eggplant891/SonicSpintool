@@ -312,36 +312,29 @@ namespace spintool
 
 			if (render_flippers)
 			{
-				const static Uint32 flippers_ptr_table_offset = 0x000C08BE;
-				const static Uint32 flippers_count_table_offset = 0x000C08EE;
-				const static Uint32 flipper_palette[4] =
-				{
-					0x1,
-					0x0,
-					0x0,
-					0x0
-				};
-				const static Uint32 flipper_sprite_offset[4] =
-				{
-					0x00017E82,
-					0x0002594A,
-					0x0002E05C,
-					0x00035692
-				};
+				const rom::AnimObjectDefinition flipper_def = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_object_definition));
+				AnimSpriteEntry entry;
+				entry.sprite_table = m_owning_ui.GetROM().ReadUint32(flipper_def.sprite_table);
+				entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), flipper_def.starting_animation, entry.sprite_table);
 
-				if (m_flipper_preview.sprite == nullptr || m_render_from_edit == false)
+				const auto& command_sequence = entry.anim_sequence->command_sequence;
+				const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+					{
+						return command.ui_frame_sprite != nullptr;
+					});
+
+				if ((m_flipper_preview.sprite == nullptr || m_render_from_edit == false) && first_frame_with_sprite != std::end(command_sequence))
 				{
-					std::shared_ptr<const rom::Sprite> flipperSprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), flipper_sprite_offset[m_level->m_level_index]);
 					m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_palette[m_level->m_level_index]]);
+					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_def.palette_index % 4]);
 					SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
 					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
 					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
-					flipperSprite->RenderToSurface(m_flipper_preview.sprite.get());
+					first_frame_with_sprite->ui_frame_sprite->sprite->RenderToSurface(m_flipper_preview.sprite.get());
 					m_flipper_preview.texture = Renderer::RenderToTexture(m_flipper_preview.sprite.get());
 				}
-				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(flippers_ptr_table_offset + (4 * m_level->m_level_index));
-				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(flippers_count_table_offset + (2 * m_level->m_level_index));
+				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_data);
+				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.flipper_count);
 
 				m_level->m_flipper_instances.clear();
 				m_level->m_flipper_instances.reserve(num_flippers);
