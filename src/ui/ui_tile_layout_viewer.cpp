@@ -1237,14 +1237,57 @@ namespace spintool
 										uv0.y = 1;
 										uv1.y = 0;
 									}
-									ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) }, uv0, uv1);
+
+									ImVec2 min_pos;
+									ImVec2 max_pos;
+
+									if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+									{
+										const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
+										const ImVec2 end_grid_pos = grid_pos;
+
+										const float start_x = std::min(start_grid_pos.x, end_grid_pos.x);
+										const float end_x = std::max(start_grid_pos.x, end_grid_pos.x);
+										const float start_y = std::min(start_grid_pos.y, end_grid_pos.y);
+										const float end_y = std::max(start_grid_pos.y, end_grid_pos.y);
+
+										{
+											const ImVec2 snapped_pos{ (ImVec2{start_x,start_y} *brush_dimensions) * m_zoom };
+											const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+											min_pos = final_snapped_pos;
+										}
+										{
+											const ImVec2 snapped_pos{ (ImVec2{end_x + 1,end_y + 1} *brush_dimensions) * m_zoom };
+											const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+											max_pos = final_snapped_pos;
+										}
+
+										for (float x = start_x; x <= end_x; ++x)
+										{
+											for (float y = start_y; y <= end_y; ++y)
+											{
+												const ImVec2 snapped_pos{ (ImVec2{x,y} *brush_dimensions) * m_zoom };
+												const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+												ImGui::SetCursorScreenPos(final_snapped_pos);
+												ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) }, uv0, uv1);
+											}
+										}
+
+										ImGui::GetWindowDrawList()->AddRect(min_pos, max_pos, ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f }), 0, 0, 1.0f);
+									}
+									else
+									{
+										ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) }, uv0, uv1);
+									}
 								}
 
-								ImGui::GetForegroundDrawList()->AddRect(
-									ImVec2{ final_snapped_pos.x - 1, final_snapped_pos.y - 1 },
-									ImVec2{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1 },
-									ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
-
+								if (m_selected_brush.dragging_start_ref.has_value() == false)
+								{
+									ImGui::GetForegroundDrawList()->AddRect(
+										ImVec2{ final_snapped_pos.x - 1, final_snapped_pos.y - 1 },
+										ImVec2{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1 },
+										ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
+								}
 								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
 								{
 									if (m_selected_brush.IsPickingBrushFromLayout())
@@ -1267,16 +1310,30 @@ namespace spintool
 									}
 									else if (m_selected_brush.HasBrushSelected())
 									{
-										// Background
 										if (grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 										{
-											auto& tile = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
+											m_selected_brush.dragging_start_ref = grid_pos;
+										}
+									}
+								}
+
+								if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+								{
+									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
+									const ImVec2 end_grid_pos = grid_pos;
+									for (float x = std::min(start_grid_pos.x, end_grid_pos.x); x <= std::max(start_grid_pos.x, end_grid_pos.x); ++x)
+									{
+										for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); ++y)
+										{
+											const int drag_grid_ref = static_cast<int>((y * m_selected_brush.tile_layer->tile_layout->layout_width) + x);
+											auto& tile = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(drag_grid_ref);
 											tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
 											tile.is_flipped_horizontally = m_selected_brush.flip_x;
 											tile.is_flipped_vertically = m_selected_brush.flip_y;
-											m_render_from_edit = true;
 										}
 									}
+									m_render_from_edit = true;
+									m_selected_brush.dragging_start_ref.reset();
 								}
 							}
 						}

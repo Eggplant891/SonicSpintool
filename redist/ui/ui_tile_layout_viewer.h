@@ -133,6 +133,7 @@ namespace spintool
 		TileBrushPreview* tile_brush = nullptr;
 		bool is_picking_from_layout = false;
 		bool was_picked_from_layout = false;
+		std::optional<ImVec2> dragging_start_ref;
 		bool flip_x = false;
 		bool flip_y = false;
 
