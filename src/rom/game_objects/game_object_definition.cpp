@@ -1,6 +1,7 @@
 #include "rom/game_objects/game_object_definition.h"
 
 #include "rom/spinball_rom.h"
+#include "rom/culling_tables/spline_culling_table.h"
 
 namespace spintool::rom
 {
@@ -35,6 +36,11 @@ namespace spintool::rom
 
 		new_instance.flip_x = (new_instance.flags & 0x4000) != 0;
 		new_instance.flip_y = (new_instance.flags & 0x2000) != 0;
+
+		if (new_instance.collision_bbox_ptr != 0)
+		{
+			new_instance.collision = std::make_shared<rom::CollisionSpline>(rom::CollisionSpline::LoadFromROM(rom, new_instance.collision_bbox_ptr));
+		}
 
 		new_instance.rom_data.SetROMData(offset, current_offset);
 		return new_instance;

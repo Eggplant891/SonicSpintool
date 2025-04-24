@@ -27,20 +27,25 @@ namespace spintool
 
 		for (const std::unique_ptr<UIGameObject>& ui_obj : game_objects)
 		{
-			if (ui_obj->had_collision_sectors_on_rom == false)
+			if (ui_obj->obj_definition.collision_bbox_ptr == 0 || ui_obj->had_collision_sectors_on_rom == false)
 			{
 				continue;
 			}
 
 			std::vector<Point> grid_intersections;
+
 			// Left bound
-			const BoundingBox& obj_bbox =
+			const BoundingBox& spline_vector = ui_obj->obj_definition.collision->spline_vector;
+			const rom::GameObjectDefinition& obj_def = ui_obj->obj_definition;
+			const  Point pos{ ui_obj->obj_definition.x_pos, ui_obj->obj_definition.y_pos };
+			const BoundingBox& obj_bbox
 			{
-				static_cast<int>(ui_obj->GetSpriteDrawPos().x),
-				static_cast<int>(ui_obj->GetSpriteDrawPos().y),
-				static_cast<int>(ui_obj->GetSpriteDrawPos().x + ui_obj->dimensions.x),
-				static_cast<int>(ui_obj->GetSpriteDrawPos().y + ui_obj->dimensions.y)
+				static_cast<Uint16>(ui_obj->obj_definition.x_pos + static_cast<Uint16>(spline_vector.min.x)),
+				static_cast<Uint16>(ui_obj->obj_definition.y_pos + static_cast<Uint16>(spline_vector.min.y)),
+				static_cast<Uint16>(ui_obj->obj_definition.x_pos + static_cast<Uint16>(spline_vector.max.x)),
+				static_cast<Uint16>(ui_obj->obj_definition.y_pos + static_cast<Uint16>(spline_vector.max.y))
 			};
+
 			BoundingBox cell_range;
 			cell_range.min.x = std::clamp(obj_bbox.MinOrdered().x / rom::GameObjectCullingTable::cell_dimensions.Width(), 0,  rom::GameObjectCullingTable::grid_dimensions.x-1);
 			cell_range.min.y = std::clamp(obj_bbox.MinOrdered().y / rom::GameObjectCullingTable::cell_dimensions.Height(), 0, rom::GameObjectCullingTable::grid_dimensions.y-1);

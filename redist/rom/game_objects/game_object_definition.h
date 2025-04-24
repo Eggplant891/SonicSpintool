@@ -3,9 +3,12 @@
 #include "rom/rom_data.h"
 #include "types/rom_ptr.h"
 
+#include <memory>
+
 namespace spintool::rom
 {
 	class SpinballROM;
+	struct CollisionSpline;
 }
 
 namespace spintool::rom
@@ -24,6 +27,7 @@ namespace spintool::rom
 		Uint8 collision_height = 0;
 		Ptr32 animation_definition = 0;
 		Ptr32 collision_bbox_ptr = 0;
+		std::shared_ptr<rom::CollisionSpline> collision;
 		Uint16 flags = 0;
 		bool flip_x = false;
 		bool flip_y = false;
