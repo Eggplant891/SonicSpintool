@@ -92,11 +92,6 @@ namespace spintool
 
 	void EditorTileEditor::DrawTilePicker()
 	{
-		if (spintool::DrawPaletteLineSelector(m_tile_picker.current_palette_line, m_tile_layer->palette_set, m_owning_ui))
-		{
-			RenderTileset();
-		}
-
 		if (m_tile_picker.texture != nullptr)
 		{
 			const ImVec2 cursor_start_pos = ImGui::GetCursorScreenPos();
@@ -165,8 +160,16 @@ namespace spintool
 			{
 				m_visible = false;
 			}
+			if (spintool::DrawPaletteLineSelector(m_tile_picker.current_palette_line, m_tile_layer->palette_set, m_owning_ui))
+			{
+				RenderTileset();
+			}
 
-			DrawTilePicker();
+			if (ImGui::BeginChild("TilePicker", ImVec2{ static_cast<float>(m_tile_picker.texture->w) * m_tile_picker.zoom, -1}))
+			{
+				DrawTilePicker();
+			}
+			ImGui::EndChildFrame();
 			ImGui::SameLine();
 
 			const float max_zoom = 16.0f;
