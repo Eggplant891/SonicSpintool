@@ -1357,6 +1357,11 @@ namespace spintool
 								{
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
+										if (ImGui::IsKeyPressed(ImGuiKey_R))
+										{
+											m_working_flipper->flipper_obj.is_x_flipped = !m_working_flipper->flipper_obj.is_x_flipped;
+										}
+
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset - m_working_flipper->destination->GetDrawPosOffset();
 										m_working_flipper->flipper_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
 										m_working_flipper->flipper_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
