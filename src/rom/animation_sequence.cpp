@@ -109,6 +109,8 @@ namespace spintool::rom
 		std::shared_ptr<rom::AnimationSequence> new_animation = std::make_shared<rom::AnimationSequence>();
 		bool stop_encountered = false;
 
+		Point current_dynamic_offset{ 0,0 };
+
 		while (current_offset < src_rom.m_buffer.size() - 2 && stop_encountered == false)
 		{
 			AnimationCommand command;
@@ -245,7 +247,7 @@ namespace spintool::rom
 				}
 				else if ((command_code & 0x20) == 0x20)
 				{
-					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 8) | src_rom.ReadUint16(current_offset + 2);
+					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 16) | src_rom.ReadUint16(current_offset + 2);
 					command.data_size = 2;
 					current_offset += 4;
 				}
@@ -281,7 +283,7 @@ namespace spintool::rom
 				}
 				else if ((command_code & 0x20) == 0x20)
 				{
-					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 8) | src_rom.ReadUint16(current_offset + 2);
+					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 16) | src_rom.ReadUint16(current_offset + 2);
 					command.data_size = 2;
 					current_offset += 4;
 				}
@@ -324,7 +326,7 @@ namespace spintool::rom
 				}
 				else if ((command_code & 0x20) == 0x20)
 				{
-					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 8) | src_rom.ReadUint16(current_offset + 2);
+					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 16) | src_rom.ReadUint16(current_offset + 2);
 					command.data_size = 2;
 					current_offset += 4;
 				}
@@ -352,8 +354,6 @@ namespace spintool::rom
 				continue;
 			}
 
-			
-
 			const auto start_offset = current_offset;
 
 			if (command.command_type == AnimationCommandType::FRAME_JUMP_QUESTION)
@@ -366,7 +366,7 @@ namespace spintool::rom
 				}
 				else if ((command_code & 0x20) == 0x20)
 				{
-					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 8) | src_rom.ReadUint16(current_offset + 2);
+					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 16) | src_rom.ReadUint16(current_offset + 2);
 					command.data_size = 2;
 					current_offset += 4;
 				}
@@ -379,6 +379,8 @@ namespace spintool::rom
 			}
 			else
 			{
+				command.command_data_extra_in_word = src_rom.ReadUint8(current_offset + 1);
+				
 				if ((command_code & 0x40) == 0x40)
 				{
 					command.command_data = src_rom.ReadUint32(current_offset + 2);
@@ -387,7 +389,7 @@ namespace spintool::rom
 				}
 				else if ((command_code & 0x20) == 0x20)
 				{
-					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 8) | src_rom.ReadUint16(current_offset + 2);
+					command.command_data = (static_cast<Uint32>(src_rom.ReadUint8(current_offset + 1)) << 16) | src_rom.ReadUint16(current_offset + 2);
 					command.data_size = 2;
 					current_offset += 4;
 				}
@@ -397,6 +399,37 @@ namespace spintool::rom
 					command.data_size = 1;
 					current_offset += 2;
 				}
+
+				if (command.command_type == AnimationCommandType::ADD_X_OFFSET)
+				{
+					Uint16 offset_command_value = static_cast<Uint16>(command.command_data);
+					if (offset_command_value > std::numeric_limits<Sint16>::max())
+					{
+						current_dynamic_offset.x -= (static_cast<int>(std::numeric_limits<Uint16>::max()) - offset_command_value) + 1;
+					}
+					else
+					{
+						current_dynamic_offset.x += offset_command_value;
+					}
+				}
+
+				if (command.command_type == AnimationCommandType::ADD_Y_OFFSET)
+				{
+					Uint16 offset_command_value = static_cast<Uint16>(command.command_data);
+					if (offset_command_value > std::numeric_limits<Sint16>::max())
+					{
+						current_dynamic_offset.y -= (static_cast<int>(std::numeric_limits<Uint16>::max()) - offset_command_value) + 1;
+					}
+					else
+					{
+						current_dynamic_offset.y += offset_command_value;
+					}
+				}
+
+				new_animation->min_dynamic_offset.x = std::min<int>(new_animation->min_dynamic_offset.x, current_dynamic_offset.x);
+				new_animation->min_dynamic_offset.y = std::min<int>(new_animation->min_dynamic_offset.y, current_dynamic_offset.y);
+				new_animation->max_dynamic_offset.x = std::max<int>(new_animation->max_dynamic_offset.x, current_dynamic_offset.x);
+				new_animation->max_dynamic_offset.y = std::max<int>(new_animation->max_dynamic_offset.y, current_dynamic_offset.y);
 			}
 			command.rom_data.SetROMData(start_offset, current_offset);
 			result_data.emplace_back(command);

@@ -11,7 +11,14 @@ namespace spintool
 		size_t current_visual_command = 0;
 		size_t current_command = 0;
 		int remaining_ticks_on_frame = 0;
-		int base_ticks_per_frame = 8;
+		int base_ticks_per_frame = 6;
+		int loop_counter = 0;
+		int preview_loop_count = 0;
+		int preview_loop_max = 10;
+		Point anim_offset{ 0,0 };
+
+		void GoToNextCommand();
+		void ResetAnimation();
 	};
 	class EditorAnimationNavigator : public EditorWindowBase
 	{

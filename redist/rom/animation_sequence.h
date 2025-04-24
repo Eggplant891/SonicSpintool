@@ -55,6 +55,7 @@ namespace spintool::rom
 		AnimationCommandType command_type = AnimationCommandType::NORMAL_FRAME;
 		std::shared_ptr<UISpriteTexture> ui_frame_sprite;
 		Uint32 command_data = 0;
+		Uint8 command_data_extra_in_word = 0;
 		Uint8 data_size = 1;
 
 		bool flip_x = false;
@@ -65,6 +66,9 @@ namespace spintool::rom
 	{
 		ROMData rom_data;
 		std::vector<AnimationCommand> command_sequence;
+
+		Point min_dynamic_offset{ 0,0 };
+		Point max_dynamic_offset{ 0,0 };
 
 		static std::shared_ptr<const AnimationSequence> LoadFromROM(const SpinballROM& src_rom, Uint32 offset, Ptr32 sprite_table_offset);
 	};
