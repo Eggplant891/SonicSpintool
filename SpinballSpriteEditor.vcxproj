@@ -259,6 +259,8 @@
     <ClInclude Include="external\imgui\imstb_rectpack.h" />
     <ClInclude Include="external\imgui\imstb_textedit.h" />
     <ClInclude Include="external\imgui\imstb_truetype.h" />
+    <ClInclude Include="external\nlohmann\json.hpp" />
+    <ClInclude Include="external\nlohmann\json_fwd.hpp" />
     <ClInclude Include="redist\editor\game_obj_manager.h" />
     <ClInclude Include="redist\editor\spline_manager.h" />
     <ClInclude Include="redist\editor\tile_brush_manager.h" />

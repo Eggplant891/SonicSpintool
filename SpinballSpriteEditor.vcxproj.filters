@@ -58,6 +58,9 @@
     <Filter Include="Source Files\editor">
       <UniqueIdentifier>{00578600-426d-414f-a3c0-c6556cb689e2}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\external\nlohmann">
+      <UniqueIdentifier>{0e425f21-56b5-4b55-bd4d-62d8a54d5c03}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\imgui\imgui.cpp">
@@ -364,6 +367,12 @@
     </ClInclude>
     <ClInclude Include="redist\ui\ui_tile_editor.h">
       <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nlohmann\json_fwd.hpp">
+      <Filter>Header Files\external\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="external\nlohmann\json.hpp">
+      <Filter>Header Files\external\nlohmann</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
