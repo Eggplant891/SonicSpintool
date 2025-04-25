@@ -1087,9 +1087,9 @@ namespace spintool
 						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
 						const ImVec2 grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / brush_dimensions.x)), static_cast<float>(static_cast<int>(relative_mouse_pos.y / brush_dimensions.y)) };
+						const bool grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || grid_pos.x >= 0 && grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && grid_pos.y >= 0 && grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
 						const ImVec2 snapped_pos{ (grid_pos * brush_dimensions) * m_zoom };
 						const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
-
 						if (ImGui::IsKeyDown(ImGuiKey_ModCtrl))
 						{
 							m_zoom += ImGui::GetIO().MouseWheel / 10.0f;
@@ -1202,16 +1202,15 @@ namespace spintool
 							}
 						}
 
-						if (m_level && has_just_selected_brush == false)
+						if (m_level && has_just_selected_brush == false && grid_pos_within_bounds)
 						{
 							const int grid_ref = static_cast<int>((grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + grid_pos.x);
-
 							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && grid_ref >= 0 && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 							{
 								const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
 								const int hovered_index = brush_instance.tile_brush_index;
 
-								if (m_selected_brush.tileset != nullptr && hovered_index > 0 && hovered_index < m_selected_brush.tileset->brushes.size() && ImGui::BeginTooltip())
+								if (m_selected_brush.tileset != nullptr && hovered_index >= 0 && hovered_index < m_selected_brush.tileset->brushes.size() && ImGui::BeginTooltip())
 								{
 									const ImVec2 uv_min{ brush_instance.is_flipped_horizontally ? 1.0f : 0.0f, brush_instance.is_flipped_vertically ? 1.0f : 0.0f };
 									const ImVec2 uv_max{ brush_instance.is_flipped_horizontally ? 0.0f : 1.0f, brush_instance.is_flipped_vertically ? 0.0f : 1.0f };
@@ -1222,6 +1221,9 @@ namespace spintool
 
 							if (m_selected_brush.IsActive())
 							{
+								const ImVec2 rect_min{ final_snapped_pos.x - 1, final_snapped_pos.y - 1 };
+								const ImVec2 rect_max{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1 };
+
 								if (m_selected_brush.HasBrushSelected())
 								{
 									ImGui::SetCursorScreenPos(final_snapped_pos);
@@ -1283,11 +1285,9 @@ namespace spintool
 
 								if (m_selected_brush.dragging_start_ref.has_value() == false)
 								{
-									ImGui::GetForegroundDrawList()->AddRect(
-										ImVec2{ final_snapped_pos.x - 1, final_snapped_pos.y - 1 },
-										ImVec2{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1 },
-										ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, 0, 1.0f);
+									ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
 								}
+
 								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
 								{
 									if (m_selected_brush.IsPickingBrushFromLayout())
@@ -1335,6 +1335,7 @@ namespace spintool
 									m_render_from_edit = true;
 									m_selected_brush.dragging_start_ref.reset();
 								}
+
 							}
 						}
 
