@@ -1180,6 +1180,7 @@ namespace spintool
 
 						if (current_layer_settings.collision == true)
 						{
+							bool has_drawn_working_spline = false;
 							for (rom::CollisionSpline& next_spline : m_spline_manager.splines)
 							{
 								if (current_layer_settings.spline_culling && selected_spline_culling_cell_index >= 0 && selected_spline_culling_cell_index < rom::SplineCullingTable::cells_count)
@@ -1197,8 +1198,14 @@ namespace spintool
 
 								const bool is_working_spline = (m_working_spline.has_value() && m_working_spline->destination == &next_spline && (m_working_spline->dest_spline_point != nullptr || ImGui::IsPopupOpen("spline_popup")));
 								rom::CollisionSpline& spline = is_working_spline ? m_working_spline->spline : next_spline;
-
+								has_drawn_working_spline |= is_working_spline;
 								DrawCollisionSpline(spline, origin, screen_origin, current_layer_settings, is_working_spline);
+							}
+
+							if (has_drawn_working_spline == false && m_working_spline.has_value())
+							{
+								rom::CollisionSpline spline = m_working_spline->spline;
+								DrawCollisionSpline(spline, origin, screen_origin, current_layer_settings, true);
 							}
 						}
 
@@ -1538,50 +1545,53 @@ namespace spintool
 											}
 										}
 
-										if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+										if (m_working_game_obj.has_value() == false)
 										{
-											m_request_open_obj_popup = true;
-											m_working_game_obj.emplace();
-											m_working_game_obj->destination = game_obj.get();
-											m_working_game_obj->game_obj = *game_obj;
-										}
-										else if (IsDraggingObject() == false && IsObjectPopupOpen() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
-										{
-											m_working_game_obj.emplace();
-											m_working_game_obj->destination = game_obj.get();
-											m_working_game_obj->game_obj = *game_obj;
-											m_working_game_obj->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - m_working_game_obj->game_obj.GetSpriteDrawPos();
-										}
-										else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
-										{
-											ImGui::SeparatorText("Game Object");
-											if (game_obj->ui_sprite)
+											if (IsDraggingObject() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 											{
-												ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
-												const ImVec2 uv_min{ game_obj->obj_definition.FlipX() ? 1.0f : 0.0f, game_obj->obj_definition.FlipY() ? 1.0f : 0.0f };
-												const ImVec2 uv_max{ game_obj->obj_definition.FlipX() ? 0.0f : 1.0f, game_obj->obj_definition.FlipY() ? 0.0f : 1.0f };
-												ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f), uv_min, uv_max);
+												m_request_open_obj_popup = true;
+												m_working_game_obj.emplace();
+												m_working_game_obj->destination = game_obj.get();
+												m_working_game_obj->game_obj = *game_obj;
 											}
-											else
+											else if (IsDraggingObject() == false && IsObjectPopupOpen() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 											{
-												ImGui::Text("<No Sprite>");
+												m_working_game_obj.emplace();
+												m_working_game_obj->destination = game_obj.get();
+												m_working_game_obj->game_obj = *game_obj;
+												m_working_game_obj->initial_drag_offset = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - m_working_game_obj->game_obj.GetSpriteDrawPos();
 											}
+											else if (current_layer_settings.hover_game_objects_tooltip && ImGui::BeginTooltip())
+											{
+												ImGui::SeparatorText("Game Object");
+												if (game_obj->ui_sprite)
+												{
+													ImGui::Text("Sprite Table: 0x%04X", game_obj->sprite_table_address);
+													const ImVec2 uv_min{ game_obj->obj_definition.FlipX() ? 1.0f : 0.0f, game_obj->obj_definition.FlipY() ? 1.0f : 0.0f };
+													const ImVec2 uv_max{ game_obj->obj_definition.FlipX() ? 0.0f : 1.0f, game_obj->obj_definition.FlipY() ? 0.0f : 1.0f };
+													ImGui::Image((ImTextureID)game_obj->ui_sprite->texture.get(), ImVec2(static_cast<float>(game_obj->ui_sprite->texture->w) * 2.0f, static_cast<float>(game_obj->ui_sprite->texture->h) * 2.0f), uv_min, uv_max);
+												}
+												else
+												{
+													ImGui::Text("<No Sprite>");
+												}
 
-											ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
-											ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
-											ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
-											ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
-											ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
-											ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
-											ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
-											ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
-											ImGui::Text("Anim Definition ptr: 0x%08X", game_obj->obj_definition.animation_definition);
-											ImGui::Text("Collision Bbox ptr: 0x%08X", game_obj->obj_definition.collision_bbox_ptr);
-											ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
-											ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
-											ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+												ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
+												ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
+												ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
+												ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
+												ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
+												ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
+												ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
+												ImGui::Text("Height: 0x%04X", game_obj->obj_definition.collision_height);
+												ImGui::Text("Anim Definition ptr: 0x%08X", game_obj->obj_definition.animation_definition);
+												ImGui::Text("Collision Bbox ptr: 0x%08X", game_obj->obj_definition.collision_bbox_ptr);
+												ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
+												ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
+												ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
 
-											ImGui::EndTooltip();
+												ImGui::EndTooltip();
+											}
 										}
 									}
 								}
@@ -1668,17 +1678,44 @@ namespace spintool
 							}
 						}
 
-						if (m_working_spline && m_working_spline->dest_spline_point != nullptr)
+						if (m_working_spline)
 						{
-							if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+							if (m_working_spline->current_mode == WorkingSplineMode::PLACING_START_POINT || m_working_spline->current_mode == WorkingSplineMode::PLACING_END_POINT)
 							{
-								m_working_spline->dest_spline_point->x = static_cast<int>(((ImGui::GetMousePos().x - screen_origin.x) / m_zoom) / m_grid_snap) * m_grid_snap;
-								m_working_spline->dest_spline_point->y = static_cast<int>(((ImGui::GetMousePos().y - screen_origin.y) / m_zoom) / m_grid_snap) * m_grid_snap;
+								if (m_working_spline->current_mode != WorkingSplineMode::PLACING_END_POINT)
+								{
+									m_working_spline->spline.spline_vector.min.x = static_cast<int>(((ImGui::GetMousePos().x - screen_origin.x) / m_zoom) / m_grid_snap) * m_grid_snap;
+									m_working_spline->spline.spline_vector.min.y = static_cast<int>(((ImGui::GetMousePos().y - screen_origin.y) / m_zoom) / m_grid_snap) * m_grid_snap;
+									if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+									{
+										m_working_spline->current_mode = WorkingSplineMode::PLACING_END_POINT;
+									}
+								}
+								else
+								{
+									if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+									{
+										m_working_spline->current_mode = WorkingSplineMode::EDITING_SPLINE_PROPERTIES;
+										ImGui::OpenPopup("spline_popup");
+									}
+								}
+
+								m_working_spline->spline.spline_vector.max.x = static_cast<int>(((ImGui::GetMousePos().x - screen_origin.x) / m_zoom) / m_grid_snap) * m_grid_snap;
+								m_working_spline->spline.spline_vector.max.y = static_cast<int>(((ImGui::GetMousePos().y - screen_origin.y) / m_zoom) / m_grid_snap) * m_grid_snap;
 							}
-							else
+							else if (m_working_spline->current_mode == WorkingSplineMode::DRAGGING_POINT && m_working_spline->dest_spline_point != nullptr)
 							{
-								ImGui::OpenPopup("spline_popup");
-								m_working_spline->dest_spline_point = nullptr;
+								if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+								{
+									m_working_spline->dest_spline_point->x = static_cast<int>(((ImGui::GetMousePos().x - screen_origin.x) / m_zoom) / m_grid_snap) * m_grid_snap;
+									m_working_spline->dest_spline_point->y = static_cast<int>(((ImGui::GetMousePos().y - screen_origin.y) / m_zoom) / m_grid_snap) * m_grid_snap;
+								}
+								else
+								{
+									m_working_spline->current_mode = WorkingSplineMode::EDITING_SPLINE_PROPERTIES;
+									ImGui::OpenPopup("spline_popup");
+									m_working_spline->dest_spline_point = nullptr;
+								}
 							}
 						}
 
@@ -1782,7 +1819,7 @@ namespace spintool
 
 						if (ImGui::BeginPopup("spline_popup"))
 						{
-							if (m_working_spline.has_value() == false || m_working_spline->dest_spline_point != nullptr)
+							if (m_working_spline.has_value() == false || m_working_spline->current_mode != WorkingSplineMode::EDITING_SPLINE_PROPERTIES)
 							{
 								ImGui::CloseCurrentPopup();
 							}
@@ -1828,7 +1865,15 @@ namespace spintool
 											}
 										}
 									}
-									*m_working_spline->destination = m_working_spline->spline;
+
+									if (m_working_spline->destination != nullptr)
+									{
+										*m_working_spline->destination = m_working_spline->spline;
+									}
+									else
+									{
+										m_spline_manager.splines.emplace_back(std::move(m_working_spline->spline));
+									}
 									m_working_spline.reset();
 									ImGui::CloseCurrentPopup();
 								}
@@ -1954,7 +1999,7 @@ namespace spintool
 							ImGui::EndPopup();
 						}
 
-						if (ImGui::IsPopupOpen("spline_popup") == false && m_working_spline.has_value() && m_working_spline->dest_spline_point == nullptr)
+						if (m_working_spline && (m_working_spline->current_mode == WorkingSplineMode::NONE || (ImGui::IsPopupOpen("spline_popup") == false && m_working_spline.has_value() && (m_working_spline->current_mode == WorkingSplineMode::EDITING_SPLINE_PROPERTIES))))
 						{
 							m_working_spline.reset();
 						}
@@ -1988,6 +2033,11 @@ namespace spintool
 						is_dragging = false;
 					}
 
+					if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && IsEditingSomething() == false && IsObjectPopupOpen() == false)
+					{
+						ImGui::OpenPopup("create_new");
+					}
+
 					int scroll_multiplier = 1;
 
 					if (ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift))
@@ -2015,6 +2065,18 @@ namespace spintool
 					{
 						tile_area->Scroll.x += scroll_amount;
 					}
+				}
+
+				if (ImGui::BeginPopup("create_new"))
+				{
+					if (ImGui::MenuItem("Create spline"))
+					{
+						m_working_spline.emplace();
+						m_working_spline->current_mode = WorkingSplineMode::PLACING_START_POINT;
+						m_working_spline->spline = {};
+						ImGui::CloseCurrentPopup();
+					}
+					ImGui::EndPopup();
 				}
 				ImGui::EndChild();
 			}
@@ -2620,6 +2682,11 @@ namespace spintool
 		return ImGui::IsPopupOpen("obj_popup") || ImGui::IsPopupOpen("spline_popup");
 	}
 
+	bool EditorTileLayoutViewer::IsEditingSomething() const
+	{
+		return m_working_spline.has_value() || m_working_game_obj.has_value() || m_working_brush.has_value() || m_working_flipper.has_value() || m_working_ring.has_value();
+	}
+
 	void EditorTileLayoutViewer::TestCollisionCullingResults() const
 	{
 		// Spline culling unit test
@@ -2715,27 +2782,27 @@ namespace spintool
 		ImVec4 colour{ 192,192,0,128 };
 		if (spline.IsBumper())
 		{
-			colour = ImVec4(255, 0, 255, 255);
+			colour = ImVec4(1.0f, 0, 1.0f, 1.0f);
 		}
 		else if (spline.IsTeleporter())
 		{
-			colour = ImVec4(0, 255, 255, 255);
+			colour = ImVec4(0, 1.0f, 1.0f, 1.0f);
 		}
 		else if (spline.IsSlippery())
 		{
-			colour = ImVec4(0, 128, 255, 255);
+			colour = ImVec4(0, 0.5f, 1.0f, 1.0f);
 		}
 		else if (spline.IsRing())
 		{
-			colour = ImVec4(255, 128, 0, 255);
+			colour = ImVec4(1.0f, 0.5f, 0, 1.0f);
 		}
 		else if (spline.IsWalkable())
 		{
-			colour = ImVec4(128, 128, 255, 255);
+			colour = ImVec4(0.5f, 0.5f, 1.0f, 1.0f);
 		}
 		else if (spline.IsUnknown())
 		{
-			colour = ImVec4(128, 128, 255, 255);
+			colour = ImVec4(0.5f, 0.5f, 1.0f, 1.0f);
 		}
 
 		if (spline.IsRadial())
@@ -2764,7 +2831,7 @@ namespace spintool
 				return;
 			}
 
-			if (is_working_spline || ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)))
+			if (is_working_spline || (m_working_spline.has_value() == false && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom))))
 			{
 				ImGui::GetWindowDrawList()->AddRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom),
 					ImGui::GetColorU32(colour), 0, ImDrawFlags_None, 3.0f);
@@ -2789,6 +2856,7 @@ namespace spintool
 						new_spline.destination = &spline;
 						new_spline.spline = spline;
 						m_working_spline.emplace(new_spline);
+						m_working_spline->current_mode = WorkingSplineMode::DRAGGING_POINT;
 						m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
 					}
 				}
@@ -2800,6 +2868,7 @@ namespace spintool
 					new_spline.destination = &spline;
 					new_spline.spline = spline;
 					m_working_spline.emplace(new_spline);
+					m_working_spline->current_mode = WorkingSplineMode::EDITING_SPLINE_PROPERTIES;
 				}
 			}
 		}
@@ -2832,7 +2901,7 @@ namespace spintool
 				ImGui::GetForegroundDrawList()->AddRect((screen_origin + (fixed_bbox.min * m_zoom)), (screen_origin + (fixed_bbox.max * m_zoom)), bbox_colour, 0, ImDrawFlags_None, 2.0f);
 			}
 
-			if (is_working_spline || ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)))
+			if (is_working_spline || (m_working_spline.has_value() == false && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom))))
 			{
 				constexpr float handle_size = 4.0f;
 				constexpr ImVec2 handle_dimensions{ 4.0f, 4.0f };
@@ -2846,7 +2915,7 @@ namespace spintool
 				const ImVec2 spline_to_cursor_vector{ ImGui::GetMousePos() - (screen_origin + (original_bbox.min * m_zoom)) };
 				const float spline_to_cursor_length = std::sqrtf(std::powf(spline_to_cursor_vector.x, 2) + std::powf(spline_to_cursor_vector.y, 2));
 
-				if (spline_to_cursor_length <= spline_length)
+				if (is_working_spline || spline_to_cursor_length <= spline_length)
 				{
 					const float distance_delta = spline_to_cursor_length / spline_length;
 					const ImVec2 collision_test_pos{ (original_bbox.min * m_zoom) + (spline_vector * distance_delta) };
@@ -2862,6 +2931,7 @@ namespace spintool
 							new_spline.destination = &spline;
 							new_spline.spline = spline;
 							m_working_spline.emplace(new_spline);
+							m_working_spline->current_mode = WorkingSplineMode::DRAGGING_POINT;
 							m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.min;
 						}
 					}
@@ -2875,6 +2945,7 @@ namespace spintool
 							new_spline.destination = &spline;
 							new_spline.spline = spline;
 							m_working_spline.emplace(new_spline);
+							m_working_spline->current_mode = WorkingSplineMode::DRAGGING_POINT;
 							m_working_spline->dest_spline_point = &m_working_spline->spline.spline_vector.max;
 						}
 					}
@@ -2901,6 +2972,7 @@ namespace spintool
 							new_spline.destination = &spline;
 							new_spline.spline = spline;
 							m_working_spline.emplace(new_spline);
+							m_working_spline->current_mode = WorkingSplineMode::EDITING_SPLINE_PROPERTIES;
 						}
 					}
 				}

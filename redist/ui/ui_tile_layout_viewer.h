@@ -85,11 +85,23 @@ namespace spintool
 		rom::RingInstance ring_obj;
 	};
 
+	enum class WorkingSplineMode
+	{
+		NONE,
+		PLACING_START_POINT,
+		PLACING_END_POINT,
+		DRAGGING_POINT,
+		DRAGGING_WHOLE_SPLINE,
+		EDITING_SPLINE_PROPERTIES
+	};
+
 	struct WorkingSpline
 	{
 		rom::CollisionSpline* destination = nullptr;
 		rom::CollisionSpline spline;
 		Point* dest_spline_point = nullptr;
+
+		WorkingSplineMode current_mode = WorkingSplineMode::NONE;
 	};
 
 	struct TilesetPreview
@@ -192,6 +204,7 @@ namespace spintool
 
 		bool IsDraggingObject() const;
 		bool IsObjectPopupOpen() const;
+		bool IsEditingSomething() const;
 
 		struct AnimSpriteEntry
 		{
