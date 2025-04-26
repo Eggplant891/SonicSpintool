@@ -1501,9 +1501,9 @@ namespace spintool
 											}
 										}
 
-										if (current_layer_settings.collision && game_obj->obj_definition.collision_bbox_ptr != 0)
+										if (current_layer_settings.collision && game_obj->obj_definition.collision != nullptr)
 										{
-											rom::CollisionSpline spline = rom::CollisionSpline::LoadFromROM(m_owning_ui.GetROM(), game_obj->obj_definition.collision_bbox_ptr);
+											rom::CollisionSpline spline = *game_obj->obj_definition.collision;
 											spline.spline_vector.min.x = static_cast<Uint16>(static_cast<Uint16>(spline.spline_vector.min.x) + game_obj->obj_definition.x_pos);
 											spline.spline_vector.min.y = static_cast<Uint16>(static_cast<Uint16>(spline.spline_vector.min.y) + game_obj->obj_definition.y_pos);
 											spline.spline_vector.max.x = static_cast<Uint16>(static_cast<Uint16>(spline.spline_vector.max.x) + game_obj->obj_definition.x_pos);
@@ -1518,7 +1518,7 @@ namespace spintool
 											{
 												std::swap(spline.spline_vector.min.y, spline.spline_vector.max.y);
 											}
-											DrawCollisionSpline(spline, origin, screen_origin, current_layer_settings, false);
+											DrawCollisionSpline(spline, origin, screen_origin, current_layer_settings, false, true);
 										}
 
 										if (current_layer_settings.collision_culling && m_level->m_data_offsets.collision_tile_obj_ids.offset != 0)
@@ -2709,7 +2709,7 @@ namespace spintool
 		m_game_object_manager = {};
 	}
 	
-	void EditorTileLayoutViewer::DrawCollisionSpline(rom::CollisionSpline& spline, ImVec2 origin, ImVec2 screen_origin, LayerSettings& current_layer_settings, bool is_working_spline)
+	void EditorTileLayoutViewer::DrawCollisionSpline(rom::CollisionSpline& spline, ImVec2 origin, ImVec2 screen_origin, LayerSettings& current_layer_settings, bool is_working_spline, bool draw_bbox)
 	{
 		const BoundingBox& spline_bbox = spline.spline_vector;
 		ImVec4 colour{ 192,192,0,128 };
@@ -2826,13 +2826,19 @@ namespace spintool
 				return;
 			}
 
+			if (draw_bbox)
+			{
+				ImU32 bbox_colour = ImGui::GetColorU32(ImVec4{ 1.0f,1.0f,0.0f,1.0f });
+				ImGui::GetForegroundDrawList()->AddRect((screen_origin + (fixed_bbox.min * m_zoom)), (screen_origin + (fixed_bbox.max * m_zoom)), bbox_colour, 0, ImDrawFlags_None, 2.0f);
+			}
+
 			if (is_working_spline || ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)))
 			{
 				constexpr float handle_size = 4.0f;
 				constexpr ImVec2 handle_dimensions{ 4.0f, 4.0f };
 
-				ImU32 start_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,255,255 });
-				ImU32 end_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,255,255 });
+				ImU32 start_handle_colour = ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f });
+				ImU32 end_handle_colour = ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f });
 
 				const ImVec2 spline_vector{ (original_bbox.max - original_bbox.min) * m_zoom };
 				const float spline_length = std::sqrtf(std::powf(spline_vector.x, 2) + std::powf(spline_vector.y, 2));
