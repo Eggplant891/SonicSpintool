@@ -1086,7 +1086,7 @@ namespace spintool
 						const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * brush_dimensions.y);
 						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
-						const ImVec2 grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / brush_dimensions.x)), static_cast<float>(static_cast<int>(relative_mouse_pos.y / brush_dimensions.y)) };
+						const ImVec2 grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (brush_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (brush_dimensions.y * m_zoom))) };
 						const bool grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || grid_pos.x >= 0 && grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && grid_pos.y >= 0 && grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
 						const ImVec2 snapped_pos{ (grid_pos * brush_dimensions) * m_zoom };
 						const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
@@ -1222,7 +1222,7 @@ namespace spintool
 							if (m_selected_brush.IsActive())
 							{
 								const ImVec2 rect_min{ final_snapped_pos.x - 1, final_snapped_pos.y - 1 };
-								const ImVec2 rect_max{ final_snapped_pos.x + brush_dimensions.x + 1, final_snapped_pos.y + brush_dimensions.y + 1 };
+								const ImVec2 rect_max{ final_snapped_pos.x + (brush_dimensions.x * m_zoom) + 1, final_snapped_pos.y + (brush_dimensions.y * m_zoom) + 1 };
 
 								if (m_selected_brush.HasBrushSelected())
 								{
@@ -1271,7 +1271,7 @@ namespace spintool
 												const ImVec2 snapped_pos{ (ImVec2{x,y} *brush_dimensions) * m_zoom };
 												const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 												ImGui::SetCursorScreenPos(final_snapped_pos);
-												ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) }, uv0, uv1);
+												ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } * m_zoom, uv0, uv1);
 											}
 										}
 
@@ -1279,7 +1279,7 @@ namespace spintool
 									}
 									else
 									{
-										ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) }, uv0, uv1);
+										ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } *m_zoom, uv0, uv1);
 									}
 								}
 
