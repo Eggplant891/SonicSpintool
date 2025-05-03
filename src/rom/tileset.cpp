@@ -8,6 +8,7 @@ namespace spintool::rom
 {
 	TilesetEntry TileSet::LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
+		constexpr Uint32 uncompressed_tile_size = TileSet::s_tile_total_bytes;
 		auto new_tileset = std::make_shared<rom::TileSet>();
 
 		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
@@ -17,6 +18,30 @@ namespace spintool::rom
 		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
+
+		for (size_t tile_index = 0; tile_index < new_tileset->num_tiles; ++tile_index)
+		{
+			const size_t relative_offset = (tile_index * s_tile_total_bytes);
+			rom::Tile new_tile;
+			
+			const Uint8* tile_start_byte = &new_tileset->uncompressed_data[relative_offset];
+			const Uint8* current_byte = tile_start_byte;
+			const size_t total_pixels = TileSet::s_tile_total_bytes;
+
+			for (size_t i = 0; i < total_pixels && relative_offset + i < new_tileset->uncompressed_data.size(); i += 1)
+			{
+				const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
+				const Uint32 right_byte = 0x0F & *current_byte;
+
+				new_tile.pixel_data.emplace_back(left_byte);
+				new_tile.pixel_data.emplace_back(right_byte);
+
+				++current_byte;
+			}
+
+			new_tileset->tiles.emplace_back(std::move(new_tile));
+		}
+
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
 
 		return { new_tileset, results };
@@ -42,9 +67,33 @@ namespace spintool::rom
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
 		// Seems to be necessary to remove the first 2 bytes to make it renderable. Possible these specify dimensions or other data.
 		new_tileset->uncompressed_data.erase(std::begin(new_tileset->uncompressed_data), std::begin(new_tileset->uncompressed_data) + 2);
+		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size()) / TileSet::s_tile_total_bytes;
+
+		for (size_t tile_index = 0; tile_index < new_tileset->num_tiles; ++tile_index)
+		{
+			const size_t relative_offset = (tile_index * s_tile_total_bytes);
+			rom::Tile new_tile;
+
+			const Uint8* tile_start_byte = &new_tileset->uncompressed_data[relative_offset];
+			const Uint8* current_byte = tile_start_byte;
+			const size_t total_pixels = TileSet::s_tile_total_bytes;
+
+			for (size_t i = 0; i < total_pixels && relative_offset + i < new_tileset->uncompressed_data.size(); i += 1)
+			{
+				const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
+				const Uint32 right_byte = 0x0F & *current_byte;
+
+				new_tile.pixel_data.emplace_back(left_byte);
+				new_tile.pixel_data.emplace_back(right_byte);
+
+				++current_byte;
+			}
+
+			new_tileset->tiles.emplace_back(std::move(new_tile));
+		}
+
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset, results.rom_data.rom_offset_end);
 
-		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size()) / TileSet::s_tile_total_bytes;
 
 		return { new_tileset, results };
 	}

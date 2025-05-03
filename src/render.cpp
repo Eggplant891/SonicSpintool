@@ -87,7 +87,6 @@ namespace spintool
 		SDL_DestroyWindow(s_window);
 	}
 
-
 	void Renderer::NewFrame()
 	{
 		ImGui_ImplSDLRenderer3_NewFrame();

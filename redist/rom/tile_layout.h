@@ -75,7 +75,7 @@ namespace spintool::rom
 
 		std::vector<TileInstance> tile_instances;
 
-		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, Uint32 brushes_offset, Uint32 brushes_end, Uint32 layout_offset, std::optional<Uint32> layout_end);
+		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, Uint32 layout_width, Uint32 brushes_offset, Uint32 brushes_end, Uint32 layout_offset, std::optional<Uint32> layout_end);
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end);
 
 		void SaveToROM(SpinballROM& src_rom, Uint32 brushes_offset, Uint32 layout_offset);

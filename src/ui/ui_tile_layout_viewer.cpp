@@ -486,64 +486,47 @@ namespace spintool
 				bool preserve_rendered_items = false;
 				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
 				
-				if (request.compression_algorithm == CompressionAlgorithm::SSC)
+				if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
 				{
-					if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
-					{
-						m_working_tileset = *request.store_tileset;
-						preserve_rendered_items = true;
-					}
-					else
+					m_working_tileset = *request.store_tileset;
+					preserve_rendered_items = true;
+				}
+				else
+				{
+					if (request.compression_algorithm == CompressionAlgorithm::SSC)
 					{
 						m_working_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
-						if (request.store_tileset != nullptr)
-						{
-							*request.store_tileset = m_working_tileset;
-						}
 					}
-
-					if (request.store_layout != nullptr && *request.store_layout != nullptr)
-					{
-						m_working_tile_layout = *request.store_layout;
-						preserve_rendered_items = true;
-					}
-					else
-					{
-						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
-						if (request.store_layout != nullptr)
-						{
-							*request.store_layout = m_working_tile_layout;
-						}
-					}
-				}
-				else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
-				{
-					if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
-					{
-						m_working_tileset = *request.store_tileset;
-						preserve_rendered_items = true;
-					}
-					else
+					else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
 					{
 						m_working_tileset = rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
-						if (request.store_tileset != nullptr)
-						{
-							*request.store_tileset = m_working_tileset;
-						}
 					}
 
-					if (request.store_layout != nullptr && *request.store_layout != nullptr)
+					if (request.store_tileset != nullptr)
 					{
-						m_working_tile_layout = *request.store_layout;
-						preserve_rendered_items = true;
+						*request.store_tileset = m_working_tileset;
 					}
-					else
+				}
+
+				if (request.store_layout != nullptr && *request.store_layout != nullptr)
+				{
+					m_working_tile_layout = *request.store_layout;
+					preserve_rendered_items = true;
+				}
+				else
+				{
+					if (request.compression_algorithm == CompressionAlgorithm::SSC)
+					{
+						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_layout_width, request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
+					}
+					else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
 					{
 						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_working_tileset, request.tile_layout_address, request.tile_layout_address_end);
-						if (request.store_layout != nullptr)
-						{
-							*request.store_layout = m_working_tile_layout;
-						}
+					}
+
+					if (request.store_layout != nullptr)
+					{
+						*request.store_layout = m_working_tile_layout;
 					}
 				}
 
@@ -555,9 +538,6 @@ namespace spintool
 					current_preview_data->tile_layout_address = m_working_tile_layout->rom_data.rom_offset;
 					current_preview_data->tile_layout_address_end = m_working_tile_layout->rom_data.rom_offset_end;
 				}
-
-				const int brush_width = static_cast<int>(request.tile_brush_width * rom::TileSet::s_tile_width);
-				const int brush_height = static_cast<int>(request.tile_brush_height * rom::TileSet::s_tile_height);
 
 				if (preserve_rendered_items == false)
 				{
@@ -604,63 +584,58 @@ namespace spintool
 				}
 
 				const size_t target_index = m_level == nullptr || m_working_tile_layout == m_level->m_tile_layers[0].tile_layout ? 0 : 1;
-				auto& brush_previews = m_tileset_preview_list.at(target_index).brushes;
-
-				for (size_t i = 0; i < m_working_tile_layout->tile_brush_instances.size(); ++i)
+				for (size_t i = 0; i < m_working_tile_layout->tile_instances.size(); ++i)
 				{
-					const auto tile_brush_index = m_working_tile_layout->tile_brush_instances[i].tile_brush_index;
-					if (tile_brush_index >= brush_previews.size())
+					const auto tile_index = m_working_tile_layout->tile_instances[i].tile_index;
+					if (tile_index >= m_working_tileset->tiles.size())
 					{
 						break;
 					}
 
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(brush_previews[tile_brush_index].surface.get()) };
-					if (m_working_tile_layout->tile_brush_instances[i].is_flipped_horizontally)
+					const rom::Tile& tile = m_working_tileset->tiles[tile_index];
+					const rom::TileInstance& tile_instance = m_working_tile_layout->tile_instances[i];
+					static SDLSurfaceHandle temp_surface{ SDL_CreateSurface(rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, SDL_PIXELFORMAT_INDEX8) };
+					SDLPaletteHandle tile_palette = Renderer::CreateSDLPalette(tile_instance.palette_line == 0 && request.palette_line.has_value() ? *m_working_palette_set.palette_lines.at(*request.palette_line) : *m_working_palette_set.palette_lines.at(tile_instance.palette_line));
+					SDL_SetSurfacePalette(temp_surface.get(), tile_palette.get());
+					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, 0);
+					SDL_FillSurfaceRect(temp_surface.get(), nullptr, 0);
+
+					const size_t x_size = rom::TileSet::s_tile_width;
+					const size_t y_size = rom::TileSet::s_tile_height;
+					if (tile.surface != nullptr)
+					{
+						SDL_BlitSurface(temp_surface.get(), nullptr, tile.surface.get(), nullptr);
+					}
+					else
+					{
+						size_t target_pixel_index = 0;
+						for (size_t i = 0; i < tile.pixel_data.size() && i < temp_surface->pitch * temp_surface->h && (i / x_size) < y_size; ++i, target_pixel_index += 1)
+						{
+							if ((i % x_size) == 0)
+							{
+								target_pixel_index = temp_surface->pitch * (i / x_size);
+							}
+						
+							reinterpret_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
+						}
+					}
+
+					if (m_working_tile_layout->tile_instances[i].is_flipped_horizontally)
 					{
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
 					}
 
-					if (m_working_tile_layout->tile_brush_instances[i].is_flipped_vertically)
+					if (m_working_tile_layout->tile_instances[i].is_flipped_vertically)
 					{
 						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
 					}
 
-					const int x_off = static_cast<int>((i % request.tile_layout_width) * brush_width);
-					const int y_off = static_cast<int>(((i - (i % request.tile_layout_width)) / request.tile_layout_width) * brush_height);
+					const auto adjusted_layout_width = (request.tile_layout_width * request.tile_brush_width);
+					const int x_off = static_cast<int>(i % adjusted_layout_width) * rom::TileSet::s_tile_width;
+					const int y_off = static_cast<int>(((i - (i % adjusted_layout_width)) / adjusted_layout_width)) * rom::TileSet::s_tile_height;
 
-					const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
-					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
+					const SDL_Rect target_rect{ x_off, y_off, x_size, y_size };
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
-				}
-
-				if (request.draw_mirrored_layout)
-				{
-					for (size_t i = 0; i < m_working_tile_layout->tile_brush_instances.size(); ++i)
-					{
-						const auto tile_brush_index = m_working_tile_layout->tile_brush_instances[i].tile_brush_index;
-						if (tile_brush_index >= brush_previews.size())
-						{
-							break;
-						}
-
-						SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(brush_previews[tile_brush_index].surface.get()) };
-						if (m_working_tile_layout->tile_brush_instances[i].is_flipped_horizontally == false)
-						{
-							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
-						}
-
-						if (m_working_tile_layout->tile_brush_instances[i].is_flipped_vertically)
-						{
-							SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
-						}
-
-						const int x_off = ((request.tile_layout_width * 2 * brush_width)- brush_width) - static_cast<int>((i % request.tile_layout_width) * brush_width);
-						const int y_off = static_cast<int>(((i - (i % request.tile_layout_width)) / request.tile_layout_width) * brush_height);
-
-						const SDL_Rect target_rect{ x_off, y_off, brush_width, brush_height };
-						SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-						SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
-					}
 				}
 
 				if (m_export_result && export_combined == false)
