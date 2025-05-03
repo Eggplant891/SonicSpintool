@@ -25,15 +25,20 @@ namespace spintool::rom
 
 	};
 
+	bool operator==(const TileInstance& lhs, const TileInstance& rhs);
+	bool operator==(const std::unique_ptr<TileInstance>& lhs, const std::unique_ptr<TileInstance>& rhs);
+
 	class TileBrushBase
 	{
 	public:
-		virtual Uint32 BrushWidth() = 0;
-		virtual Uint32 BrushHeight() = 0;
-		Uint32 TotalTiles()
+		virtual Uint32 BrushWidth() const = 0;
+		virtual Uint32 BrushHeight() const = 0;
+		Uint32 TotalTiles() const
 		{
 			return BrushWidth() * BrushHeight();
 		}
+
+		std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
 
 		ROMData rom_data;
 		std::vector<TileInstance> tiles;
@@ -43,13 +48,17 @@ namespace spintool::rom
 	class TileBrush : public TileBrushBase
 	{
 	public:
-		Uint32 BrushWidth() override { return s_brush_width; }
-		Uint32 BrushHeight() override { return s_brush_height; }
+		Uint32 BrushWidth() const override { return s_brush_width; }
+		Uint32 BrushHeight() const override { return s_brush_height; }
 
 		constexpr static const Uint32 s_brush_width = width;
 		constexpr static const Uint32 s_brush_height = height;
 		constexpr static const Uint32 s_brush_total_tiles = width * height;
 	};
+
+	bool operator==(const TileBrushBase& lhs, const TileBrushBase& rhs);
+	bool operator==(const std::unique_ptr<TileBrushBase>& lhs, const std::unique_ptr<TileBrushBase>& rhs);
+
 
 	template class TileBrush<1, 1>;
 	template class TileBrush<4, 4>;
@@ -62,6 +71,9 @@ namespace spintool::rom
 		int palette_line = 0; // 2 bit value. 0x0 -> 0x3
 		Uint16 tile_brush_index = 0;
 	};
+
+	bool operator==(const TileBrushInstance& lhs, const TileBrushInstance& rhs);
+	bool operator==(const std::unique_ptr<TileInstance>& lhs, const std::unique_ptr<TileInstance>& rhs);
 
 	struct TileLayout
 	{
@@ -79,5 +91,6 @@ namespace spintool::rom
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end);
 
 		void SaveToROM(SpinballROM& src_rom, Uint32 brushes_offset, Uint32 layout_offset);
+		void CollapseTilesIntoBrushes();
 	};
 }
