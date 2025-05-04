@@ -1341,6 +1341,7 @@ namespace spintool
 											tile.is_flipped_vertically = m_selected_brush.flip_y;
 										}
 									}
+									m_selected_brush.tile_layer->tile_layout->BlitTileInstancesFromBrushInstances();
 									m_render_from_edit = true;
 									m_selected_brush.dragging_start_ref.reset();
 								}
