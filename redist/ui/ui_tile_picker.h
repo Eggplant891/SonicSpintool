@@ -31,6 +31,7 @@ namespace spintool
 		void Draw();
 
 		void SetTileLayer(rom::TileLayer* layer);
+		rom::TileLayer* GetTileLayer();
 
 	//private:
 		static constexpr Uint32 picker_width = 20;

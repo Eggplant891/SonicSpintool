@@ -137,4 +137,9 @@ namespace spintool
 		}
 	}
 
+	spintool::rom::TileLayer* TilePicker::GetTileLayer()
+	{
+		return m_tile_layer;
+	}
+
 }
