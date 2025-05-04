@@ -224,8 +224,6 @@ namespace spintool::rom
 
 	void TileLayout::CollapseTilesIntoBrushes()
 	{
-		const size_t brush_width = TileBrush<4, 4>::s_brush_width;
-		const size_t brush_height = TileBrush<4, 4>::s_brush_height;
 		const size_t num_brush_instances = tile_instances.size() / TileBrush<4, 4>::s_brush_total_tiles;
 		const size_t previous_num_brushes = tile_brushes.size();
 
@@ -234,17 +232,16 @@ namespace spintool::rom
 		for (size_t i = 0; i < num_brush_instances; ++i)
 		{
 			std::unique_ptr<TileBrushBase> next_brush = std::make_unique<TileBrush<4, 4>>();
+			const Uint32 brush_width = next_brush->BrushWidth();
+			const Uint32 brush_height = next_brush->BrushHeight();
 			next_brush->tiles.resize(next_brush->TotalTiles());
-			for (size_t x = 0; x < brush_width; ++x)
+			for (Uint32 x = 0; x < brush_width; ++x)
 			{
-				for (size_t y = 0; y < brush_height; ++y)
+				for (Uint32 y = 0; y < brush_height; ++y)
 				{
-					size_t x_brush_index = x;
-					size_t y_brush_index = y;
-					const size_t brush_x_index = (i % layout_width) * brush_width;
-					const size_t brush_y_index = static_cast<int>(((i - (i % layout_width)) / static_cast<float>(layout_width))) * brush_width;
-					const size_t destination_index = ((brush_y_index * layout_width * brush_width) + (y_brush_index * layout_width * brush_height)) + (brush_x_index + x_brush_index);
-					const size_t brush_destination_index = (y * brush_width) + x;
+					const Point brush_coords = LinearIndexToGridCoordinates(i) * static_cast<float>(brush_width);
+					const size_t destination_index = ((brush_coords.y * layout_width * brush_width) + (y * layout_width * brush_height)) + (brush_coords.x + x);
+					const size_t brush_destination_index = next_brush->GridCoordinatesToLinearIndex(Point{ static_cast<int>(x), static_cast<int>(y) });
 					next_brush->tiles[brush_destination_index] = tile_instances[destination_index];
 				}
 			}
@@ -317,6 +314,10 @@ namespace spintool::rom
 				new_brush_y->tiles = new_brush->TilesFlipped(false, true);
 				new_brush_xy->tiles = new_brush->TilesFlipped(true, true);
 
+				assert(new_brush->tiles == new_brush_x->TilesFlipped(true, false));
+				assert(new_brush->tiles == new_brush_y->TilesFlipped(false, true));
+				assert(new_brush->tiles == new_brush_xy->TilesFlipped(true, true));
+
 				final_brush_set.emplace_back(std::move(new_brush));
 				final_brush_set_x.emplace_back(std::move(new_brush_x));
 				final_brush_set_y.emplace_back(std::move(new_brush_y));
@@ -376,9 +377,23 @@ namespace spintool::rom
 		}
 	}
 
-	std::vector<spintool::rom::TileInstance> TileBrushBase::TilesFlipped(bool flip_x, bool flip_y) const
+	size_t TileLayout::GridCoordinatesToLinearIndex(Point grid_coord) const
 	{
-		std::vector<spintool::rom::TileInstance> out_tiles = tiles;
+		return grid_coord.x + (grid_coord.y * layout_width);
+	}
+
+	Point TileLayout::LinearIndexToGridCoordinates(size_t linear_index) const
+	{
+		Point out_coord{};
+		out_coord.x = (linear_index % layout_width);
+		out_coord.y = static_cast<int>(((linear_index - (linear_index % layout_width)) / static_cast<float>(layout_width)));
+
+		return out_coord;
+	}
+
+	std::vector<rom::TileInstance> TileBrushBase::TilesFlipped(bool flip_x, bool flip_y) const
+	{
+		std::vector<rom::TileInstance> out_tiles = tiles;
 
 		if (flip_x)
 		{
@@ -388,9 +403,11 @@ namespace spintool::rom
 				{
 					const size_t x_offset_inverse = ((BrushWidth() - 1) - x);
 					const size_t y_offset = y * BrushWidth();
-					out_tiles[y_offset + x].is_flipped_horizontally = !out_tiles[y_offset + x].is_flipped_horizontally;
-					out_tiles[y_offset + x_offset_inverse].is_flipped_horizontally = !out_tiles[y_offset + x_offset_inverse].is_flipped_horizontally;
-					std::swap(out_tiles[y_offset + x], out_tiles[y_offset + x_offset_inverse]);
+					rom::TileInstance& lhs = out_tiles[y_offset + x];
+					rom::TileInstance& rhs = out_tiles[y_offset + x_offset_inverse];
+					lhs.is_flipped_horizontally = !lhs.is_flipped_horizontally;
+					rhs.is_flipped_horizontally = !rhs.is_flipped_horizontally;
+					std::swap(lhs, rhs);
 				}
 			}
 		}
@@ -403,13 +420,31 @@ namespace spintool::rom
 				{
 					const size_t y_offset = y * BrushWidth();
 					const size_t y_offset_inverse = ((BrushHeight() - 1) - y) * BrushWidth();
-					out_tiles[y_offset + x].is_flipped_vertically = !out_tiles[y_offset + x].is_flipped_vertically;
-					out_tiles[y_offset_inverse + x].is_flipped_vertically = !out_tiles[y_offset_inverse + x].is_flipped_vertically;
-					std::swap(out_tiles[y_offset + x], out_tiles[y_offset_inverse + x]);
+					rom::TileInstance& lhs = out_tiles[y_offset + x];
+					rom::TileInstance& rhs = out_tiles[y_offset_inverse + x];
+					lhs.is_flipped_vertically = !lhs.is_flipped_vertically;
+					rhs.is_flipped_vertically = !rhs.is_flipped_vertically;
+					std::swap(lhs, rhs);
 				}
 			}
 		}
 
 		return out_tiles;
 	}
+
+	size_t TileBrushBase::GridCoordinatesToLinearIndex(Point grid_coord) const
+	{
+		return grid_coord.x + (grid_coord.y * BrushWidth());
+
+	}
+
+	Point TileBrushBase::LinearIndexToGridCoordinates(size_t linear_index) const
+	{
+		Point out_coord{};
+		out_coord.x = (linear_index % BrushWidth());
+		out_coord.y = static_cast<int>(((linear_index - (linear_index % BrushWidth())) / static_cast<float>(BrushWidth())));
+
+		return out_coord;
+	}
+
 }

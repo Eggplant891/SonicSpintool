@@ -39,6 +39,32 @@ namespace spintool::rom
 				++current_byte;
 			}
 
+			for (Uint8 x = 0; x < 4 && new_tile.is_x_symmetrical; ++x)
+			{
+				for (Uint8 y = 0; y < 4 && new_tile.is_x_symmetrical; ++y)
+				{
+					const Uint32 flip_lhs_index = (y * 8) + x;
+					const Uint32 flip_rhs_index = (y * 8) + (7 - x);
+					if (new_tile.pixel_data[flip_lhs_index] != new_tile.pixel_data[flip_rhs_index])
+					{
+						new_tile.is_x_symmetrical = false;
+					}
+				}
+			}
+
+			for (Uint8 x = 0; x < 4 && new_tile.is_y_symmetrical; ++x)
+			{
+				for (Uint8 y = 0; y < 4 && new_tile.is_y_symmetrical; ++y)
+				{
+					const Uint32 flip_lhs_index = (y * 8) + x;
+					const Uint32 flip_rhs_index = ((7 - y) * 8) + x;
+					if (new_tile.pixel_data[flip_lhs_index] != new_tile.pixel_data[flip_rhs_index])
+					{
+						new_tile.is_y_symmetrical = false;
+					}
+				}
+			}
+
 			new_tileset->tiles.emplace_back(std::move(new_tile));
 		}
 
