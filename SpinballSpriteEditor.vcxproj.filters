@@ -210,6 +210,9 @@
     <ClCompile Include="src\ui\ui_tile_editor.cpp">
       <Filter>Source Files\ui</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\ui_tile_picker.cpp">
+      <Filter>Source Files\ui</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\imconfig.h">
@@ -373,6 +376,9 @@
     </ClInclude>
     <ClInclude Include="external\nlohmann\json.hpp">
       <Filter>Header Files\external\nlohmann</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\ui\ui_tile_picker.h">
+      <Filter>Header Files\ui</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

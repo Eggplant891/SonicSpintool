@@ -458,6 +458,7 @@ namespace spintool
 				if (m_render_from_edit == false)
 				{
 					m_tileset_preview_list.clear();
+					m_tile_picker_list.clear();
 				}
 				m_render_from_edit = false;
 
@@ -543,6 +544,7 @@ namespace spintool
 				{
 					std::vector<rom::Sprite> brushes;
 					m_tileset_preview_list.emplace_back();
+					auto& tile_picker = m_tile_picker_list.emplace_back(m_owning_ui);
 					auto& brush_previews = m_tileset_preview_list.back().brushes;
 					brushes.reserve(m_working_tile_layout->tile_brushes.size());
 					brush_previews.clear();
@@ -583,7 +585,6 @@ namespace spintool
 					}
 				}
 
-				const size_t target_index = m_level == nullptr || m_working_tile_layout == m_level->m_tile_layers[0].tile_layout ? 0 : 1;
 				for (size_t i = 0; i < m_working_tile_layout->tile_instances.size(); ++i)
 				{
 					const auto tile_index = m_working_tile_layout->tile_instances[i].tile_index;
@@ -898,7 +899,33 @@ namespace spintool
 
 						bool request_open_brush_popup = false;
 
-						if (m_tileset_preview_list.empty() == false && ImGui::BeginTabItem("Brush Previews"))
+						if (m_tile_picker_list.empty() == false && ImGui::BeginTabItem("Tilesets"))
+						{
+							if (ImGui::BeginTabBar("tile_layers"))
+							{
+								static const char* layer_names[] =
+								{
+									"Background",
+									"Foreground"
+								};
+
+								int tab_index = 0;
+								for (Uint16 layer_index = 0; layer_index < m_tile_picker_list.size(); ++layer_index)
+								{
+									TilePicker& tile_picker = m_tile_picker_list[layer_index];
+									tile_picker.SetTileLayer(m_level != nullptr ? &m_level->m_tile_layers[layer_index] : nullptr);
+									if (ImGui::BeginTabItem(layer_names[tab_index++]))
+									{
+										tile_picker.Draw();
+										ImGui::EndTabItem();
+									}
+								}
+								ImGui::EndTabBar();
+							}
+							ImGui::EndTabItem();
+						}
+
+						if (m_tileset_preview_list.empty() == false && ImGui::BeginTabItem("Brushes"))
 						{
 							if (ImGui::BeginTabBar("tile_layers"))
 							{

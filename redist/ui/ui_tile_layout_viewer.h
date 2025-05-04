@@ -1,13 +1,9 @@
 #pragma once
 
-#include "ui/ui_editor_window.h"
 #include "types/sdl_handle_defs.h"
 
 #include "rom/level.h"
-#include "editor/spline_manager.h"
-#include "editor/game_obj_manager.h"
 #include "rom/rom_asset_definitions.h"
-
 #include "rom/culling_tables/spline_culling_table.h"
 #include "rom/game_objects/game_object_definition.h"
 #include "rom/game_objects/game_object_flipper.h"
@@ -16,13 +12,19 @@
 #include "rom/palette.h"
 #include "rom/animated_object.h"
 
+#include "editor/spline_manager.h"
+#include "editor/game_obj_manager.h"
+
+#include "ui/ui_editor_window.h"
+#include "ui/ui_tile_editor.h"
+#include "ui_tile_picker.h"
+
 #include "imgui.h"
 
 #include <vector>
 #include <memory>
 #include <optional>
 #include <string>
-#include "ui/ui_tile_editor.h"
 
 namespace spintool
 {
@@ -227,6 +229,7 @@ namespace spintool
 		GameObjectManager m_game_object_manager;
 
 		std::vector<RenderTileLayoutRequest> m_tile_layout_render_requests;
+		std::vector<TilePicker> m_tile_picker_list;
 		std::vector<TilesetPreview> m_tileset_preview_list;
 		std::vector<AnimSpriteEntry> m_anim_sprite_instances;
 
