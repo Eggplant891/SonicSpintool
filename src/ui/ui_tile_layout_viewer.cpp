@@ -1,29 +1,30 @@
 #include "ui/ui_tile_layout_viewer.h"
 
-#include "ui/ui_editor.h"
-
 #include "rom/sprite.h"
 #include "rom/tileset.h"
 #include "rom/tile_layout.h"
 #include "rom/culling_tables/game_obj_collision_culling_table.h"
 #include "rom/culling_tables/animated_object_culling_table.h"
 #include "rom/culling_tables/spline_culling_table.h"
+#include "rom/rom_asset_definitions.h"
+#include "rom/level.h"
+#include "rom/tile_brush.h"
+#include "rom/tile.h"
+
+#include "editor/game_obj_manager.h"
+
+#include "ui/ui_editor.h"
 
 #include "SDL3/SDL_image.h"
 #include "imgui.h"
+#include "imgui_internal.h"
+
 #include <memory>
 #include <cassert>
 #include <limits>
 #include <algorithm>
-#include <iterator>
 #include <cmath>
-#include <iostream>
-#include "imgui_internal.h"
 #include <cstdio>
-#include "rom/rom_asset_definitions.h"
-#include "editor/game_obj_manager.h"
-#include <numeric>
-#include "rom/level.h"
 
 
 namespace spintool

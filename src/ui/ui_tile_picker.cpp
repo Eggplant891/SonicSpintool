@@ -7,6 +7,7 @@
 
 #include "imgui.h"
 #include "ui/ui_palette_viewer.h"
+#include "rom/tile.h"
 
 namespace spintool
 {

@@ -1,8 +1,10 @@
 #include "rom/tileset.h"
+
 #include "rom/sprite.h"
 #include "rom/spinball_rom.h"
 #include "rom/ssc_decompressor.h"
 #include "rom/lzss_decompressor.h"
+#include "rom/tile.h"
 
 namespace spintool::rom
 {

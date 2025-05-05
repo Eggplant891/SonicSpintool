@@ -3,7 +3,8 @@
 #include "rom/level.h"
 #include "imgui.h"
 #include "render.h"
-#include "ui/ui_palette_viewer.h"
+#include "rom/tile_brush.h"
+#include "rom/tile.h"
 
 namespace spintool
 {

@@ -14,6 +14,7 @@ namespace spintool::rom
 	class SpinballROM;
 	struct Sprite;
 	struct SpriteTile;
+	struct Tile;
 	struct TileSet;
 }
 
@@ -36,16 +37,6 @@ namespace spintool
 
 namespace spintool::rom
 {
-	struct Tile
-	{
-		SDLSurfaceHandle surface;
-		std::vector<Uint8> pixel_data;
-		Uint32 tile_index = 0;
-
-		bool is_x_symmetrical = true;
-		bool is_y_symmetrical = true;
-	};
-
 	struct TileSet
 	{
 		ROMData rom_data;

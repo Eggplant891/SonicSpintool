@@ -213,6 +213,12 @@
     <ClCompile Include="src\ui\ui_tile_picker.cpp">
       <Filter>Source Files\ui</Filter>
     </ClCompile>
+    <ClCompile Include="src\rom\tile.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\rom\tile_brush.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\imconfig.h">
@@ -379,6 +385,12 @@
     </ClInclude>
     <ClInclude Include="redist\ui\ui_tile_picker.h">
       <Filter>Header Files\ui</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\tile.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\tile_brush.h">
+      <Filter>Header Files\rom</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
