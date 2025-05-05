@@ -54,7 +54,7 @@ namespace spintool::rom
 
 		auto new_layout = std::make_shared<TileLayout>();
 
-		const size_t total_brushes = (brushes_end - brushes_offset) / TileBrush::s_default_total_tiles;
+		const size_t total_brushes = static_cast<size_t>(brushes_end - brushes_offset) / (TileBrush::s_default_total_tiles * 2);
 		new_layout->tile_brushes.resize(total_brushes);
 
 		for (std::unique_ptr<TileBrush>& current_brush : new_layout->tile_brushes)
