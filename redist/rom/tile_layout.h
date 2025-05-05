@@ -12,7 +12,7 @@ namespace spintool::rom
 	class SpinballROM;
 	struct TileSet;
 	struct TileInstance;
-	class TileBrushBase;
+	class TileBrush;
 	struct TileBrushInstance;
 }
 
@@ -25,7 +25,7 @@ namespace spintool::rom
 		int layout_width = 0;
 		int layout_height = 0;
 
-		std::vector<std::unique_ptr<TileBrushBase>> tile_brushes;
+		std::vector<std::unique_ptr<TileBrush>> tile_brushes;
 		std::vector<TileBrushInstance> tile_brush_instances;
 
 		std::vector<TileInstance> tile_instances;

@@ -13,7 +13,7 @@ namespace spintool
 	struct TileLayer;
 	namespace rom
 	{
-		class TileBrushBase;
+		class TileBrush;
 	}
 }
 
@@ -32,7 +32,7 @@ namespace spintool
 		TileBrushPreview m_brush_preview;
 		
 		rom::TileLayer* m_tile_layer = nullptr;
-		rom::TileBrushBase* m_target_brush = nullptr;
+		rom::TileBrush* m_target_brush = nullptr;
 
 		TilePicker m_tile_picker;
 		Uint32 m_brush_index = 0;

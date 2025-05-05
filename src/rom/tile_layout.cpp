@@ -20,7 +20,7 @@ namespace spintool::rom
 				{
 					continue;
 				}
-				const std::unique_ptr<rom::TileBrushBase>& brush_def = tile_brushes[brush_instance.tile_brush_index];
+				const std::unique_ptr<rom::TileBrush>& brush_def = tile_brushes[brush_instance.tile_brush_index];
 				const std::vector<rom::TileInstance> tiles_flipped = brush_def->TilesFlipped(brush_instance.is_flipped_horizontally, brush_instance.is_flipped_vertically);
 
 				for (size_t x = 0; x < brush_width; ++x)
@@ -54,12 +54,12 @@ namespace spintool::rom
 
 		auto new_layout = std::make_shared<TileLayout>();
 
-		const size_t total_brushes = (brushes_end - brushes_offset) / (TileBrush<4,4>::s_brush_total_tiles*2);
+		const size_t total_brushes = (brushes_end - brushes_offset) / TileBrush::s_default_total_tiles;
 		new_layout->tile_brushes.resize(total_brushes);
 
-		for (std::unique_ptr<TileBrushBase>& current_brush : new_layout->tile_brushes)
+		for (std::unique_ptr<TileBrush>& current_brush : new_layout->tile_brushes)
 		{
-			current_brush = std::make_unique<TileBrush<4, 4>>();
+			current_brush = std::make_unique<TileBrush>(TileBrush::s_default_brush_width, TileBrush::s_default_brush_height);
 			for (size_t i = 0; i < current_brush->TotalTiles(); ++i)
 			{
 				const Uint8 first_byte = *current_byte;
@@ -112,7 +112,7 @@ namespace spintool::rom
 
 		for (Uint32 tile = 0; tile < new_layout->tile_brushes.size(); ++tile)
 		{
-			new_layout->tile_brushes[tile] = std::make_unique<TileBrush<1, 1>>();
+			new_layout->tile_brushes[tile] = std::make_unique<TileBrush>(1, 1);
 			TileInstance& new_tile_instance = new_layout->tile_brushes[tile]->tiles.emplace_back();
 			new_tile_instance.tile_index = static_cast<int>(tile);
 		}
@@ -152,14 +152,14 @@ namespace spintool::rom
 
 	void TileLayout::CollapseTilesIntoBrushes()
 	{
-		const size_t num_brush_instances = tile_instances.size() / TileBrush<4, 4>::s_brush_total_tiles;
+		const size_t num_brush_instances = tile_instances.size() / TileBrush::s_default_total_tiles;
 		const size_t previous_num_brushes = tile_brushes.size();
 
-		std::vector<std::unique_ptr<TileBrushBase>> candidate_brushes;
+		std::vector<std::unique_ptr<TileBrush>> candidate_brushes;
 		candidate_brushes.reserve(num_brush_instances);
 		for (size_t i = 0; i < num_brush_instances; ++i)
 		{
-			std::unique_ptr<TileBrushBase> next_brush = std::make_unique<TileBrush<4, 4>>();
+			std::unique_ptr<TileBrush> next_brush = std::make_unique<TileBrush>(TileBrush::s_default_brush_width, TileBrush::s_default_brush_height);
 			const Uint32 brush_width = next_brush->BrushWidth();
 			const Uint32 brush_height = next_brush->BrushHeight();
 			next_brush->tiles.resize(next_brush->TotalTiles());
@@ -176,14 +176,14 @@ namespace spintool::rom
 			candidate_brushes.emplace_back(std::move(next_brush));
 		}
 
-		std::vector<std::unique_ptr<TileBrushBase>> final_brush_set;
-		std::vector<std::unique_ptr<TileBrushBase>> final_brush_set_x;
-		std::vector<std::unique_ptr<TileBrushBase>> final_brush_set_y;
-		std::vector<std::unique_ptr<TileBrushBase>> final_brush_set_xy;
+		std::vector<std::unique_ptr<TileBrush>> final_brush_set;
+		std::vector<std::unique_ptr<TileBrush>> final_brush_set_x;
+		std::vector<std::unique_ptr<TileBrush>> final_brush_set_y;
+		std::vector<std::unique_ptr<TileBrush>> final_brush_set_xy;
 
 		std::vector<rom::TileBrushInstance> brush_instances;
 
-		for (std::unique_ptr<TileBrushBase>& candidate_brush : candidate_brushes)
+		for (std::unique_ptr<TileBrush>& candidate_brush : candidate_brushes)
 		{
 			bool found_match = false;
 			rom::TileBrushInstance new_instance{};
@@ -193,7 +193,7 @@ namespace spintool::rom
 			{
 				for (size_t i = 0; i < final_brush_set.size(); ++i)
 				{
-					std::unique_ptr<TileBrushBase>& brush_def = final_brush_set[i];
+					std::unique_ptr<TileBrush>& brush_def = final_brush_set[i];
 
 					// If candidate brush exists, push Brush instance references the existing brush, and any flip flags
 					if (final_brush_set[i]->tiles == candidate_brush->tiles)
@@ -233,10 +233,10 @@ namespace spintool::rom
 			// If candidate brush does not exist, create a brush and push tothe final brush list
 			if (found_match == false)
 			{
-				auto new_brush = std::make_unique<TileBrush<4, 4>>(*static_cast<TileBrush<4, 4>*>(candidate_brush.get()));
-				auto new_brush_x = std::make_unique<TileBrush<4, 4>>(*static_cast<TileBrush<4, 4>*>(candidate_brush.get()));
-				auto new_brush_y = std::make_unique<TileBrush<4, 4>>(*static_cast<TileBrush<4, 4>*>(candidate_brush.get()));
-				auto new_brush_xy = std::make_unique<TileBrush<4, 4>>(*static_cast<TileBrush<4, 4>*>(candidate_brush.get()));
+				auto new_brush = std::make_unique<TileBrush>(*candidate_brush);
+				auto new_brush_x = std::make_unique<TileBrush>(*candidate_brush);
+				auto new_brush_y = std::make_unique<TileBrush>(*candidate_brush);
+				auto new_brush_xy = std::make_unique<TileBrush>(*candidate_brush);
 
 				new_brush_x->tiles = new_brush->TilesFlipped(true, false);
 				new_brush_y->tiles = new_brush->TilesFlipped(false, true);
@@ -269,7 +269,7 @@ namespace spintool::rom
 
 		CollapseTilesIntoBrushes();
 
-		for (std::unique_ptr<TileBrushBase>& current_brush : tile_brushes)
+		for (std::unique_ptr<TileBrush>& current_brush : tile_brushes)
 		{
 			for (const TileInstance& tile : current_brush->tiles)
 			{

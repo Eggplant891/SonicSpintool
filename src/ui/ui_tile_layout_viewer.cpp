@@ -554,7 +554,7 @@ namespace spintool
 
 					for (size_t brush_index = 0; brush_index < m_working_tile_layout->tile_brushes.size(); ++brush_index)
 					{
-						rom::TileBrushBase& brush = *m_working_tile_layout->tile_brushes[brush_index].get();
+						rom::TileBrush& brush = *m_working_tile_layout->tile_brushes[brush_index].get();
 						rom::Sprite& brush_sprite = brushes.emplace_back();
 						for (size_t i = 0; i < brush.tiles.size(); ++i)
 						{
@@ -981,6 +981,8 @@ namespace spintool
 											m_selected_brush.is_picking_from_layout = true;
 											m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
 											m_selected_brush.tileset = &tileset_preview;
+											m_selected_brush.tile_brush = nullptr;
+											m_selected_brush.dragging_start_ref.reset();
 										}
 
 										for (size_t page_index = tileset_preview.current_page * num_previews_per_page; page_index < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++page_index)
@@ -1111,7 +1113,7 @@ namespace spintool
 						const ImVec2 tile_snapped_pos{ (tile_grid_pos * tile_dimensions) * m_zoom };
 						const ImVec2 tile_final_snapped_pos{ tile_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
-						const ImVec2 tile_brush_dimensions = ImVec2{ rom::TileBrush<4, 4>::s_brush_width, rom::TileBrush<4,4>::s_brush_height } *tile_dimensions;
+						const ImVec2 tile_brush_dimensions = ImVec2{ 4, 4 } * tile_dimensions;
 						const ImVec2 tile_brush_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (tile_brush_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (tile_brush_dimensions.y * m_zoom))) };
 						const bool is_tile_brush_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_brush_grid_pos.x >= 0 && tile_brush_grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && tile_brush_grid_pos.y >= 0 && tile_brush_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
 						const ImVec2 tile_brush_snapped_pos{ (tile_brush_grid_pos * tile_brush_dimensions) * m_zoom };
@@ -2474,8 +2476,8 @@ namespace spintool
 					request.tile_brush_width = 4;
 					request.tile_brush_height = 4;
 
-					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width);
-					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height);
+					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush::s_default_brush_width * rom::TileSet::s_tile_width);
+					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_default_brush_height * rom::TileSet::s_tile_height);
 
 					request.tile_layout_address = BGTilesetLayouts;
 					request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
@@ -2516,8 +2518,8 @@ namespace spintool
 					request.tile_brush_width = 4;
 					request.tile_brush_height = 4;
 
-					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width);
-					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height);
+					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush::s_default_brush_width * rom::TileSet::s_tile_width);
+					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_default_brush_height * rom::TileSet::s_tile_height);
 
 					request.tile_layout_address = FGTilesetLayouts;
 					request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);

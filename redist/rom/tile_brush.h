@@ -15,44 +15,35 @@ namespace spintool::rom
 
 namespace spintool::rom
 {
-	class TileBrushBase
+	class TileBrush
 	{
 	public:
-		virtual Uint32 BrushWidth() const = 0;
-		virtual Uint32 BrushHeight() const = 0;
-		Uint32 TotalTiles() const
-		{
-			return BrushWidth() * BrushHeight();
-		}
+		TileBrush(Uint32 width, Uint32 height);
 
-		std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
+		Uint32 BrushWidth() const;
+		Uint32 BrushHeight() const;
+		Uint32 TotalTiles() const;
 
 		size_t GridCoordinatesToLinearIndex(Point grid_coord) const;
 		Point LinearIndexToGridCoordinates(size_t linear_index) const;
 
-		ROMData rom_data;
+		std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
 		std::vector<TileInstance> tiles;
+
+		constexpr static const Uint32 s_default_brush_width = 4;
+		constexpr static const Uint32 s_default_brush_height = 4;
+		constexpr static const Uint32 s_default_total_tiles = s_default_brush_width * s_default_brush_height;
+
+	private:
+		ROMData rom_data;
+
+		const Uint32 m_brush_width;
+		const Uint32 m_brush_height;
+		const Uint32 m_brush_total_tiles;
 	};
 
-	template<Uint32 width, Uint32 height>
-	class TileBrush : public TileBrushBase
-	{
-	public:
-		Uint32 BrushWidth() const override { return s_brush_width; }
-		Uint32 BrushHeight() const override { return s_brush_height; }
-
-		constexpr static const Uint32 s_brush_width = width;
-		constexpr static const Uint32 s_brush_height = height;
-		constexpr static const Uint32 s_brush_total_tiles = width * height;
-	};
-
-	bool operator==(const TileBrushBase& lhs, const TileBrushBase& rhs);
-	bool operator==(const std::unique_ptr<TileBrushBase>& lhs, const std::unique_ptr<TileBrushBase>& rhs);
-
-
-	template class TileBrush<1, 1>;
-	template class TileBrush<4, 4>;
-	template class TileBrush<8, 8>;
+	bool operator==(const TileBrush& lhs, const TileBrush& rhs);
+	bool operator==(const std::unique_ptr<TileBrush>& lhs, const std::unique_ptr<TileBrush>& rhs);
 
 	struct TileBrushInstance
 	{

@@ -3,14 +3,14 @@
 
 namespace spintool::rom
 {
-	bool operator==(const TileBrushBase& lhs, const TileBrushBase& rhs)
+	bool operator==(const TileBrush& lhs, const TileBrush& rhs)
 	{
 		return lhs.BrushWidth() == rhs.BrushWidth()
 			&& lhs.BrushHeight() == rhs.BrushHeight()
 			&& lhs.tiles == rhs.tiles;
 	}
-	
-	bool operator==(const std::unique_ptr<TileBrushBase>& lhs, const std::unique_ptr<TileBrushBase>& rhs)
+
+	bool operator==(const std::unique_ptr<TileBrush>& lhs, const std::unique_ptr<TileBrush>& rhs)
 	{
 		return lhs != nullptr && rhs != nullptr && *lhs == *rhs;
 	}
@@ -28,7 +28,22 @@ namespace spintool::rom
 		return lhs != nullptr && rhs != nullptr && *lhs == *rhs;
 	}
 
-	std::vector<rom::TileInstance> TileBrushBase::TilesFlipped(bool flip_x, bool flip_y) const
+	Uint32 TileBrush::BrushWidth() const
+	{
+		return m_brush_width;
+	}
+
+	Uint32 TileBrush::BrushHeight() const
+	{
+		return m_brush_height;
+	}
+
+	Uint32 TileBrush::TotalTiles() const
+	{
+		return BrushWidth() * BrushHeight();
+	}
+
+	std::vector<rom::TileInstance> TileBrush::TilesFlipped(bool flip_x, bool flip_y) const
 	{
 		std::vector<rom::TileInstance> out_tiles = tiles;
 
@@ -69,19 +84,27 @@ namespace spintool::rom
 		return out_tiles;
 	}
 
-	size_t TileBrushBase::GridCoordinatesToLinearIndex(Point grid_coord) const
+	size_t TileBrush::GridCoordinatesToLinearIndex(Point grid_coord) const
 	{
 		return grid_coord.x + (grid_coord.y * BrushWidth());
 
 	}
 
-	Point TileBrushBase::LinearIndexToGridCoordinates(size_t linear_index) const
+	Point TileBrush::LinearIndexToGridCoordinates(size_t linear_index) const
 	{
 		Point out_coord{};
 		out_coord.x = (linear_index % BrushWidth());
 		out_coord.y = static_cast<int>(((linear_index - (linear_index % BrushWidth())) / static_cast<float>(BrushWidth())));
 
 		return out_coord;
+	}
+
+	TileBrush::TileBrush(Uint32 width, Uint32 height)
+		: m_brush_width(width)
+		, m_brush_height(height)
+		, m_brush_total_tiles(width * height)
+	{
+
 	}
 
 }
