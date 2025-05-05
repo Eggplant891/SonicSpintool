@@ -82,7 +82,7 @@ namespace spintool
 
 				ImGui::EndDisabled();
 				ImGui::Separator();
-				
+
 
 				ImGui::Checkbox("Export", &m_export_result);
 
@@ -261,7 +261,7 @@ namespace spintool
 			m_brush_editor->Update();
 			return;
 		}
-		else if(m_brush_editor)
+		else if (m_brush_editor)
 		{
 			m_brush_editor.reset();
 			m_working_brush.reset();
@@ -304,7 +304,7 @@ namespace spintool
 					m_popup_msg.reset();
 				}
 			}
-			
+
 			if (render_request == RenderRequestType::LEVEL)
 			{
 				render_flippers = true;
@@ -487,7 +487,7 @@ namespace spintool
 			{
 				bool preserve_rendered_items = false;
 				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
-				
+
 				if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
 				{
 					m_working_tileset = *request.store_tileset;
@@ -617,7 +617,7 @@ namespace spintool
 							{
 								target_pixel_index = temp_surface->pitch * (i / x_size);
 							}
-						
+
 							reinterpret_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
 						}
 					}
@@ -682,7 +682,7 @@ namespace spintool
 					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 				}
-				
+
 				static rom::Colour bbox_colours[]
 				{
 					{255,255,255,255},
@@ -704,7 +704,7 @@ namespace spintool
 				{
 					const rom::GameObjectDefinition& game_obj = m_level->m_game_obj_instances[i];
 
-					if(game_obj.instance_id == 0)
+					if (game_obj.instance_id == 0)
 					{
 						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
 						new_obj->obj_definition = game_obj;
@@ -1007,7 +1007,7 @@ namespace spintool
 													m_working_layer_index = layer_index;
 													request_open_brush_popup = true;
 												}
-												
+
 												if (m_working_brush.has_value() == false)
 												{
 													if (ImGui::BeginItemTooltip())
@@ -1050,7 +1050,7 @@ namespace spintool
 								ImGui::EndPopup();
 							}
 						}
-					
+
 						if (ImGui::BeginTabItem("Palettes"))
 						{
 							if (m_level != nullptr)
@@ -1093,6 +1093,8 @@ namespace spintool
 				if (ImGui::BeginChild("Preview info Area", ImVec2{ 0,0 }, 0, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 				{
 					const ImVec2 panel_screen_origin = ImGui::GetCursorScreenPos();
+					ImGuiWindow* tile_area = ImGui::GetCurrentContext()->CurrentWindow;
+					const bool is_hovering_tile_area = (ImGui::GetCurrentContext()->HoveredWindow == tile_area);
 					if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 					{
 						LayerSettings current_layer_settings = m_layer_settings;
@@ -1101,10 +1103,10 @@ namespace spintool
 						ImVec2 screen_origin{ ImGui::GetCursorScreenPos() };
 						const ImVec2 mouse_pos{ ImGui::GetMousePos() };
 						const ImVec2 relative_mouse_pos{ (mouse_pos - panel_screen_origin) + origin };
-						
+
 						const ImVec2 tile_dimensions{ rom::TileSet::s_tile_width, rom::TileSet::s_tile_height };
 						const ImVec2 tile_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (tile_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (tile_dimensions.y * m_zoom))) };
-						const bool is_tile_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_grid_pos.x >= 0 && tile_grid_pos.x < (m_level->m_tile_layers[0].tile_layout->layout_width*4) && tile_grid_pos.y >= 0 && (tile_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height*4);
+						const bool is_tile_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_grid_pos.x >= 0 && tile_grid_pos.x < (m_level->m_tile_layers[0].tile_layout->layout_width * 4) && tile_grid_pos.y >= 0 && (tile_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height * 4);
 						const ImVec2 tile_snapped_pos{ (tile_grid_pos * tile_dimensions) * m_zoom };
 						const ImVec2 tile_final_snapped_pos{ tile_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
@@ -1113,25 +1115,20 @@ namespace spintool
 						const bool is_tile_brush_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_brush_grid_pos.x >= 0 && tile_brush_grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && tile_brush_grid_pos.y >= 0 && tile_brush_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
 						const ImVec2 tile_brush_snapped_pos{ (tile_brush_grid_pos * tile_brush_dimensions) * m_zoom };
 						const ImVec2 tile_brush_final_snapped_pos{ tile_brush_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
-						
+
 						const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * tile_brush_dimensions.y);
 						const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * tile_brush_dimensions.y);
 
 						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
 
-						if (ImGui::IsKeyDown(ImGuiKey_ModCtrl))
-						{
-							m_zoom += ImGui::GetIO().MouseWheel / 10.0f;
-						}
-
 						ImGui::Image((ImTextureID)m_tile_layout_preview_bg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_bg->w),  static_cast<float>(m_tile_layout_preview_bg->h) });
 						ImGui::SetCursorPos(origin);
 						ImGui::Image((ImTextureID)m_tile_layout_preview_fg.get(), zoomed_level_dimensions, ImVec2{ 0, 0 }, level_dimensions / ImVec2{ static_cast<float>(m_tile_layout_preview_fg->w),  static_cast<float>(m_tile_layout_preview_fg->h) });
 
 						// Visualise collision vectors
-						constexpr int tile_width = 128;
-						constexpr int num_tiles_x = 16;
+						constexpr int collision_sector_width = 128;
+						constexpr int num_collision_sectors_x = 16;
 						constexpr int size_of_preview_collision_boxes = 4;
 						constexpr int half_size_of_preview_collision_boxes = size_of_preview_collision_boxes / 2;
 
@@ -1182,18 +1179,6 @@ namespace spintool
 							current_layer_settings.hover_splines = false;
 							current_layer_settings.hover_radials = false;
 							current_layer_settings.hover_brushes = m_selected_brush.IsPickingFromLayout();
-						}
-
-						if (m_working_game_obj)
-						{
-							current_layer_settings.collision = false;
-							current_layer_settings.rings = false;
-							current_layer_settings.flippers = false;
-							current_layer_settings.visible_objects = false;
-							current_layer_settings.hover_game_objects = false;
-							current_layer_settings.hover_splines = false;
-							current_layer_settings.hover_radials = false;
-							current_layer_settings.hover_brushes = false;
 						}
 
 						if (m_working_game_obj)
@@ -1271,6 +1256,7 @@ namespace spintool
 									{
 										m_selected_tile.tile_picker->currently_selected_tile = nullptr;
 										m_selected_tile.Clear();
+										has_just_selected_item = true;
 									}
 								}
 
@@ -1315,7 +1301,7 @@ namespace spintool
 								{
 									ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
 								}
-							
+
 								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_tile.tile_layer != nullptr)
 								{
 									if (m_selected_tile.IsPickingFromLayout())
@@ -1347,7 +1333,7 @@ namespace spintool
 										}
 									}
 								}
-								
+
 								if (m_selected_tile.IsPickingFromLayout() == false && m_selected_tile.tile_selection == nullptr)
 								{
 									m_selected_tile.Clear();
@@ -1392,46 +1378,50 @@ namespace spintool
 								const ImVec2 rect_min{ tile_brush_final_snapped_pos.x - 1, tile_brush_final_snapped_pos.y - 1 };
 								const ImVec2 rect_max{ tile_brush_final_snapped_pos.x + (tile_brush_dimensions.x * m_zoom) + 1, tile_brush_final_snapped_pos.y + (tile_brush_dimensions.y * m_zoom) + 1 };
 
+								ImGui::SetCursorScreenPos(tile_brush_final_snapped_pos);
+								ImVec2 uv0 = { 0,0 };
+								ImVec2 uv1 = { 1,1 };
+
 								if (m_selected_brush.HasSelection())
 								{
-									ImGui::SetCursorScreenPos(tile_brush_final_snapped_pos);
-									ImVec2 uv0 = { 0,0 };
-									ImVec2 uv1 = { 1,1 };
 									if (m_selected_brush.flip_x)
 									{
 										uv0.x = 1;
 										uv1.x = 0;
 									}
+
 									if (m_selected_brush.flip_y)
 									{
 										uv0.y = 1;
 										uv1.y = 0;
 									}
+								}
+								ImVec2 min_pos;
+								ImVec2 max_pos;
 
-									ImVec2 min_pos;
-									ImVec2 max_pos;
+								if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+								{
+									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
+									const ImVec2 end_grid_pos = tile_brush_grid_pos;
 
-									if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+									const float start_x = std::min(start_grid_pos.x, end_grid_pos.x);
+									const float end_x = std::max(start_grid_pos.x, end_grid_pos.x);
+									const float start_y = std::min(start_grid_pos.y, end_grid_pos.y);
+									const float end_y = std::max(start_grid_pos.y, end_grid_pos.y);
+
 									{
-										const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
-										const ImVec2 end_grid_pos = tile_brush_grid_pos;
+										const ImVec2 snapped_pos{ (ImVec2{start_x,start_y} *tile_brush_dimensions) * m_zoom };
+										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+										min_pos = final_snapped_pos;
+									}
+									{
+										const ImVec2 snapped_pos{ (ImVec2{end_x + 1,end_y + 1} *tile_brush_dimensions) * m_zoom };
+										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+										max_pos = final_snapped_pos;
+									}
 
-										const float start_x = std::min(start_grid_pos.x, end_grid_pos.x);
-										const float end_x = std::max(start_grid_pos.x, end_grid_pos.x);
-										const float start_y = std::min(start_grid_pos.y, end_grid_pos.y);
-										const float end_y = std::max(start_grid_pos.y, end_grid_pos.y);
-
-										{
-											const ImVec2 snapped_pos{ (ImVec2{start_x,start_y} *tile_brush_dimensions) * m_zoom };
-											const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
-											min_pos = final_snapped_pos;
-										}
-										{
-											const ImVec2 snapped_pos{ (ImVec2{end_x + 1,end_y + 1} *tile_brush_dimensions) * m_zoom };
-											const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
-											max_pos = final_snapped_pos;
-										}
-
+									if (m_selected_brush.HasSelection() == true)
+									{
 										for (float x = start_x; x <= end_x; ++x)
 										{
 											for (float y = start_y; y <= end_y; ++y)
@@ -1439,16 +1429,16 @@ namespace spintool
 												const ImVec2 snapped_pos{ (ImVec2{x,y} *tile_brush_dimensions) * m_zoom };
 												const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 												ImGui::SetCursorScreenPos(final_snapped_pos);
-												ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } * m_zoom, uv0, uv1);
+												ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } *m_zoom, uv0, uv1);
 											}
 										}
+									}
 
-										ImGui::GetWindowDrawList()->AddRect(min_pos, max_pos, ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f }), 0, 0, 1.0f);
-									}
-									else
-									{
-										ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } *m_zoom, uv0, uv1);
-									}
+									ImGui::GetWindowDrawList()->AddRect(min_pos, max_pos, ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f }), 0, 0, 1.0f);
+								}
+								else if( m_selected_brush.HasSelection())
+								{
+									ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } *m_zoom, uv0, uv1);
 								}
 
 								if (m_selected_brush.dragging_start_ref.has_value() == false)
@@ -1458,6 +1448,17 @@ namespace spintool
 
 								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
 								{
+									if (brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
+									{
+										m_selected_brush.dragging_start_ref = tile_brush_grid_pos;
+									}
+								}
+
+								if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+								{
+									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
+									const ImVec2 end_grid_pos = tile_brush_grid_pos;
+
 									if (m_selected_brush.IsPickingFromLayout())
 									{
 										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false && brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
@@ -1478,31 +1479,21 @@ namespace spintool
 									}
 									else if (m_selected_brush.HasSelection())
 									{
-										if (brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
+										for (float x = std::min(start_grid_pos.x, end_grid_pos.x); x <= std::max(start_grid_pos.x, end_grid_pos.x); ++x)
 										{
-											m_selected_brush.dragging_start_ref = tile_brush_grid_pos;
+											for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); ++y)
+											{
+												const int drag_grid_ref = static_cast<int>((y * m_selected_brush.tile_layer->tile_layout->layout_width) + x);
+												auto& tile = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(drag_grid_ref);
+												tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
+												tile.is_flipped_horizontally = m_selected_brush.flip_x;
+												tile.is_flipped_vertically = m_selected_brush.flip_y;
+											}
 										}
+										m_selected_brush.tile_layer->tile_layout->BlitTileInstancesFromBrushInstances();
+										m_render_from_edit = true;
+										m_selected_brush.dragging_start_ref.reset();
 									}
-								}
-
-								if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
-								{
-									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
-									const ImVec2 end_grid_pos = tile_brush_grid_pos;
-									for (float x = std::min(start_grid_pos.x, end_grid_pos.x); x <= std::max(start_grid_pos.x, end_grid_pos.x); ++x)
-									{
-										for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); ++y)
-										{
-											const int drag_grid_ref = static_cast<int>((y * m_selected_brush.tile_layer->tile_layout->layout_width) + x);
-											auto& tile = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(drag_grid_ref);
-											tile.tile_brush_index = m_selected_brush.tile_brush->brush_index;
-											tile.is_flipped_horizontally = m_selected_brush.flip_x;
-											tile.is_flipped_vertically = m_selected_brush.flip_y;
-										}
-									}
-									m_selected_brush.tile_layer->tile_layout->BlitTileInstancesFromBrushInstances();
-									m_render_from_edit = true;
-									m_selected_brush.dragging_start_ref.reset();
 								}
 
 							}
@@ -1562,7 +1553,7 @@ namespace spintool
 										}
 										else
 										{
-											ImGui::Dummy(m_working_game_obj->game_obj.dimensions* m_zoom);
+											ImGui::Dummy(m_working_game_obj->game_obj.dimensions * m_zoom);
 											ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0.0f,1.0f,0.0f,1.0f }));
 										}
 									}
@@ -1590,11 +1581,11 @@ namespace spintool
 										}
 
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_flipper->initial_drag_offset - m_working_flipper->destination->GetDrawPosOffset();
-										m_working_flipper->flipper_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
-										m_working_flipper->flipper_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
+										m_working_flipper->flipper_obj.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
+										m_working_flipper->flipper_obj.y_pos = static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
-										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().y)} *m_zoom));
-										const ImVec2 uv_min{m_working_flipper->flipper_obj.is_x_flipped ? 1.0f : 0.0f, 0.0f };
+										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_flipper->flipper_obj.x_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().x), static_cast<float>(m_working_flipper->flipper_obj.y_pos + m_working_flipper->flipper_obj.GetDrawPosOffset().y) } *m_zoom));
+										const ImVec2 uv_min{ m_working_flipper->flipper_obj.is_x_flipped ? 1.0f : 0.0f, 0.0f };
 										const ImVec2 uv_max{ m_working_flipper->flipper_obj.is_x_flipped ? 0.0f : 1.0f, 1.0f };
 										ImGui::Image((ImTextureID)m_flipper_preview.texture.get(), m_working_flipper->flipper_obj.dimensions * m_zoom, uv_min, uv_max, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 									}
@@ -1620,11 +1611,11 @@ namespace spintool
 									if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
 									{
 										const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_ring->initial_drag_offset - m_working_ring->destination->draw_pos_offset;
-										m_working_ring->ring_obj.x_pos =  static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
-										m_working_ring->ring_obj.y_pos =  static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
+										m_working_ring->ring_obj.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
+										m_working_ring->ring_obj.y_pos = static_cast<Uint16>(pos.y / m_grid_snap) * m_grid_snap;
 
 										ImGui::SetCursorPos(origin + (ImVec2{ static_cast<float>(m_working_ring->ring_obj.x_pos + m_working_ring->ring_obj.draw_pos_offset.x), static_cast<float>(m_working_ring->ring_obj.y_pos + m_working_ring->ring_obj.draw_pos_offset.y) } *m_zoom));
-										ImGui::Image((ImTextureID)m_ring_preview.texture.get(), m_working_ring->ring_obj.dimensions* m_zoom, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
+										ImGui::Image((ImTextureID)m_ring_preview.texture.get(), m_working_ring->ring_obj.dimensions * m_zoom, ImVec2{ 0,0 }, ImVec2{ 1,1 }, ImVec4{ 1.0f,1.0f,1.0f,0.55f });
 
 									}
 									else if (m_working_ring->initial_drag_offset)
@@ -1648,7 +1639,7 @@ namespace spintool
 									}
 
 									ImGui::SetCursorPos(origin + (game_obj->GetSpriteDrawPos() * m_zoom));
-									ImGui::Dummy(game_obj->dimensions* m_zoom);
+									ImGui::Dummy(game_obj->dimensions * m_zoom);
 									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 									{
 										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
@@ -1700,7 +1691,7 @@ namespace spintool
 												{
 													if (obj_id == game_obj->obj_definition.instance_id)
 													{
-														ImGui::GetWindowDrawList()->AddRect(screen_origin + (cell.bbox.min* m_zoom), screen_origin + (cell.bbox.max * m_zoom),
+														ImGui::GetWindowDrawList()->AddRect(screen_origin + (cell.bbox.min * m_zoom), screen_origin + (cell.bbox.max * m_zoom),
 															ImGui::GetColorU32(ImVec4{ 255,0,255,255 }), 0, ImDrawFlags_None, 2.0f);
 													}
 												}
@@ -1757,7 +1748,7 @@ namespace spintool
 										}
 									}
 								}
-								
+
 								if (m_level != nullptr)
 								{
 									for (rom::FlipperInstance& flipper_obj : m_level->m_flipper_instances)
@@ -1805,7 +1796,7 @@ namespace spintool
 										const ImVec2 ring_dimensions{ rom::RingInstance::width, rom::RingInstance::height };
 
 										ImGui::SetCursorPos(origin + (ring_realpos * m_zoom));
-										ImGui::Dummy(ring_dimensions* m_zoom);
+										ImGui::Dummy(ring_dimensions * m_zoom);
 										if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 										{
 											ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
@@ -1992,7 +1983,7 @@ namespace spintool
 									if (m_working_spline->spline.IsRadial())
 									{
 										const bool is_max_point = true;
-										const Point offset = is_max_point ? Point{ m_working_spline->spline.spline_vector.min - m_working_spline->destination->spline_vector.min } : Point{m_working_spline->spline.spline_vector.max - m_working_spline->destination->spline_vector.max};
+										const Point offset = is_max_point ? Point{ m_working_spline->spline.spline_vector.min - m_working_spline->destination->spline_vector.min } : Point{ m_working_spline->spline.spline_vector.max - m_working_spline->destination->spline_vector.max };
 										const Uint16 spline_target_id = m_working_spline->spline.instance_id_binding;
 
 										if (m_working_spline->spline.IsRing() && m_working_spline->spline.instance_id_binding != 0)
@@ -2161,84 +2152,90 @@ namespace spintool
 							ImGui::EndPopup();
 						}
 
+						if (is_hovering_tile_area && has_just_selected_item == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && IsEditingSomething() == false && IsObjectPopupOpen() == false)
+						{
+							ImGui::OpenPopup("create_new");
+						}
+
 						if (m_working_spline && (m_working_spline->current_mode == WorkingSplineMode::NONE || (ImGui::IsPopupOpen("spline_popup") == false && m_working_spline.has_value() && (m_working_spline->current_mode == WorkingSplineMode::EDITING_SPLINE_PROPERTIES))))
 						{
 							m_working_spline.reset();
 						}
 					}
-				}
 
-				ImGuiWindow* tile_area = ImGui::GetCurrentContext()->CurrentWindow;
-				if (tile_area != nullptr)
-				{
-					const bool is_hovering_tile_area = (ImGui::GetCurrentContext()->HoveredWindow == tile_area);
-
-					static bool is_dragging = false;
-					static ImVec2 drag_start_pos = ImGui::GetMousePos();
-					static ImVec2 scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
-					if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+					if (tile_area != nullptr)
 					{
-						if (is_dragging == false && is_hovering_tile_area && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+						static bool is_dragging = false;
+						static ImVec2 drag_start_pos = ImGui::GetMousePos();
+						static ImVec2 scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
+
+						if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
 						{
-							drag_start_pos = ImGui::GetMousePos();
-							scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
-							is_dragging = true;
+							if (is_dragging == false && is_hovering_tile_area && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+							{
+								drag_start_pos = ImGui::GetMousePos();
+								scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
+								is_dragging = true;
+							}
+
+							if (is_dragging)
+							{
+								tile_area->Scroll = scroll_start_pos + (drag_start_pos - ImGui::GetMousePos());
+							}
+						}
+						else
+						{
+							is_dragging = false;
 						}
 
-						if (is_dragging)
+						int scroll_multiplier = 1;
+
+						if (is_hovering_tile_area && ImGui::IsKeyDown(ImGuiKey_ModCtrl))
 						{
-							tile_area->Scroll = scroll_start_pos + (drag_start_pos - ImGui::GetMousePos());
+							m_zoom += ImGui::GetIO().MouseWheel / 10.0f;
 						}
-					}
-					else
-					{
-						is_dragging = false;
+
+						if (ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift))
+						{
+							scroll_multiplier = 2;
+						}
+
+						const int scroll_amount = 4 * scroll_multiplier;
+
+						if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow))
+						{
+							tile_area->Scroll.y -= scroll_amount;
+						}
+
+						if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow))
+						{
+							tile_area->Scroll.x -= scroll_amount;
+						}
+
+						if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow))
+						{
+							tile_area->Scroll.y += scroll_amount;
+						}
+
+						if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow))
+						{
+							tile_area->Scroll.x += scroll_amount;
+						}
+
+						if (ImGui::BeginPopup("create_new"))
+						{
+							if (ImGui::MenuItem("Create spline"))
+							{
+								m_working_spline.emplace();
+								m_working_spline->current_mode = WorkingSplineMode::PLACING_START_POINT;
+								m_working_spline->spline = {};
+								ImGui::CloseCurrentPopup();
+							}
+							ImGui::EndPopup();
+						}
+
 					}
 
-					if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && IsEditingSomething() == false && IsObjectPopupOpen() == false)
-					{
-						ImGui::OpenPopup("create_new");
-					}
-
-					int scroll_multiplier = 1;
-
-					if (ImGui::IsKeyDown(ImGuiKey_LeftShift) || ImGui::IsKeyDown(ImGuiKey_RightShift))
-					{
-						scroll_multiplier = 2;
-					}
-					const int scroll_amount = 4 * scroll_multiplier;
-
-					if (ImGui::IsKeyDown(ImGuiKey_W) || ImGui::IsKeyDown(ImGuiKey_UpArrow))
-					{
-						tile_area->Scroll.y -= scroll_amount;
-					}
-
-					if (ImGui::IsKeyDown(ImGuiKey_A) || ImGui::IsKeyDown(ImGuiKey_LeftArrow))
-					{
-						tile_area->Scroll.x -= scroll_amount;
-					}
-
-					if (ImGui::IsKeyDown(ImGuiKey_S) || ImGui::IsKeyDown(ImGuiKey_DownArrow))
-					{
-						tile_area->Scroll.y += scroll_amount;
-					}
-
-					if (ImGui::IsKeyDown(ImGuiKey_D) || ImGui::IsKeyDown(ImGuiKey_RightArrow))
-					{
-						tile_area->Scroll.x += scroll_amount;
-					}
-				}
-
-				if (ImGui::BeginPopup("create_new"))
-				{
-					if (ImGui::MenuItem("Create spline"))
-					{
-						m_working_spline.emplace();
-						m_working_spline->current_mode = WorkingSplineMode::PLACING_START_POINT;
-						m_working_spline->spline = {};
-						ImGui::CloseCurrentPopup();
-					}
-					ImGui::EndPopup();
 				}
 				ImGui::EndChild();
 			}
@@ -2253,6 +2250,7 @@ namespace spintool
 						m_selected_brush.was_picked_from_layout = false;
 						m_selected_brush.is_picking_from_layout = true;
 						m_selected_brush.tile_brush = nullptr;
+						m_selected_brush.dragging_start_ref.reset();
 					}
 					else
 					{
@@ -2267,6 +2265,7 @@ namespace spintool
 						m_selected_tile.was_picked_from_layout = false;
 						m_selected_tile.is_picking_from_layout = true;
 						m_selected_tile.tile_selection = nullptr;
+						m_selected_tile.dragging_start_ref.reset();
 					}
 					else
 					{
@@ -2449,135 +2448,261 @@ namespace spintool
 	{
 		switch (render_request)
 		{
-		case RenderRequestType::NONE:
+			case RenderRequestType::NONE:
+				break;
+
+			case RenderRequestType::LEVEL:
+			{
+				{
+					const auto& buffer = m_owning_ui.GetROM().m_buffer;
+					const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tileset);
+					const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout);
+					const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes);
+					const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tile_layout);
+
+
+					const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_width);
+					const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_height);
+
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = BGTilesetOffsets;
+					request.tile_brushes_address = BGTilesetBrushes;
+					request.tile_brushes_address_end = FGTilesetLayouts;
+
+					request.tile_brush_width = 4;
+					request.tile_brush_height = 4;
+
+					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width);
+					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height);
+
+					request.tile_layout_address = BGTilesetLayouts;
+					request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
+
+					request.is_chroma_keyed = false;
+					request.compression_algorithm = CompressionAlgorithm::SSC;
+					char levelname_buffer[32];
+					sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
+					request.layout_type_name = levelname_buffer;
+					request.layout_layout_name = "bg";
+
+					m_working_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
+					m_level->m_tile_layers[0].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
+					request.store_tileset = &m_level->m_tile_layers[0].tileset;
+					request.store_layout = &m_level->m_tile_layers[0].tile_layout;
+
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+
+				{
+					const auto& buffer = m_owning_ui.GetROM().m_buffer;
+					const rom::LevelDataOffsets level_data_offsets{ m_level->m_level_index };
+					const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
+					const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
+					const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
+					const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
+
+
+					const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
+					const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
+
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = FGTilesetOffsets;
+					request.tile_brushes_address = FGTilesetBrushes;
+					request.tile_brushes_address_end = BGTilesetBrushes;
+
+					request.tile_brush_width = 4;
+					request.tile_brush_height = 4;
+
+					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width);
+					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height);
+
+					request.tile_layout_address = FGTilesetLayouts;
+					request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
+
+					request.is_chroma_keyed = true;
+					request.compression_algorithm = CompressionAlgorithm::SSC;
+
+					char levelname_buffer[32];
+					sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
+					request.layout_type_name = levelname_buffer;
+					request.layout_layout_name = "fg";
+
+					m_level->m_tile_layers[1].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
+					request.store_tileset = &m_level->m_tile_layers[1].tileset;
+					request.store_layout = &m_level->m_tile_layers[1].tile_layout;;
+
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+			}
 			break;
 
-		case RenderRequestType::LEVEL:
-		{
+			case RenderRequestType::OPTIONS:
 			{
-				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tileset);
-				const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout);
-				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes);
-				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tile_layout);
-
-
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_width);
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_height);
+				Reset();
 
 				RenderTileLayoutRequest request;
 
-				request.tileset_address = BGTilesetOffsets;
-				request.tile_brushes_address = BGTilesetBrushes;
-				request.tile_brushes_address_end = FGTilesetLayouts;
+				request.tileset_address = rom::OptionsMenuTileset;
+				request.tile_brushes_address = rom::OptionsMenuTileBrushes;
+				request.tile_brushes_address_end = 0x000BE1BC;
+				request.tile_layout_address = rom::OptionsMenuTileLayout;
+				request.tile_layout_address_end = 0x000BE248;
 
 				request.tile_brush_width = 4;
 				request.tile_brush_height = 4;
 
-				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width);
-				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height);
-
-				request.tile_layout_address = BGTilesetLayouts;
-				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
+				request.tile_layout_width = 0xA;
+				request.tile_layout_height = 0x7;
 
 				request.is_chroma_keyed = false;
 				request.compression_algorithm = CompressionAlgorithm::SSC;
-				char levelname_buffer[32];
-				sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
-				request.layout_type_name = levelname_buffer;
-				request.layout_layout_name = "bg";
 
-				m_working_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
-				m_level->m_tile_layers[0].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
-				request.store_tileset = &m_level->m_tile_layers[0].tileset;
-				request.store_layout = &m_level->m_tile_layers[0].tile_layout;
+				m_working_palette_set = *m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
 
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
+			break;
 
+			case RenderRequestType::INTRO:
 			{
-				const auto& buffer = m_owning_ui.GetROM().m_buffer;
-				const rom::LevelDataOffsets level_data_offsets{ m_level->m_level_index };
-				const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
-				const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
-				const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
-				const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
+				{
+					Reset();
+					{
+						RenderTileLayoutRequest request;
+
+						request.tileset_address = rom::IntroCutscenesTileset;
+						request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky);
+						request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky + sizeof(Uint16));
+						request.tile_layout_address = rom::IntroCutsceneTileLayoutSky;
+						request.palette_line = 1;
+
+						request.tile_brush_width = 1;
+						request.tile_brush_height = 1;
+
+						request.is_chroma_keyed = false;
+						request.show_brush_previews = false;
+						request.compression_algorithm = CompressionAlgorithm::LZSS;
+
+						request.layout_type_name = "intro";
+						request.layout_layout_name = "bg";
+
+						m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+						m_tile_layout_render_requests.emplace_back(std::move(request));
+					}
+				}
+
+				{
+					{
+						RenderTileLayoutRequest request;
+
+						request.tileset_address = 0x000A3124 + 2;
+
+						// Veg-o Fortress
+						request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
+						request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
+						request.tile_layout_address = 0x000A1B8C;
+						request.palette_line = 1;
+
+						// Veg-o Fortress empty topsection
+						//request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2168);
+						//request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A216A);
+						//request.tile_layout_address = 0x000A2168;
+						//request.palette_line = 1;
 
 
-				const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
-				const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
+						request.tile_brush_width = 1;
+						request.tile_brush_height = 1;
+
+						request.is_chroma_keyed = false;
+						request.show_brush_previews = false;
+						request.compression_algorithm = CompressionAlgorithm::LZSS;
+
+						request.layout_type_name = "intro";
+						request.layout_layout_name = "veg_o_fortress";
+
+						m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+
+						m_tile_layout_render_requests.emplace_back(std::move(request));
+					}
+				}
+			}
+			break;
+
+			case RenderRequestType::INTRO_SHIP:
+			{
+				Reset();
 
 				RenderTileLayoutRequest request;
 
-				request.tileset_address = FGTilesetOffsets;
-				request.tile_brushes_address = FGTilesetBrushes;
-				request.tile_brushes_address_end = BGTilesetBrushes;
+				request.tileset_address = 0x000A3124 + 2;
 
-				request.tile_brush_width = 4;
-				request.tile_brush_height = 4;
+				// Robotnik ship
+				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
+				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
+				request.tile_layout_address = 0x000a30bc;
+				request.palette_line = 1;
 
-				request.tile_layout_width = LevelDimensionsX / (rom::TileBrush<4, 4>::s_brush_width * rom::TileSet::s_tile_width);
-				request.tile_layout_height = LevelDimensionsY / (rom::TileBrush<4, 4>::s_brush_height * rom::TileSet::s_tile_height);
+				request.tile_brush_width = 1;
+				request.tile_brush_height = 1;
 
-				request.tile_layout_address = FGTilesetLayouts;
-				request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
+				request.is_chroma_keyed = false;
+				request.show_brush_previews = false;
+				request.compression_algorithm = CompressionAlgorithm::LZSS;
 
-				request.is_chroma_keyed = true;
-				request.compression_algorithm = CompressionAlgorithm::SSC;
+				request.layout_type_name = "intro";
+				request.layout_layout_name = "robotnik_ship";
 
-				char levelname_buffer[32];
-				sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
-				request.layout_type_name = levelname_buffer;
-				request.layout_layout_name = "fg";
-
-				m_level->m_tile_layers[1].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
-				request.store_tileset = &m_level->m_tile_layers[1].tileset;
-				request.store_layout = &m_level->m_tile_layers[1].tile_layout;;
+				m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
 
 				m_tile_layout_render_requests.emplace_back(std::move(request));
 			}
-		}
-		break;
+			break;
 
-		case RenderRequestType::OPTIONS:
-		{
-			Reset();
-
-			RenderTileLayoutRequest request;
-
-			request.tileset_address = rom::OptionsMenuTileset;
-			request.tile_brushes_address = rom::OptionsMenuTileBrushes;
-			request.tile_brushes_address_end = 0x000BE1BC;
-			request.tile_layout_address = rom::OptionsMenuTileLayout;
-			request.tile_layout_address_end = 0x000BE248;
-
-			request.tile_brush_width = 4;
-			request.tile_brush_height = 4;
-
-			request.tile_layout_width = 0xA;
-			request.tile_layout_height = 0x7;
-
-			request.is_chroma_keyed = false;
-			request.compression_algorithm = CompressionAlgorithm::SSC;
-
-			m_working_palette_set = *m_owning_ui.GetROM().GetOptionsScreenPaletteSet();
-
-			m_tile_layout_render_requests.emplace_back(std::move(request));
-		}
-		break;
-
-		case RenderRequestType::INTRO:
-		{
+			case RenderRequestType::INTRO_WATER:
 			{
 				Reset();
 				{
 					RenderTileLayoutRequest request;
 
-					request.tileset_address = rom::IntroCutscenesTileset;
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky + sizeof(Uint16));
-					request.tile_layout_address = rom::IntroCutsceneTileLayoutSky;
+					request.tileset_address = 0x000A3124 + 2;
+
+					// Water
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
+					request.tile_layout_address = 0x000a220c;
+					request.palette_line = 0;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.is_chroma_keyed = false;
+					request.show_brush_previews = false;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
+
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "water";
+
+					m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+			}
+			break;
+
+			case RenderRequestType::MENU:
+			{
+				Reset();
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x0009D102 + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C82E);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C830);
 					request.palette_line = 1;
+
+					request.tile_layout_address = 0x0009C82E;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -2589,29 +2714,112 @@ namespace spintool
 					request.layout_type_name = "intro";
 					request.layout_layout_name = "bg";
 
-					m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					m_working_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x0009D102 + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C05A);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C05C);
+					request.tile_layout_address = 0x0009C05A;
+					request.palette_line = 0;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.is_chroma_keyed = true;
+					request.show_brush_previews = false;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
+
+					request.layout_type_name = "intro";
+					request.layout_layout_name = "fg";
+
+					m_working_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
+			break;
 
+			case RenderRequestType::BONUS:
 			{
+				Reset();
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x000C77B0;
+					request.tile_layout_address = 0x000C7350 - 4;
+					request.tile_layout_address_end = 0x000c77b0 - 4;
+					request.palette_line = m_preview_bonus_alt_palette ? 1 : 0;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.tile_layout_width = 0x14;
+					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
+
+					request.is_chroma_keyed = false;
+					request.show_brush_previews = false;
+					request.draw_mirrored_layout = true;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
+
+					m_working_palette_set = rom::PaletteSet{};
+					m_working_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
+					m_working_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
+					m_working_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
+					m_working_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
+
+					request.layout_type_name = "bonus";
+					request.layout_layout_name = "bg";
+
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+
+				{
+					RenderTileLayoutRequest request;
+
+					request.tileset_address = 0x000C77B0;
+					request.tile_layout_address = 0x000C6EF0 - 4;
+					request.tile_layout_address_end = 0x000C734D;
+					request.palette_line = m_preview_bonus_alt_palette ? 0 : 1;
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+
+					request.tile_layout_width = 0x14;
+					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
+
+					request.is_chroma_keyed = true;
+					request.show_brush_previews = false;
+					request.draw_mirrored_layout = true;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
+
+					m_working_palette_set = rom::PaletteSet{};
+					m_working_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
+					m_working_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
+					m_working_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
+					m_working_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
+
+					request.layout_type_name = "bonus";
+					request.layout_layout_name = "fg";
+
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				}
+			}
+			break;
+
+			case RenderRequestType::SEGA_LOGO:
+			{
+				Reset();
 				{
 					RenderTileLayoutRequest request;
 
 					request.tileset_address = 0x000A3124 + 2;
-
-					// Veg-o Fortress
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
-					request.tile_layout_address = 0x000A1B8C;
-					request.palette_line = 1;
-
-					// Veg-o Fortress empty topsection
-					//request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2168);
-					//request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A216A);
-					//request.tile_layout_address = 0x000A2168;
-					//request.palette_line = 1;
-
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A14F8);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A14FA);
+					request.tile_layout_address = 0x000A14F8;
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
@@ -2621,222 +2829,13 @@ namespace spintool
 					request.compression_algorithm = CompressionAlgorithm::LZSS;
 
 					request.layout_type_name = "intro";
-					request.layout_layout_name = "veg_o_fortress";
+					request.layout_layout_name = "sega_logo";
 
-					m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-
+					m_working_palette_set = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
 				}
 			}
-		}
-		break;
-
-		case RenderRequestType::INTRO_SHIP:
-		{
-			Reset();
-
-			RenderTileLayoutRequest request;
-
-			request.tileset_address = 0x000A3124 + 2;
-
-			// Robotnik ship
-			request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
-			request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
-			request.tile_layout_address = 0x000a30bc;
-			request.palette_line = 1;
-
-			request.tile_brush_width = 1;
-			request.tile_brush_height = 1;
-
-			request.is_chroma_keyed = false;
-			request.show_brush_previews = false;
-			request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-			request.layout_type_name = "intro";
-			request.layout_layout_name = "robotnik_ship";
-
-			m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-
-			m_tile_layout_render_requests.emplace_back(std::move(request));
-		}
-		break;
-
-		case RenderRequestType::INTRO_WATER:
-		{
-			Reset();
-			{
-				RenderTileLayoutRequest request;
-
-				request.tileset_address = 0x000A3124 + 2;
-
-				// Water
-				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
-				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
-				request.tile_layout_address = 0x000a220c;
-				request.palette_line = 0;
-
-				request.tile_brush_width = 1;
-				request.tile_brush_height = 1;
-
-				request.is_chroma_keyed = false;
-				request.show_brush_previews = false;
-				request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-				request.layout_type_name = "intro";
-				request.layout_layout_name = "water";
-
-				m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-
-				m_tile_layout_render_requests.emplace_back(std::move(request));
-			}
-		}
-		break;
-
-		case RenderRequestType::MENU:
-		{
-			Reset();
-			{
-				RenderTileLayoutRequest request;
-
-				request.tileset_address = 0x0009D102 + 2;
-				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C82E);
-				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C830);
-				request.palette_line = 1;
-
-				request.tile_layout_address = 0x0009C82E;
-
-				request.tile_brush_width = 1;
-				request.tile_brush_height = 1;
-
-				request.is_chroma_keyed = false;
-				request.show_brush_previews = false;
-				request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-				request.layout_type_name = "intro";
-				request.layout_layout_name = "bg";
-
-				m_working_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
-				m_tile_layout_render_requests.emplace_back(std::move(request));
-			}
-
-			{
-				RenderTileLayoutRequest request;
-
-				request.tileset_address = 0x0009D102 + 2;
-				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C05A);
-				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C05C);
-				request.tile_layout_address = 0x0009C05A;
-				request.palette_line = 0;
-
-				request.tile_brush_width = 1;
-				request.tile_brush_height = 1;
-
-				request.is_chroma_keyed = true;
-				request.show_brush_previews = false;
-				request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-				request.layout_type_name = "intro";
-				request.layout_layout_name = "fg";
-
-				m_working_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
-				m_tile_layout_render_requests.emplace_back(std::move(request));
-			}
-		}
-		break;
-
-		case RenderRequestType::BONUS:
-		{
-			Reset();
-			{
-				RenderTileLayoutRequest request;
-
-				request.tileset_address = 0x000C77B0;
-				request.tile_layout_address = 0x000C7350 - 4;
-				request.tile_layout_address_end = 0x000c77b0 - 4;
-				request.palette_line = m_preview_bonus_alt_palette ? 1 : 0;
-
-				request.tile_brush_width = 1;
-				request.tile_brush_height = 1;
-
-				request.tile_layout_width = 0x14;
-				request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
-
-				request.is_chroma_keyed = false;
-				request.show_brush_previews = false;
-				request.draw_mirrored_layout = true;
-				request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-				m_working_palette_set = rom::PaletteSet{};
-				m_working_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
-				m_working_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
-				m_working_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
-				m_working_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
-
-				request.layout_type_name = "bonus";
-				request.layout_layout_name = "bg";
-
-				m_tile_layout_render_requests.emplace_back(std::move(request));
-			}
-
-			{
-				RenderTileLayoutRequest request;
-
-				request.tileset_address = 0x000C77B0;
-				request.tile_layout_address = 0x000C6EF0 - 4;
-				request.tile_layout_address_end = 0x000C734D;
-				request.palette_line = m_preview_bonus_alt_palette ? 0 : 1;
-
-				request.tile_brush_width = 1;
-				request.tile_brush_height = 1;
-
-				request.tile_layout_width = 0x14;
-				request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
-
-				request.is_chroma_keyed = true;
-				request.show_brush_previews = false;
-				request.draw_mirrored_layout = true;
-				request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-				m_working_palette_set = rom::PaletteSet{};
-				m_working_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
-				m_working_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
-				m_working_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
-				m_working_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
-
-				request.layout_type_name = "bonus";
-				request.layout_layout_name = "fg";
-
-				m_tile_layout_render_requests.emplace_back(std::move(request));
-			}
-		}
-		break;
-
-		case RenderRequestType::SEGA_LOGO:
-		{
-			Reset();
-			{
-				RenderTileLayoutRequest request;
-
-				request.tileset_address = 0x000A3124 + 2;
-				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A14F8);
-				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A14FA);
-				request.tile_layout_address = 0x000A14F8;
-
-				request.tile_brush_width = 1;
-				request.tile_brush_height = 1;
-
-				request.is_chroma_keyed = false;
-				request.show_brush_previews = false;
-				request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-				request.layout_type_name = "intro";
-				request.layout_layout_name = "sega_logo";
-
-				m_working_palette_set = *m_owning_ui.GetROM().GetSegaLogoIntroPaletteSet();
-				m_tile_layout_render_requests.emplace_back(std::move(request));
-			}
-		}
-		break;
+			break;
 
 		}
 	}
@@ -2954,7 +2953,7 @@ namespace spintool
 		m_spline_manager = {};
 		m_game_object_manager = {};
 	}
-	
+
 	void EditorTileLayoutViewer::DrawCollisionSpline(rom::CollisionSpline& spline, ImVec2 origin, ImVec2 screen_origin, LayerSettings& current_layer_settings, bool is_working_spline, bool draw_bbox)
 	{
 		const BoundingBox& spline_bbox = spline.spline_vector;
