@@ -107,4 +107,12 @@ namespace spintool::rom
 
 	}
 
+	void TileBrush::AssignTiles(const std::vector<TileInstance>& source_tiles)
+	{
+		if (source_tiles.size() == tiles.size())
+		{
+			tiles = source_tiles;
+		}
+	}
+
 }

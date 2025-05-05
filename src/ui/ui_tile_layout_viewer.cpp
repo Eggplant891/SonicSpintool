@@ -1113,14 +1113,14 @@ namespace spintool
 						const ImVec2 tile_snapped_pos{ (tile_grid_pos * tile_dimensions) * m_zoom };
 						const ImVec2 tile_final_snapped_pos{ tile_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
-						const ImVec2 tile_brush_dimensions = ImVec2{ 4, 4 } * tile_dimensions;
-						const ImVec2 tile_brush_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (tile_brush_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (tile_brush_dimensions.y * m_zoom))) };
-						const bool is_tile_brush_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_brush_grid_pos.x >= 0 && tile_brush_grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && tile_brush_grid_pos.y >= 0 && tile_brush_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
-						const ImVec2 tile_brush_snapped_pos{ (tile_brush_grid_pos * tile_brush_dimensions) * m_zoom };
-						const ImVec2 tile_brush_final_snapped_pos{ tile_brush_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+						const ImVec2 default_tile_brush_dimensions = ImVec2{ rom::TileBrush::s_default_brush_width, rom::TileBrush::s_default_brush_height } *tile_dimensions;
+						const ImVec2 default_tile_brush_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (default_tile_brush_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (default_tile_brush_dimensions.y * m_zoom))) };
+						const bool is_default_tile_brush_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || default_tile_brush_grid_pos.x >= 0 && default_tile_brush_grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && default_tile_brush_grid_pos.y >= 0 && default_tile_brush_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
+						const ImVec2 default_tile_brush_snapped_pos{ (default_tile_brush_grid_pos * default_tile_brush_dimensions) * m_zoom };
+						const ImVec2 default_tile_brush_final_snapped_pos{ default_tile_brush_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
-						const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * tile_brush_dimensions.y);
-						const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * tile_brush_dimensions.y);
+						const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * default_tile_brush_dimensions.y);
+						const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * default_tile_brush_dimensions.y);
 
 						const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 						const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
@@ -1229,7 +1229,7 @@ namespace spintool
 
 						if (m_level && has_just_selected_item == false)
 						{
-							const int brush_grid_ref = static_cast<int>((tile_brush_grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + tile_brush_grid_pos.x);
+							const int brush_grid_ref = static_cast<int>((default_tile_brush_grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + default_tile_brush_grid_pos.x);
 							const int tile_grid_ref = static_cast<int>((tile_grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width * 4) + tile_grid_pos.x);
 							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && brush_grid_ref >= 0 && brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 							{
@@ -1376,12 +1376,12 @@ namespace spintool
 								}
 							}
 
-							if (m_selected_brush.IsActive() && is_tile_brush_grid_pos_within_bounds)
+							if (m_selected_brush.IsActive() && is_default_tile_brush_grid_pos_within_bounds)
 							{
-								const ImVec2 rect_min{ tile_brush_final_snapped_pos.x - 1, tile_brush_final_snapped_pos.y - 1 };
-								const ImVec2 rect_max{ tile_brush_final_snapped_pos.x + (tile_brush_dimensions.x * m_zoom) + 1, tile_brush_final_snapped_pos.y + (tile_brush_dimensions.y * m_zoom) + 1 };
+								const ImVec2 rect_min{ default_tile_brush_final_snapped_pos.x - 1, default_tile_brush_final_snapped_pos.y - 1 };
+								const ImVec2 rect_max{ default_tile_brush_final_snapped_pos.x + (default_tile_brush_dimensions.x * m_zoom) + 1, default_tile_brush_final_snapped_pos.y + (default_tile_brush_dimensions.y * m_zoom) + 1 };
 
-								ImGui::SetCursorScreenPos(tile_brush_final_snapped_pos);
+								ImGui::SetCursorScreenPos(default_tile_brush_final_snapped_pos);
 								ImVec2 uv0 = { 0,0 };
 								ImVec2 uv1 = { 1,1 };
 
@@ -1405,7 +1405,7 @@ namespace spintool
 								if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
 								{
 									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
-									const ImVec2 end_grid_pos = tile_brush_grid_pos;
+									const ImVec2 end_grid_pos = default_tile_brush_grid_pos;
 
 									const float start_x = std::min(start_grid_pos.x, end_grid_pos.x);
 									const float end_x = std::max(start_grid_pos.x, end_grid_pos.x);
@@ -1413,12 +1413,12 @@ namespace spintool
 									const float end_y = std::max(start_grid_pos.y, end_grid_pos.y);
 
 									{
-										const ImVec2 snapped_pos{ (ImVec2{start_x,start_y} *tile_brush_dimensions) * m_zoom };
+										const ImVec2 snapped_pos{ (ImVec2{start_x,start_y} *default_tile_brush_dimensions) * m_zoom };
 										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 										min_pos = final_snapped_pos;
 									}
 									{
-										const ImVec2 snapped_pos{ (ImVec2{end_x + 1,end_y + 1} *tile_brush_dimensions) * m_zoom };
+										const ImVec2 snapped_pos{ (ImVec2{end_x + 1,end_y + 1} *default_tile_brush_dimensions) * m_zoom };
 										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 										max_pos = final_snapped_pos;
 									}
@@ -1429,7 +1429,7 @@ namespace spintool
 										{
 											for (float y = start_y; y <= end_y; ++y)
 											{
-												const ImVec2 snapped_pos{ (ImVec2{x,y} *tile_brush_dimensions) * m_zoom };
+												const ImVec2 snapped_pos{ (ImVec2{x,y} *default_tile_brush_dimensions) * m_zoom };
 												const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 												ImGui::SetCursorScreenPos(final_snapped_pos);
 												ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } *m_zoom, uv0, uv1);
@@ -1453,14 +1453,14 @@ namespace spintool
 								{
 									if (brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 									{
-										m_selected_brush.dragging_start_ref = tile_brush_grid_pos;
+										m_selected_brush.dragging_start_ref = default_tile_brush_grid_pos;
 									}
 								}
 
 								if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
 								{
 									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
-									const ImVec2 end_grid_pos = tile_brush_grid_pos;
+									const ImVec2 end_grid_pos = default_tile_brush_grid_pos;
 
 									if (m_selected_brush.IsPickingFromLayout())
 									{

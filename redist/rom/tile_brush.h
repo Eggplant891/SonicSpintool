@@ -20,6 +20,8 @@ namespace spintool::rom
 	public:
 		TileBrush(Uint32 width, Uint32 height);
 
+		void AssignTiles(const std::vector<TileInstance>& source_tiles);
+
 		Uint32 BrushWidth() const;
 		Uint32 BrushHeight() const;
 		Uint32 TotalTiles() const;
