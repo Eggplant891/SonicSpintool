@@ -127,6 +127,15 @@ namespace spintool
 		}
 	}
 
+	void TilePicker::SetPaletteLine(int palette_line)
+	{
+		if (palette_line < 4)
+		{
+			current_palette_line = palette_line;
+			RenderTileset();
+		}
+	}
+
 	void TilePicker::SetTileLayer(rom::TileLayer* layer)
 	{
 		const bool render_required = m_tile_layer != layer;
@@ -140,6 +149,49 @@ namespace spintool
 	spintool::rom::TileLayer* TilePicker::GetTileLayer()
 	{
 		return m_tile_layer;
+	}
+
+	size_t TilePicker::GetSelectedTileIndex() const
+	{
+		return std::distance(std::begin(tiles)
+			, std::find_if(std::begin(tiles), std::end(tiles),
+				[this](const std::shared_ptr<rom::SpriteTile>& tile)
+				{
+					return currently_selected_tile == tile.get();
+				}));
+	}
+
+	const rom::Tile* TilePicker::GetSelectedTile() const
+	{
+		if (currently_selected_tile == nullptr)
+		{
+			return nullptr;
+		}
+
+		return &m_tile_layer->tileset->tiles.at(GetSelectedTileIndex());
+	}
+
+	void TilePicker::DrawPickedTile(bool flip_x, bool flip_y, float zoom) const
+	{
+		if (currently_selected_tile == nullptr)
+		{
+			return;
+		}
+
+		const rom::SpriteTile& tile = *currently_selected_tile;
+
+		ImVec2 uv0 = { static_cast<float>(tile.x_offset) / texture->w , static_cast<float>(tile.y_offset) / texture->h };
+		ImVec2 uv1 = { static_cast<float>(tile.x_offset + tile.x_size) / texture->w, static_cast<float>(tile.y_offset + tile.y_size) / texture->h };
+		if (flip_x)
+		{
+			std::swap(uv0.x, uv1.x);
+		}
+		if (flip_y)
+		{
+			std::swap(uv0.y, uv1.y);
+		}
+
+		ImGui::Image((ImTextureID)texture.get(), ImVec2{ static_cast<float>(tile.x_size), static_cast<float>(tile.y_size) } * zoom, uv0, uv1);
 	}
 
 }

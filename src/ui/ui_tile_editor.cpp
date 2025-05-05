@@ -110,12 +110,7 @@ namespace spintool
 
 							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{
-								m_target_brush->tiles[target_index].tile_index = static_cast<int>(std::distance(std::begin(m_tile_picker.tiles)
-									, std::find_if(std::begin(m_tile_picker.tiles), std::end(m_tile_picker.tiles),
-										[this](const std::shared_ptr<rom::SpriteTile>& tile)
-										{
-											return m_tile_picker.currently_selected_tile == tile.get();
-										})));
+								m_target_brush->tiles[target_index].tile_index = static_cast<int>(m_tile_picker.GetSelectedTileIndex());
 
 								m_target_brush->tiles[target_index].palette_line = m_tile_picker.current_palette_line;
 								m_tile_brush_changed = true;

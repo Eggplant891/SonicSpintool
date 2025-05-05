@@ -218,7 +218,7 @@ namespace spintool
 				ImGui::Checkbox("Game Object Tooltips", &m_layer_settings.hover_game_objects_tooltip);
 				ImGui::Checkbox("Spline Collision Info", &m_layer_settings.hover_splines);
 				ImGui::Checkbox("Radial Collision Info", &m_layer_settings.hover_radials);
-				ImGui::Checkbox("Tile Info", &m_layer_settings.hover_tiles);
+				ImGui::Checkbox("Tile Info", &m_layer_settings.hover_brushes);
 				ImGui::EndMenu();
 			}
 
@@ -240,6 +240,7 @@ namespace spintool
 			m_level->m_tile_layers.emplace_back();
 			m_level->m_tile_layers.emplace_back();
 			m_selected_brush.Clear();
+			m_selected_tile.Clear();
 			m_working_brush.reset();
 			m_working_flipper.reset();
 			m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain)));
@@ -835,7 +836,7 @@ namespace spintool
 				m_tile_layout_preview_fg = Renderer::RenderToTexture(layout_preview_fg_surface.get());
 			}
 
-			bool has_just_selected_brush = false;
+			bool has_just_selected_item = false;
 
 			//////////// BEGIN IMGUI ///////////////////////////////////
 
@@ -916,7 +917,24 @@ namespace spintool
 									tile_picker.SetTileLayer(m_level != nullptr ? &m_level->m_tile_layers[layer_index] : nullptr);
 									if (ImGui::BeginTabItem(layer_names[tab_index++]))
 									{
+										if (ImGui::Button("Pick from layout"))
+										{
+											m_selected_tile.is_picking_from_layout = true;
+											m_selected_tile.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
+											m_selected_tile.tile_picker = &tile_picker;
+										}
+
+										const bool had_selection = tile_picker.currently_selected_tile != nullptr;
 										tile_picker.Draw();
+
+										if (had_selection == false && tile_picker.currently_selected_tile != nullptr)
+										{
+											m_selected_tile.tile_selection = tile_picker.GetSelectedTile();
+											m_selected_tile.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
+											m_selected_tile.tile_picker = &tile_picker;
+											has_just_selected_item = true;
+										}
+
 										ImGui::EndTabItem();
 									}
 								}
@@ -980,7 +998,7 @@ namespace spintool
 													m_selected_brush.tileset = &tileset_preview;
 													m_selected_brush.tile_brush = &preview_brush;
 													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
-													has_just_selected_brush = true;
+													has_just_selected_item = true;
 												}
 
 												if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
@@ -1086,7 +1104,7 @@ namespace spintool
 						
 						const ImVec2 tile_dimensions{ rom::TileSet::s_tile_width, rom::TileSet::s_tile_height };
 						const ImVec2 tile_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (tile_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (tile_dimensions.y * m_zoom))) };
-						const bool is_tile_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_grid_pos.x >= 0 && tile_grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && tile_grid_pos.y >= 0 && tile_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
+						const bool is_tile_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_grid_pos.x >= 0 && tile_grid_pos.x < (m_level->m_tile_layers[0].tile_layout->layout_width*4) && tile_grid_pos.y >= 0 && (tile_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height*4);
 						const ImVec2 tile_snapped_pos{ (tile_grid_pos * tile_dimensions) * m_zoom };
 						const ImVec2 tile_final_snapped_pos{ tile_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
@@ -1151,10 +1169,10 @@ namespace spintool
 							current_layer_settings.hover_game_objects = false;
 							current_layer_settings.hover_splines = false;
 							current_layer_settings.hover_radials = false;
-							current_layer_settings.hover_tiles = false;
+							current_layer_settings.hover_brushes = false;
 						}
 
-						if (m_selected_brush.HasBrushSelected() || m_selected_brush.IsPickingBrushFromLayout())
+						if (m_selected_brush.HasSelection() || m_selected_brush.IsPickingFromLayout() || m_selected_tile.HasSelection() || m_selected_tile.IsPickingFromLayout())
 						{
 							current_layer_settings.collision = false;
 							current_layer_settings.rings = false;
@@ -1163,19 +1181,7 @@ namespace spintool
 							current_layer_settings.hover_game_objects = false;
 							current_layer_settings.hover_splines = false;
 							current_layer_settings.hover_radials = false;
-							current_layer_settings.hover_tiles = m_selected_brush.IsPickingBrushFromLayout();
-						}
-
-						if (m_working_game_obj)
-						{
-							current_layer_settings.collision = false;
-							current_layer_settings.rings = false;
-							current_layer_settings.flippers = false;
-							current_layer_settings.visible_objects = false;
-							current_layer_settings.hover_game_objects = false;
-							current_layer_settings.hover_splines = false;
-							current_layer_settings.hover_radials = false;
-							current_layer_settings.hover_tiles = false;
+							current_layer_settings.hover_brushes = m_selected_brush.IsPickingFromLayout();
 						}
 
 						if (m_working_game_obj)
@@ -1187,7 +1193,19 @@ namespace spintool
 							current_layer_settings.hover_game_objects = false;
 							current_layer_settings.hover_splines = false;
 							current_layer_settings.hover_radials = false;
-							current_layer_settings.hover_tiles = false;
+							current_layer_settings.hover_brushes = false;
+						}
+
+						if (m_working_game_obj)
+						{
+							current_layer_settings.collision = false;
+							current_layer_settings.rings = false;
+							current_layer_settings.flippers = false;
+							current_layer_settings.visible_objects = false;
+							current_layer_settings.hover_game_objects = false;
+							current_layer_settings.hover_splines = false;
+							current_layer_settings.hover_radials = false;
+							current_layer_settings.hover_brushes = false;
 						}
 
 						if (current_layer_settings.collision == true)
@@ -1221,12 +1239,13 @@ namespace spintool
 							}
 						}
 
-						if (m_level && has_just_selected_brush == false && is_tile_brush_grid_pos_within_bounds)
+						if (m_level && has_just_selected_item == false)
 						{
-							const int grid_ref = static_cast<int>((tile_brush_grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + tile_brush_grid_pos.x);
-							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && grid_ref >= 0 && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
+							const int brush_grid_ref = static_cast<int>((tile_brush_grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width) + tile_brush_grid_pos.x);
+							const int tile_grid_ref = static_cast<int>((tile_grid_pos.y * m_level->m_tile_layers[0].tile_layout->layout_width * 4) + tile_grid_pos.x);
+							if (/*current_layer_settings.hover_tiles &&*/m_selected_brush.tile_layer && brush_grid_ref >= 0 && brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 							{
-								const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
+								const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(brush_grid_ref);
 								const int hovered_index = brush_instance.tile_brush_index;
 
 								if (m_selected_brush.tileset != nullptr && hovered_index >= 0 && hovered_index < m_selected_brush.tileset->brushes.size() && ImGui::BeginTooltip())
@@ -1238,58 +1257,142 @@ namespace spintool
 								}
 							}
 
-							if (m_tile_picker_list.front().currently_selected_tile != nullptr)
+							if (m_selected_tile.IsActive() && is_tile_grid_pos_within_bounds)
 							{
 								const ImVec2 rect_min{ tile_final_snapped_pos.x - 1, tile_final_snapped_pos.y - 1 };
 								const ImVec2 rect_max{ tile_final_snapped_pos.x + (tile_dimensions.x * m_zoom) + 1, tile_final_snapped_pos.y + (tile_dimensions.y * m_zoom) + 1 };
 
-								//ImGui::SetCursorScreenPos(tile_final_snapped_pos);
-								//ImVec2 uv0 = { 0,0 };
-								//ImVec2 uv1 = { 1,1 };
-								//if (m_selected_brush.flip_x)
-								//{
-								//	uv0.x = 1;
-								//	uv1.x = 0;
-								//}
-								//if (m_selected_brush.flip_y)
-								//{
-								//	uv0.y = 1;
-								//	uv1.y = 0;
-								//}
-
-								//ImGui::Image((ImTextureID)m_selected_brush.tile_brush->texture.get(), ImVec2{ static_cast<float>(m_selected_brush.tile_brush->texture->w), static_cast<float>(m_selected_brush.tile_brush->texture->h) } *m_zoom, uv0, uv1);
-
-								ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
-
-								if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+								if (m_selected_tile.HasSelection())
 								{
-									m_tile_picker_list.front().currently_selected_tile = nullptr;
+									ImGui::SetCursorScreenPos(tile_final_snapped_pos);
+									m_selected_tile.tile_picker->DrawPickedTile(m_selected_tile.flip_x, m_selected_tile.flip_y, m_zoom);
+
+									if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+									{
+										m_selected_tile.tile_picker->currently_selected_tile = nullptr;
+										m_selected_tile.Clear();
+									}
 								}
 
-								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_tile_picker_list.front().GetTileLayer() != nullptr)
+								ImVec2 min_pos;
+								ImVec2 max_pos;
+
+								if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
 								{
-									const size_t tile_index_to_edit = static_cast<size_t>(tile_grid_pos.x) + (static_cast<size_t>(tile_grid_pos.y) * m_level->m_tile_layers[0].tile_layout->layout_width * 4);
+									const ImVec2 start_grid_pos = m_selected_tile.dragging_start_ref.value();
+									const ImVec2 end_grid_pos = tile_grid_pos;
 
-									m_level->m_tile_layers[0].tile_layout->tile_instances[tile_index_to_edit].tile_index = static_cast<int>(std::distance(std::begin(m_tile_picker_list.front().tiles)
-										, std::find_if(std::begin(m_tile_picker_list.front().tiles), std::end(m_tile_picker_list.front().tiles),
-											[this](const std::shared_ptr<rom::SpriteTile>& tile)
-											{
-												return m_tile_picker_list.front().currently_selected_tile == tile.get();
-											})));
+									const float start_x = std::min(start_grid_pos.x, end_grid_pos.x);
+									const float end_x = std::max(start_grid_pos.x, end_grid_pos.x);
+									const float start_y = std::min(start_grid_pos.y, end_grid_pos.y);
+									const float end_y = std::max(start_grid_pos.y, end_grid_pos.y);
 
-									m_level->m_tile_layers[0].tile_layout->tile_instances[tile_index_to_edit].palette_line = m_tile_picker_list.front().current_palette_line;
-									m_level->m_tile_layers[0].tile_layout->CollapseTilesIntoBrushes();
+									{
+										const ImVec2 snapped_pos{ (ImVec2{start_x,start_y} *tile_dimensions) * m_zoom };
+										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+										min_pos = final_snapped_pos;
+									}
+									{
+										const ImVec2 snapped_pos{ (ImVec2{end_x + 1,end_y + 1} *tile_dimensions) * m_zoom };
+										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+										max_pos = final_snapped_pos;
+									}
+
+									for (float x = start_x; x <= end_x; ++x)
+									{
+										for (float y = start_y; y <= end_y; ++y)
+										{
+											const ImVec2 snapped_pos{ (ImVec2{x,y} *tile_dimensions) * m_zoom };
+											const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
+											ImGui::SetCursorScreenPos(final_snapped_pos);
+											m_selected_tile.tile_picker->DrawPickedTile(m_selected_tile.flip_x, m_selected_tile.flip_y, m_zoom);
+										}
+									}
+
+									ImGui::GetWindowDrawList()->AddRect(min_pos, max_pos, ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f }), 0, 0, 1.0f);
+								}
+								else
+								{
+									ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
+								}
+							
+								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_tile.tile_layer != nullptr)
+								{
+									if (m_selected_tile.IsPickingFromLayout())
+									{
+										if (m_selected_tile.tile_layer->tile_layout->tile_instances.empty() == false && tile_grid_ref < m_selected_tile.tile_layer->tile_layout->tile_instances.size())
+										{
+											const rom::TileInstance& tile_instance = m_selected_tile.tile_layer->tile_layout->tile_instances.at(tile_grid_ref);
+											const int selected_index = tile_instance.tile_index;
+											m_selected_tile.tile_selection = &m_selected_tile.tile_layer->tileset->tiles[selected_index];
+											m_selected_tile.tile_picker->currently_selected_tile = m_selected_tile.tile_picker->tiles[selected_index].get();
+											m_selected_tile.tile_picker->SetPaletteLine(tile_instance.palette_line);
+											m_selected_tile.flip_x = tile_instance.is_flipped_horizontally;
+											m_selected_tile.flip_y = tile_instance.is_flipped_vertically;
+
+											m_selected_tile.is_picking_from_layout = false;
+											m_selected_tile.was_picked_from_layout = true;
+										}
+										else
+										{
+											m_selected_tile.Clear();
+										}
+										has_just_selected_item = true;
+									}
+									else if (m_selected_tile.HasSelection())
+									{
+										if (tile_grid_ref < m_selected_tile.tile_layer->tile_layout->tile_instances.size())
+										{
+											m_selected_tile.dragging_start_ref = tile_grid_pos;
+										}
+									}
+								}
+								
+								if (m_selected_tile.IsPickingFromLayout() == false && m_selected_tile.tile_selection == nullptr)
+								{
+									m_selected_tile.Clear();
+								}
+
+								if (m_selected_tile.HasSelection())
+								{
+									if (ImGui::IsKeyPressed(ImGuiKey_R))
+									{
+										m_selected_tile.flip_x = !m_selected_tile.flip_x;
+									}
+
+									if (ImGui::IsKeyPressed(ImGuiKey_F))
+									{
+										m_selected_tile.flip_y = !m_selected_tile.flip_y;
+									}
+								}
+
+								if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
+								{
+									const ImVec2 start_grid_pos = m_selected_tile.dragging_start_ref.value();
+									const ImVec2 end_grid_pos = tile_grid_pos;
+									for (float x = std::min(start_grid_pos.x, end_grid_pos.x); x <= std::max(start_grid_pos.x, end_grid_pos.x); ++x)
+									{
+										for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); ++y)
+										{
+											const size_t tile_index_to_edit = static_cast<size_t>(x) + (static_cast<size_t>(y) * m_selected_tile.tile_layer->tile_layout->layout_width * 4);
+											rom::TileInstance& target_tile = m_selected_tile.tile_layer->tile_layout->tile_instances[tile_index_to_edit];
+											target_tile.tile_index = static_cast<int>(m_selected_tile.tile_picker->GetSelectedTileIndex());
+											target_tile.palette_line = m_selected_tile.tile_picker->current_palette_line;
+											target_tile.is_flipped_horizontally = m_selected_tile.flip_x;
+											target_tile.is_flipped_vertically = m_selected_tile.flip_y;
+										}
+									}
 									m_render_from_edit = true;
-									//m_level->m_tile_layers[0].tile_layout->SaveToROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout));
+									m_selected_tile.dragging_start_ref.reset();
 								}
 							}
 
-							if (m_selected_brush.IsActive())
+							if (m_selected_brush.IsActive() && is_tile_brush_grid_pos_within_bounds)
 							{
 								const ImVec2 rect_min{ tile_brush_final_snapped_pos.x - 1, tile_brush_final_snapped_pos.y - 1 };
 								const ImVec2 rect_max{ tile_brush_final_snapped_pos.x + (tile_brush_dimensions.x * m_zoom) + 1, tile_brush_final_snapped_pos.y + (tile_brush_dimensions.y * m_zoom) + 1 };
 
-								if (m_selected_brush.HasBrushSelected())
+								if (m_selected_brush.HasSelection())
 								{
 									ImGui::SetCursorScreenPos(tile_brush_final_snapped_pos);
 									ImVec2 uv0 = { 0,0 };
@@ -1355,11 +1458,11 @@ namespace spintool
 
 								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
 								{
-									if (m_selected_brush.IsPickingBrushFromLayout())
+									if (m_selected_brush.IsPickingFromLayout())
 									{
-										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false && grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
+										if (m_selected_brush.tile_layer->tile_layout->tile_brush_instances.empty() == false && brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 										{
-											const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(grid_ref);
+											const rom::TileBrushInstance& brush_instance = m_selected_brush.tile_layer->tile_layout->tile_brush_instances.at(brush_grid_ref);
 											const int selected_index = brush_instance.tile_brush_index;
 											m_selected_brush.tile_brush = &m_selected_brush.tileset->brushes.at(selected_index);
 											m_selected_brush.is_picking_from_layout = false;
@@ -1371,11 +1474,11 @@ namespace spintool
 										{
 											m_selected_brush.Clear();
 										}
-										has_just_selected_brush = true;
+										has_just_selected_item = true;
 									}
-									else if (m_selected_brush.HasBrushSelected())
+									else if (m_selected_brush.HasSelection())
 									{
-										if (grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
+										if (brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 										{
 											m_selected_brush.dragging_start_ref = tile_brush_grid_pos;
 										}
@@ -1405,12 +1508,12 @@ namespace spintool
 							}
 						}
 
-						if (m_selected_brush.IsPickingBrushFromLayout() == false && (m_selected_brush.tile_brush != nullptr && m_selected_brush.tile_brush->texture == nullptr))
+						if (m_selected_brush.IsPickingFromLayout() == false && (m_selected_brush.tile_brush != nullptr && m_selected_brush.tile_brush->texture == nullptr))
 						{
 							m_selected_brush.Clear();
 						}
 
-						if (m_selected_brush.HasBrushSelected())
+						if (m_selected_brush.HasSelection())
 						{
 							if (ImGui::IsKeyPressed(ImGuiKey_R))
 							{
@@ -2141,17 +2244,34 @@ namespace spintool
 			}
 			ImGui::EndGroup();
 
-			if (m_selected_brush.IsActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+			if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
 			{
-				if (m_selected_brush.was_picked_from_layout == true)
+				if (m_selected_brush.IsActive())
 				{
-					m_selected_brush.was_picked_from_layout = false;
-					m_selected_brush.is_picking_from_layout = true;
-					m_selected_brush.tile_brush = nullptr;
+					if (m_selected_brush.was_picked_from_layout == true)
+					{
+						m_selected_brush.was_picked_from_layout = false;
+						m_selected_brush.is_picking_from_layout = true;
+						m_selected_brush.tile_brush = nullptr;
+					}
+					else
+					{
+						m_selected_brush.Clear();
+					}
 				}
-				else
+
+				if (m_selected_tile.IsActive())
 				{
-					m_selected_brush.Clear();
+					if (m_selected_tile.was_picked_from_layout == true)
+					{
+						m_selected_tile.was_picked_from_layout = false;
+						m_selected_tile.is_picking_from_layout = true;
+						m_selected_tile.tile_selection = nullptr;
+					}
+					else
+					{
+						m_selected_tile.Clear();
+					}
 				}
 			}
 		}
@@ -2743,7 +2863,7 @@ namespace spintool
 
 	bool EditorTileLayoutViewer::IsEditingSomething() const
 	{
-		return m_working_spline.has_value() || m_working_game_obj.has_value() || m_working_brush.has_value() || m_working_flipper.has_value() || m_working_ring.has_value();
+		return m_working_spline.has_value() || m_working_game_obj.has_value() || m_working_brush.has_value() || m_selected_tile.HasSelection() || m_selected_brush.HasSelection() || m_working_flipper.has_value() || m_working_ring.has_value() || IsObjectPopupOpen() || IsDraggingObject();
 	}
 
 	void EditorTileLayoutViewer::TestCollisionCullingResults() const

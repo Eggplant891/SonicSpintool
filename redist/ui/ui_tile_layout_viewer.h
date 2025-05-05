@@ -137,7 +137,39 @@ namespace spintool
 		bool hover_game_objects_tooltip = true;
 		bool hover_splines = true;
 		bool hover_radials = true;
-		bool hover_tiles = false;
+		bool hover_brushes = false;
+	};
+
+	struct TileSelection
+	{
+		rom::TileLayer* tile_layer = nullptr;
+		const rom::Tile* tile_selection = nullptr;
+		TilePicker* tile_picker = nullptr;
+		bool is_picking_from_layout = false;
+		bool was_picked_from_layout = false;
+		std::optional<ImVec2> dragging_start_ref;
+		bool flip_x = false;
+		bool flip_y = false;
+
+		void Clear()
+		{
+			*this = TileSelection{};
+		}
+
+		bool IsPickingFromLayout() const
+		{
+			return is_picking_from_layout;
+		}
+
+		bool HasSelection() const
+		{
+			return (tile_layer != nullptr && tile_selection != nullptr);
+		}
+
+		bool IsActive() const
+		{
+			return (tile_layer != nullptr && tile_selection != nullptr) || (is_picking_from_layout);
+		}
 	};
 
 	struct TileBrushSelection
@@ -156,19 +188,19 @@ namespace spintool
 			*this = TileBrushSelection{};
 		}
 
-		bool IsPickingBrushFromLayout() const
+		bool IsPickingFromLayout() const
 		{
 			return is_picking_from_layout;
 		}
 
-		bool HasBrushSelected() const
+		bool HasSelection() const
 		{
-			return (tileset != nullptr && tile_brush != nullptr);
+			return (tile_layer != nullptr && tile_brush != nullptr);
 		}
 
 		bool IsActive() const
 		{
-			return (tileset != nullptr && tile_brush != nullptr) || (is_picking_from_layout);
+			return (tile_layer != nullptr && tile_brush != nullptr) || (is_picking_from_layout);
 		}
 	};
 
@@ -242,6 +274,7 @@ namespace spintool
 		std::optional<WorkingSpline> m_working_spline;
 
 		TileBrushSelection m_selected_brush;
+		TileSelection m_selected_tile;
 		std::optional<Uint32> m_working_layer_index;
 		std::optional<Uint32> m_working_brush;
 

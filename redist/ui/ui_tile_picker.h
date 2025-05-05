@@ -14,6 +14,7 @@ namespace spintool::rom
 {
 	struct SpriteTile;
 	struct TileLayer;
+	struct Tile;
 }
 
 namespace spintool
@@ -30,8 +31,13 @@ namespace spintool
 		void RenderTileset();
 		void Draw();
 
+		void SetPaletteLine(int palette_line);
 		void SetTileLayer(rom::TileLayer* layer);
 		rom::TileLayer* GetTileLayer();
+		size_t GetSelectedTileIndex() const;
+		const rom::Tile* GetSelectedTile() const;
+
+		void DrawPickedTile(bool flip_x, bool flip_y, float zoom) const;
 
 	//private:
 		static constexpr Uint32 picker_width = 20;
