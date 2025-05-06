@@ -2,22 +2,20 @@
 
 #include "types/sdl_handle_defs.h"
 
+#include "rom/tile.h"
+#include "rom/tile_brush.h"
 #include "rom/level.h"
-#include "rom/rom_asset_definitions.h"
 #include "rom/culling_tables/spline_culling_table.h"
-#include "rom/game_objects/game_object_definition.h"
 #include "rom/game_objects/game_object_flipper.h"
 #include "rom/game_objects/game_object_ring.h"
-#include "rom/rom_asset_definitions.h"
 #include "rom/palette.h"
-#include "rom/animated_object.h"
 
 #include "editor/spline_manager.h"
 #include "editor/game_obj_manager.h"
 
 #include "ui/ui_editor_window.h"
 #include "ui/ui_tile_editor.h"
-#include "ui_tile_picker.h"
+#include "ui/ui_tile_picker.h"
 
 #include "imgui.h"
 
@@ -25,6 +23,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include "render.h"
 
 namespace spintool
 {
@@ -174,18 +173,58 @@ namespace spintool
 
 	struct TileBrushSelection
 	{
+		SDLSurfaceHandle brush_surface;
+		SDLTextureHandle brush_texture;
+
 		rom::TileLayer* tile_layer = nullptr;
-		TilesetPreview* tileset = nullptr;
-		TileBrushPreview* tile_brush = nullptr;
+		TilePicker* tile_picker = nullptr;
+		std::optional<rom::TileBrush> brush;
+
+		Uint32 BrushWidth() const { return brush ? brush->BrushWidth() : 1; };
+		Uint32 BrushHeight() const { return brush ? brush->BrushHeight() : 1; }
+
+		std::optional<ImVec2> dragging_start_ref;
 		bool is_picking_from_layout = false;
 		bool was_picked_from_layout = false;
-		std::optional<ImVec2> dragging_start_ref;
 		bool flip_x = false;
 		bool flip_y = false;
 
 		void Clear()
 		{
-			*this = TileBrushSelection{};
+			tile_layer = nullptr;
+			tile_picker = nullptr;
+			brush.reset();
+			dragging_start_ref.reset();
+			is_picking_from_layout = false;
+			was_picked_from_layout = false;
+			flip_x = false;
+			flip_y = false;
+		}
+
+		void StartPickingFromLayout(rom::TileLayer& layer, TilePicker& picker)
+		{
+			brush.reset();
+			dragging_start_ref.reset();
+			is_picking_from_layout = true;
+			was_picked_from_layout = false;
+			flip_x = false;
+			flip_y = false;
+
+			tile_layer = &layer;
+			tile_picker = &picker;
+		}
+
+		void PickBrush(const rom::TileBrush& new_brush)
+		{
+			brush = new_brush;
+			brush_surface = brush->RenderToSurface(*tile_layer);
+			brush_texture = Renderer::RenderToTexture(brush_surface.get());
+
+			if (is_picking_from_layout)
+			{
+				is_picking_from_layout = false;
+				was_picked_from_layout = true;
+			}
 		}
 
 		bool IsPickingFromLayout() const
@@ -195,12 +234,12 @@ namespace spintool
 
 		bool HasSelection() const
 		{
-			return (tile_layer != nullptr && tile_brush != nullptr);
+			return (tile_layer != nullptr && brush.has_value());
 		}
 
 		bool IsActive() const
 		{
-			return (tile_layer != nullptr && tile_brush != nullptr) || (is_picking_from_layout);
+			return (tile_layer != nullptr && brush.has_value()) || (is_picking_from_layout);
 		}
 	};
 

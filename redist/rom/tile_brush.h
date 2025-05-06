@@ -1,7 +1,10 @@
 #pragma once
 
+#include "types/sdl_handle_defs.h"
+
 #include "rom_data.h"
 #include "types/bounding_box.h"
+#include "rom/tile.h"
 
 #include <vector>
 #include <memory>
@@ -10,7 +13,7 @@ namespace spintool::rom
 {
 	class SpinballROM;
 	struct TileSet;
-	struct TileInstance;
+	struct TileLayer;
 }
 
 namespace spintool::rom
@@ -29,6 +32,7 @@ namespace spintool::rom
 		size_t GridCoordinatesToLinearIndex(Point grid_coord) const;
 		Point LinearIndexToGridCoordinates(size_t linear_index) const;
 
+		SDLSurfaceHandle RenderToSurface(const TileLayer& tile_layer) const;
 		std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
 		std::vector<TileInstance> tiles;
 
@@ -39,9 +43,9 @@ namespace spintool::rom
 	private:
 		ROMData rom_data;
 
-		const Uint32 m_brush_width;
-		const Uint32 m_brush_height;
-		const Uint32 m_brush_total_tiles;
+		Uint32 m_brush_width;
+		Uint32 m_brush_height;
+		Uint32 m_brush_total_tiles;
 	};
 
 	bool operator==(const TileBrush& lhs, const TileBrush& rhs);

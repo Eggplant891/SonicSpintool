@@ -4,6 +4,7 @@
 #include "rom/level.h"
 #include "rom/sprite.h"
 #include "rom/tileset.h"
+#include "rom/tile_brush.h"
 #include "ui_tile_picker.h"
 
 #include "SDL3/SDL_stdinc.h"
@@ -11,10 +12,6 @@
 namespace spintool
 {
 	struct TileLayer;
-	namespace rom
-	{
-		class TileBrush;
-	}
 }
 
 namespace spintool

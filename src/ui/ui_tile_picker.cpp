@@ -1,13 +1,13 @@
 #include "ui/ui_tile_picker.h"
 
 #include "render.h"
+#include "rom/tile.h"
 #include "rom/level.h"
 #include "rom/sprite_tile.h"
 #include "rom/tileset.h"
 
 #include "imgui.h"
 #include "ui/ui_palette_viewer.h"
-#include "rom/tile.h"
 
 namespace spintool
 {

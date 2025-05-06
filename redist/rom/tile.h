@@ -8,14 +8,6 @@
 
 namespace spintool::rom
 {
-	class SpinballROM;
-	struct Sprite;
-	struct SpriteTile;
-	struct TileSet;
-}
-
-namespace spintool::rom
-{
 	struct Tile
 	{
 		SDLSurfaceHandle surface;

@@ -2,6 +2,8 @@
 
 #include "rom_data.h"
 #include "types/bounding_box.h"
+#include "rom/tile.h"
+#include "rom/tile_brush.h"
 
 #include <vector>
 #include <memory>
@@ -11,9 +13,6 @@ namespace spintool::rom
 {
 	class SpinballROM;
 	struct TileSet;
-	struct TileInstance;
-	class TileBrush;
-	struct TileBrushInstance;
 }
 
 namespace spintool::rom
@@ -38,5 +37,6 @@ namespace spintool::rom
 		void SaveToROM(SpinballROM& src_rom, Uint32 brushes_offset, Uint32 layout_offset);
 		void CollapseTilesIntoBrushes();
 		void BlitTileInstancesFromBrushInstances();
+		void BlitTileBrushToLayout(const rom::TileBrush& brush, size_t brush_x_index, size_t brush_y_index, bool flip_x, bool flip_y);
 	};
 }
