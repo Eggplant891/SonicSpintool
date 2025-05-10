@@ -54,7 +54,7 @@ namespace spintool::rom
 
 		if (flip_x)
 		{
-			for (size_t x = 0; x < BrushWidth() / 2; ++x)
+			for (size_t x = 0; x < ((BrushWidth() / 2) + (BrushWidth() % 2)); ++x)
 			{
 				for (size_t y = 0; y < BrushHeight(); ++y)
 				{
@@ -63,8 +63,12 @@ namespace spintool::rom
 					rom::TileInstance& lhs = out_tiles[y_offset + x];
 					rom::TileInstance& rhs = out_tiles[y_offset + x_offset_inverse];
 					lhs.is_flipped_horizontally = !lhs.is_flipped_horizontally;
-					rhs.is_flipped_horizontally = !rhs.is_flipped_horizontally;
-					std::swap(lhs, rhs);
+
+					if (&lhs != &rhs)
+					{
+						rhs.is_flipped_horizontally = !rhs.is_flipped_horizontally;
+						std::swap(lhs, rhs);
+					}
 				}
 			}
 		}
@@ -73,15 +77,19 @@ namespace spintool::rom
 		{
 			for (size_t x = 0; x < BrushWidth(); ++x)
 			{
-				for (size_t y = 0; y < BrushHeight() / 2; ++y)
+				for (size_t y = 0; y < ((BrushHeight() / 2) + (BrushHeight() % 2)); ++y)
 				{
 					const size_t y_offset = y * BrushWidth();
 					const size_t y_offset_inverse = ((BrushHeight() - 1) - y) * BrushWidth();
 					rom::TileInstance& lhs = out_tiles[y_offset + x];
 					rom::TileInstance& rhs = out_tiles[y_offset_inverse + x];
 					lhs.is_flipped_vertically = !lhs.is_flipped_vertically;
-					rhs.is_flipped_vertically = !rhs.is_flipped_vertically;
-					std::swap(lhs, rhs);
+
+					if (&lhs != &rhs)
+					{
+						rhs.is_flipped_vertically = !rhs.is_flipped_vertically;
+						std::swap(lhs, rhs);
+					}
 				}
 			}
 		}
