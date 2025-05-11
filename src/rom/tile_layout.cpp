@@ -47,8 +47,11 @@ namespace spintool::rom
 				const size_t source_brush_tile_index = (y_brush_index * brush.BrushWidth()) + x_brush_index;
 				const size_t destination_index = ((y_tile_grid * layout_width * 4) + (y_brush_index * layout_width * 4)) + (x_tile_grid + x_brush_index);
 
-				rom::TileInstance new_tile_instance = tiles_flipped[source_brush_tile_index];
-				tile_instances[destination_index] = std::move(new_tile_instance);
+				if (source_brush_tile_index < tiles_flipped.size() && destination_index < tile_instances.size())
+				{
+					rom::TileInstance new_tile_instance = tiles_flipped[source_brush_tile_index];
+					tile_instances[destination_index] = std::move(new_tile_instance);
+				}
 			}
 		}
 	}
