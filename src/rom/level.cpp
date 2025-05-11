@@ -49,8 +49,8 @@ namespace spintool::rom
 	{
 		//for (TileLayer& layer : m_tile_layers)
 		{
-			m_tile_layers[0].tile_layout->SaveToROM(target_rom, target_rom.ReadUint32(m_data_offsets.background_tile_brushes), target_rom.ReadUint32(m_data_offsets.background_tile_layout));
-			m_tile_layers[1].tile_layout->SaveToROM(target_rom, target_rom.ReadUint32(m_data_offsets.foreground_tile_brushes), target_rom.ReadUint32(m_data_offsets.foreground_tile_layout));
+			m_tile_layers[0].tile_layout->SaveToROM(target_rom, *m_tile_layers[0].tileset, target_rom.ReadUint32(m_data_offsets.background_tile_brushes), target_rom.ReadUint32(m_data_offsets.background_tile_layout));
+			m_tile_layers[1].tile_layout->SaveToROM(target_rom, *m_tile_layers[1].tileset, target_rom.ReadUint32(m_data_offsets.foreground_tile_brushes), target_rom.ReadUint32(m_data_offsets.foreground_tile_layout));
 		}
 
 		m_spline_culling_table->SaveToROM(target_rom, target_rom.ReadUint32(m_data_offsets.collision_data_terrain));

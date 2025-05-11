@@ -43,7 +43,7 @@ namespace spintool::rom
 
 			for (Uint8 x = 0; x < 4 && new_tile.is_x_symmetrical; ++x)
 			{
-				for (Uint8 y = 0; y < 4 && new_tile.is_x_symmetrical; ++y)
+				for (Uint8 y = 0; y < 8 && new_tile.is_x_symmetrical; ++y)
 				{
 					const Uint32 flip_lhs_index = (y * 8) + x;
 					const Uint32 flip_rhs_index = (y * 8) + (7 - x);
@@ -54,7 +54,7 @@ namespace spintool::rom
 				}
 			}
 
-			for (Uint8 x = 0; x < 4 && new_tile.is_y_symmetrical; ++x)
+			for (Uint8 x = 0; x < 8 && new_tile.is_y_symmetrical; ++x)
 			{
 				for (Uint8 y = 0; y < 4 && new_tile.is_y_symmetrical; ++y)
 				{

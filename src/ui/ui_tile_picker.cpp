@@ -62,7 +62,7 @@ namespace spintool
 		SDL_SetSurfaceColorKey(surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(surface->format), nullptr, 0, 0, 0, 0));
 		SDL_ClearSurface(surface.get(), 0.0f, 0, 0, 0);
 
-		picker_height = m_tile_layer->tileset->num_tiles / picker_width;
+		picker_height = (m_tile_layer->tileset->num_tiles / picker_width) + 1;
 
 		BoundingBox picker_bbox{ 0, 0, surface->w, surface->h };
 
@@ -96,7 +96,7 @@ namespace spintool
 					{
 						const unsigned int target_index = (grid_y * picker_width) + grid_x;
 
-						if (target_index >= tiles.size())
+						if (target_index >= tiles.size() || target_index >= m_tile_layer->tileset->tiles.size())
 						{
 							continue;
 						}
@@ -105,6 +105,20 @@ namespace spintool
 						const ImVec2 min = ImVec2{ static_cast<float>(cursor_start_pos.x + (tile.x_offset * zoom)), static_cast<float>(cursor_start_pos.y + (tile.y_offset * zoom)) };
 						const ImVec2 max = ImVec2{ static_cast<float>(min.x + (tile.x_size * zoom) + 1), static_cast<float>(min.y + (tile.y_size * zoom) + 1) };
 						const bool is_hovered = ImGui::IsMouseHoveringRect(min, max);
+						
+						//if (m_tile_layer->tileset->tiles[target_index].is_x_symmetrical)
+						//{
+						//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+						//
+						//	ImGui::GetWindowDrawList()->AddRect(min + ImVec2{ 0,4 }, max - ImVec2{ 0,4 }, colour);
+						//}
+						//
+						//if (m_tile_layer->tileset->tiles[target_index].is_y_symmetrical)
+						//{
+						//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+						//
+						//	ImGui::GetWindowDrawList()->AddRect(min + ImVec2{ 4,0 }, max - ImVec2{ 4,0 }, colour);
+						//}
 
 						if (is_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 						{

@@ -529,6 +529,7 @@ namespace spintool
 					m_tileset_preview_list.emplace_back();
 					auto& tile_picker = m_tile_picker_list.emplace_back(m_owning_ui);
 					auto& brush_previews = m_tileset_preview_list.back().brushes;
+					m_working_tile_layout->CollapseTilesIntoBrushes(*m_working_tileset);
 					brushes.reserve(m_working_tile_layout->tile_brushes.size());
 					brush_previews.clear();
 					brush_previews.reserve(brushes.capacity());
@@ -965,6 +966,12 @@ namespace spintool
 										for (size_t page_index = tileset_preview.current_page * num_previews_per_page; page_index < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++page_index)
 										{
 											TileBrushPreview& preview_brush = tileset_preview.brushes[page_index];
+											if (preview_brush.brush_index >= m_level->m_tile_layers[layer_index].tile_layout->tile_brushes.size())
+											{
+												continue;
+											}
+
+											const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
 											if (preview_brush.texture != nullptr)
 											{
 												if (page_index % preview_brushes_per_row != 0)
@@ -973,6 +980,23 @@ namespace spintool
 												}
 
 												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * m_zoom, static_cast<float>(preview_brush.texture->h) * m_zoom));
+												
+												//const ImVec2 preview_min = ImGui::GetItemRectMin();
+												//const ImVec2 preview_max = ImGui::GetItemRectMax();
+												//if (real_brush->is_x_symmetrical)
+												//{
+												//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+												//
+												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 0,16 }, preview_max - ImVec2{ 0,16 }, colour);
+												//}
+												//
+												//if (real_brush->is_y_symmetrical)
+												//{
+												//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+												//
+												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 16,0 }, preview_max - ImVec2{ 16,0 }, colour);
+												//}
+
 												if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
 												{
 													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;

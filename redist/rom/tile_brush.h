@@ -31,6 +31,9 @@ namespace spintool::rom
 
 		size_t GridCoordinatesToLinearIndex(Point grid_coord) const;
 		Point LinearIndexToGridCoordinates(size_t linear_index) const;
+		bool IsBrushSymmetrical(const TileSet& tile_set, bool flip_x, bool flip_y) const;
+		bool IsBrushSymmetricallyEqualTo(const rom::TileBrush& brush, const TileSet& tile_set, bool flip_x, bool flip_y) const;
+		void CacheSymmetryFlags(const TileSet& tile_set);
 
 		SDLSurfaceHandle RenderToSurface(const TileLayer& tile_layer) const;
 		std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
@@ -39,6 +42,10 @@ namespace spintool::rom
 		constexpr static const Uint32 s_default_brush_width = 4;
 		constexpr static const Uint32 s_default_brush_height = 4;
 		constexpr static const Uint32 s_default_total_tiles = s_default_brush_width * s_default_brush_height;
+
+		// Editor data
+		bool is_x_symmetrical = true;
+		bool is_y_symmetrical = true;
 
 	private:
 		ROMData rom_data;

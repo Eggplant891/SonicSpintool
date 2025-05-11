@@ -97,6 +97,67 @@ namespace spintool::rom
 		return out_tiles;
 	}
 
+	void TileBrush::CacheSymmetryFlags(const TileSet& tile_set)
+	{
+		is_x_symmetrical = IsBrushSymmetrical(tile_set, true, false);
+		is_y_symmetrical = IsBrushSymmetrical(tile_set, false, true);
+	}
+
+	bool TileBrush::IsBrushSymmetrical(const TileSet& tile_set, bool flip_x, bool flip_y) const
+	{
+		bool _x_symmetrical = flip_x;
+		bool _y_symmetrical = flip_y;
+
+		if (flip_x == false && flip_y == false)
+		{
+			return false;
+		}
+
+		rom::TileBrush flipped_brush = *this;
+		flipped_brush.tiles = std::move(TilesFlipped(flip_x, flip_y));
+		return IsBrushSymmetricallyEqualTo(flipped_brush, tile_set, flip_x, flip_y);
+	}
+
+	bool TileBrush::IsBrushSymmetricallyEqualTo(const rom::TileBrush& flipped_brush, const TileSet& tile_set, bool flip_x, bool flip_y) const
+	{
+		bool _x_symmetrical = flip_x;
+		bool _y_symmetrical = flip_y;
+
+		if (flip_x == false && flip_y == false)
+		{
+			return this == &flipped_brush || *this == flipped_brush;
+		}
+
+		for (size_t i = 0; i < flipped_brush.tiles.size(); ++i)
+		{
+			if (tiles[i].tile_index != flipped_brush.tiles[i].tile_index
+				|| tiles[i].palette_line != flipped_brush.tiles[i].palette_line
+				|| tiles[i].is_high_priority != flipped_brush.tiles[i].is_high_priority)
+			{
+				return false;
+			}
+
+			if (tiles[i].tile_index >= tile_set.tiles.size())
+			{
+				continue;
+			}
+
+			if (flip_x && tile_set.tiles[tiles[i].tile_index].is_x_symmetrical == false
+				&& tiles[i].is_flipped_horizontally != flipped_brush.tiles[i].is_flipped_horizontally)
+			{
+				_x_symmetrical = false;
+			}
+
+			if (flip_y && tile_set.tiles[tiles[i].tile_index].is_y_symmetrical == false
+				&& tiles[i].is_flipped_vertically != flipped_brush.tiles[i].is_flipped_vertically)
+			{
+				_y_symmetrical = false;
+			}
+		}
+
+		return (flip_x == false || _x_symmetrical) && (flip_y == false || _y_symmetrical);
+	}
+
 	size_t TileBrush::GridCoordinatesToLinearIndex(Point grid_coord) const
 	{
 		return grid_coord.x + (grid_coord.y * BrushWidth());

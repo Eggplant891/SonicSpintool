@@ -133,7 +133,7 @@ namespace spintool::rom
 
 		const Uint8* current_byte = &src_rom.m_buffer[layout_offset];
 		const Uint16 width = src_rom.ReadUint16(layout_offset);
-		const Uint16 height = src_rom.ReadUint16(layout_offset+2);
+		const Uint16 height = src_rom.ReadUint16(layout_offset + 2);
 		current_byte += 4;
 
 		new_layout->layout_width = width;
@@ -164,7 +164,7 @@ namespace spintool::rom
 		return new_layout;
 	}
 
-	void TileLayout::CollapseTilesIntoBrushes()
+	void TileLayout::CollapseTilesIntoBrushes(const rom::TileSet& tile_set)
 	{
 		const size_t num_brush_instances = tile_instances.size() / TileBrush::s_default_total_tiles;
 		const size_t previous_num_brushes = tile_brushes.size();
@@ -197,6 +197,8 @@ namespace spintool::rom
 
 		std::vector<rom::TileBrushInstance> brush_instances;
 
+		CacheBrushSymmetryFlags(*this, tile_set);
+
 		for (std::unique_ptr<TileBrush>& candidate_brush : candidate_brushes)
 		{
 			bool found_match = false;
@@ -210,33 +212,33 @@ namespace spintool::rom
 					std::unique_ptr<TileBrush>& brush_def = final_brush_set[i];
 
 					// If candidate brush exists, push Brush instance references the existing brush, and any flip flags
-					if (final_brush_set[i]->tiles == candidate_brush->tiles)
+					if (candidate_brush->IsBrushSymmetricallyEqualTo(*final_brush_set[i], tile_set, false, false))
 					{
 						new_instance.tile_brush_index = static_cast<Uint16>(i);
 						found_match = true;
 						break;
 					}
 
-					if (final_brush_set_x[i]->tiles == candidate_brush->tiles)
+					if (candidate_brush->IsBrushSymmetricallyEqualTo(*final_brush_set_xy[i], tile_set, true, true))
 					{
 						new_instance.tile_brush_index = static_cast<Uint16>(i);
 						new_instance.is_flipped_horizontally = true;
-						found_match = true;
-						break;
-					}
-
-					if (final_brush_set_y[i]->tiles == candidate_brush->tiles)
-					{
-						new_instance.tile_brush_index = static_cast<Uint16>(i);
 						new_instance.is_flipped_vertically = true;
 						found_match = true;
 						break;
 					}
 
-					if (final_brush_set_xy[i]->tiles == candidate_brush->tiles)
+					if (candidate_brush->IsBrushSymmetricallyEqualTo(*final_brush_set_x[i], tile_set, true, false))
 					{
 						new_instance.tile_brush_index = static_cast<Uint16>(i);
 						new_instance.is_flipped_horizontally = true;
+						found_match = true;
+						break;
+					}
+
+					if (candidate_brush->IsBrushSymmetricallyEqualTo(*final_brush_set_y[i], tile_set, false, true))
+					{
+						new_instance.tile_brush_index = static_cast<Uint16>(i);
 						new_instance.is_flipped_vertically = true;
 						found_match = true;
 						break;
@@ -275,13 +277,15 @@ namespace spintool::rom
 
 		tile_brushes = std::move(final_brush_set);
 		tile_brush_instances = std::move(brush_instances);
+
+		CacheBrushSymmetryFlags(*this, tile_set);
 	}
 
-	void TileLayout::SaveToROM(SpinballROM& src_rom, Uint32 brushes_offset, Uint32 layout_offset)
+	void TileLayout::SaveToROM(SpinballROM& src_rom, const rom::TileSet& tile_set, Uint32 brushes_offset, Uint32 layout_offset)
 	{
 		Uint32 current_offset = brushes_offset;
 
-		CollapseTilesIntoBrushes();
+		CollapseTilesIntoBrushes(tile_set);
 
 		for (std::unique_ptr<TileBrush>& current_brush : tile_brushes)
 		{
@@ -331,5 +335,14 @@ namespace spintool::rom
 		out_coord.y = static_cast<int>(((linear_index - (linear_index % layout_width)) / static_cast<float>(layout_width)));
 
 		return out_coord;
+	}
+
+	void TileLayout::CacheBrushSymmetryFlags(TileLayout& tile_layout, const TileSet& tile_set)
+	{
+		// Verify symmetrical tile brushes
+		for (std::unique_ptr<rom::TileBrush>& current_brush : tile_layout.tile_brushes)
+		{
+			current_brush->CacheSymmetryFlags(tile_set);
+		}
 	}
 }
