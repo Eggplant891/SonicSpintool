@@ -940,6 +940,11 @@ namespace spintool
 								for (Uint16 layer_index = 0; layer_index < m_tileset_preview_list.size(); ++layer_index)
 								{
 									TilesetPreview& tileset_preview = m_tileset_preview_list[layer_index];
+									if (tab_index >= std::size(layer_names))
+									{
+										continue;
+									}
+
 									if (ImGui::BeginTabItem(layer_names[tab_index++]))
 									{
 										ImGui::PushID(&tileset_preview);
