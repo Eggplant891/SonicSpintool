@@ -46,7 +46,7 @@ namespace spintool
 			{
 				for (Uint32 offset : s_tile_offsets)
 				{
-					m_tilesets.emplace_back(rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), offset));
+					m_tilesets.emplace_back(rom::TileSet::LoadFromROM_SSCCompression(m_owning_ui.GetROM(), offset));
 				}
 
 				for (Uint32 offset : s_tile_offsets_non_ssc)

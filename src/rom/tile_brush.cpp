@@ -5,6 +5,7 @@
 #include "rom/tileset.h"
 #include "rom/level.h"
 #include "rom/sprite.h"
+#include "render.h"
 
 namespace spintool::rom
 {
@@ -221,6 +222,39 @@ namespace spintool::rom
 		SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
 		brush_sprite.RenderToSurface(new_surface.get());
 		return std::move(new_surface);
+	}
+
+	TileBrushPreview TileBrush::CreateTileBrushPreview(const TileSet& tileset, const rom::PaletteSet& palette_set, const size_t brush_index, const bool is_chroma_keyed) const
+	{
+		rom::Sprite brush_sprite;
+		for (size_t i = 0; i < tiles.size(); ++i)
+		{
+			const rom::TileInstance& tile = tiles[i];
+			std::shared_ptr<rom::SpriteTile> sprite_tile = tileset.CreateSpriteTileFromTile(tile.tile_index);
+
+			if (sprite_tile == nullptr)
+			{
+				break;
+			}
+
+			const size_t current_brush_offset = i;
+
+			sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % BrushWidth()) * rom::TileSet::s_tile_width;
+			sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % BrushWidth())) / BrushWidth()) * rom::TileSet::s_tile_height;
+
+			sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
+			sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
+
+			sprite_tile->blit_settings.palette = palette_set.palette_lines.at(tile.palette_line);
+			brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
+		}
+		brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
+		SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+		SDL_SetSurfaceColorKey(new_surface.get(), is_chroma_keyed, 0);
+		SDL_FillSurfaceRect(new_surface.get(), nullptr, 0);
+		brush_sprite.RenderToSurface(new_surface.get());
+		SDL_Surface* the_surface = new_surface.get();
+		return TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface), static_cast<Uint32>(brush_index) };
 	}
 
 }

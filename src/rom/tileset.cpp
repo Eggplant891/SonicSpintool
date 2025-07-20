@@ -8,7 +8,23 @@
 
 namespace spintool::rom
 {
-	TilesetEntry TileSet::LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset)
+	TilesetEntry TileSet::LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset, CompressionAlgorithm compression_algorithm)
+	{
+		switch (compression_algorithm)
+		{
+			case CompressionAlgorithm::SSC:
+				return LoadFromROM_SSCCompression(src_rom, rom_offset);
+
+			case CompressionAlgorithm::LZSS:
+				return LoadFromROM_LZSSCompression(src_rom, rom_offset);
+
+			case CompressionAlgorithm::NONE:
+			default:
+				return TilesetEntry{};
+		}
+	}
+
+	TilesetEntry TileSet::LoadFromROM_SSCCompression(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
 		constexpr Uint32 uncompressed_tile_size = TileSet::s_tile_total_bytes;
 		auto new_tileset = std::make_shared<rom::TileSet>();

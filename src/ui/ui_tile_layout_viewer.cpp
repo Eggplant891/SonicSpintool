@@ -477,15 +477,7 @@ namespace spintool
 				}
 				else
 				{
-					if (request.compression_algorithm == CompressionAlgorithm::SSC)
-					{
-						m_working_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					}
-					else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
-					{
-						m_working_tileset = rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), request.tileset_address).tileset;
-					}
-
+					m_working_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address, request.compression_algorithm).tileset;
 					if (request.store_tileset != nullptr)
 					{
 						*request.store_tileset = m_working_tileset;
@@ -503,7 +495,7 @@ namespace spintool
 					{
 						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_layout_width, request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 					}
-					else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
+					else if (request.compression_algorithm == CompressionAlgorithm::LZSS) // Cases using LZSS don't require specifying start/end of tile layout address range.
 					{
 						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_working_tileset, request.tile_layout_address, request.tile_layout_address_end);
 					}
@@ -525,50 +517,29 @@ namespace spintool
 
 				if (preserve_rendered_items == false)
 				{
-					std::vector<rom::Sprite> brushes;
 					m_tileset_preview_list.emplace_back();
 					auto& tile_picker = m_tile_picker_list.emplace_back(m_owning_ui);
-					auto& brush_previews = m_tileset_preview_list.back().brushes;
-					m_working_tile_layout->CollapseTilesIntoBrushes(*m_working_tileset);
+					if (render_request == RenderRequestType::LEVEL)
+					{
+						m_working_tile_layout->CollapseTilesIntoBrushes(*m_working_tileset);
+					}
+
+					std::vector<rom::Sprite> brushes;
 					brushes.reserve(m_working_tile_layout->tile_brushes.size());
+
+					auto& brush_previews = m_tileset_preview_list.back().brushes;
 					brush_previews.clear();
 					brush_previews.reserve(brushes.capacity());
 
+					// Render source/preview sprites for tile brush definitions (4x4 tiles)
 					for (size_t brush_index = 0; brush_index < m_working_tile_layout->tile_brushes.size(); ++brush_index)
 					{
 						rom::TileBrush& brush = *m_working_tile_layout->tile_brushes[brush_index].get();
-						rom::Sprite& brush_sprite = brushes.emplace_back();
-						for (size_t i = 0; i < brush.tiles.size(); ++i)
-						{
-							rom::TileInstance& tile = brush.tiles[i];
-							std::shared_ptr<rom::SpriteTile> sprite_tile = m_working_tileset->CreateSpriteTileFromTile(tile.tile_index);
-
-							if (sprite_tile == nullptr)
-							{
-								break;
-							}
-
-							const size_t current_brush_offset = i;
-
-							sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % brush.BrushWidth()) * rom::TileSet::s_tile_width;
-							sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % brush.BrushWidth())) / brush.BrushWidth()) * rom::TileSet::s_tile_height;
-
-							sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
-							sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
-
-							sprite_tile->blit_settings.palette = tile.palette_line == 0 && request.palette_line.has_value() ? m_working_palette_set.palette_lines.at(*request.palette_line) : m_working_palette_set.palette_lines.at(tile.palette_line);
-							brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
-						}
-						brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
-						SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-						SDL_SetSurfaceColorKey(new_surface.get(), request.is_chroma_keyed, 0);
-						SDL_FillSurfaceRect(new_surface.get(), nullptr, 0);
-						brush_sprite.RenderToSurface(new_surface.get());
-						SDL_Surface* the_surface = new_surface.get();
-						brush_previews.emplace_back(TileBrushPreview{ std::move(new_surface), Renderer::RenderToTexture(the_surface), static_cast<Uint32>(brush_index) });
+						brush_previews.emplace_back(brush.CreateTileBrushPreview(*m_working_tileset, m_working_palette_set, brush_index, request.is_chroma_keyed));
 					}
 				}
 
+				// Render instances of Tile brushes
 				for (size_t i = 0; i < m_working_tile_layout->tile_instances.size(); ++i)
 				{
 					const auto tile_index = m_working_tile_layout->tile_instances[i].tile_index;
@@ -1425,9 +1396,9 @@ namespace spintool
 
 										if (m_selected_brush.HasSelection() == true && m_selected_brush.brush_texture != nullptr)
 										{
-											for (float x = start_x; x <= end_x; ++x)
+											for (float x = start_x; x <= end_x; x += m_selected_brush.BrushWidth())
 											{
-												for (float y = start_y; y <= end_y; ++y)
+												for (float y = start_y; y <= end_y; y += m_selected_brush.BrushHeight())
 												{
 													const ImVec2 snapped_pos{ (ImVec2{x,y} * tile_dimensions) * m_zoom };
 													const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
@@ -1496,9 +1467,9 @@ namespace spintool
 										}
 										else if (m_selected_brush.HasSelection())
 										{
-											for (float x = std::min(start_grid_pos.x, end_grid_pos.x); x <= std::max(start_grid_pos.x, end_grid_pos.x); ++x)
+											for (float x = std::min(start_grid_pos.x, end_grid_pos.x); x <= std::max(start_grid_pos.x, end_grid_pos.x); x += m_selected_brush.BrushWidth())
 											{
-												for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); ++y)
+												for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); y += m_selected_brush.BrushHeight())
 												{
 													const int drag_grid_ref = static_cast<int>((y * m_selected_brush.tile_layer->tile_layout->layout_width) + x);
 													

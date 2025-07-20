@@ -47,7 +47,8 @@ namespace spintool::rom
 		std::vector<Uint8> uncompressed_data;
 		std::vector<rom::Tile> tiles;
 
-		static TilesetEntry LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset);
+		static TilesetEntry LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset, CompressionAlgorithm compression_algorithm);
+		static TilesetEntry LoadFromROM_SSCCompression(const SpinballROM& src_rom, Uint32 rom_offset);
 		static TilesetEntry LoadFromROM_LZSSCompression(const SpinballROM& src_rom, Uint32 rom_offset);
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const Uint32 offset) const;
 		std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const Uint32 tile_index) const;

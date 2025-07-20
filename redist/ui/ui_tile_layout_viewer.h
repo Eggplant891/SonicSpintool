@@ -257,6 +257,14 @@ namespace spintool
 		COUNT
 	};
 
+	struct RenderRequestSettings
+	{
+		RenderRequestType request_type;
+		bool show_background = true;
+		bool show_foreground = true;
+		bool show_game_objects = true;
+	};
+
 	struct PopupMessage
 	{
 		std::string title;
