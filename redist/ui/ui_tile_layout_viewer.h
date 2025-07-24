@@ -276,6 +276,8 @@ namespace spintool
 	public:
 		EditorTileLayoutViewer(EditorUI& owning_ui);
 		void Update() override;
+		void DrawSidebar(bool& has_just_selected_item);
+		void DrawViewport(bool& has_just_selected_item);
 		void DrawLevelInfo();
 		void DrawObjectTable();
 		void DrawRingsTable();
@@ -326,6 +328,7 @@ namespace spintool
 		std::optional<Uint32> m_working_brush;
 
 		std::optional<EditorTileEditor> m_brush_editor;
+		std::optional<RenderTileLayoutRequest> m_current_preview_data;
 
 		rom::SplineCullingTable m_working_culling_table;
 
@@ -339,6 +342,7 @@ namespace spintool
 
 		float m_zoom = 1.0f;
 		int m_grid_snap = 8;
+		Uint8 m_sidebar_hover = 0;
 
 		bool m_export_result = false;
 		bool m_preview_bonus_alt_palette = false;

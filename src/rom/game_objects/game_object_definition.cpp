@@ -61,6 +61,11 @@ namespace spintool::rom
 		current_offset = writeable_rom.WriteUint32(current_offset, animation_definition);
 		current_offset = writeable_rom.WriteUint32(current_offset, collision_bbox_ptr);
 
+		if (collision_bbox_ptr != 0)
+		{
+			collision->SaveToROM(writeable_rom, collision_bbox_ptr);
+		}
+
 		flags = flags & ~(0x4000 | 0x2000);
 		if (flip_x)
 		{

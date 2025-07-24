@@ -26,7 +26,7 @@ namespace spintool::rom
 		Ptr32 tile_layout_width = 0x000BFC70;
 		Ptr32 tile_layout_height = 0x000BFC72;
 		Ptr32 camera_start_position_x = 0x000BFC80;
-		Ptr32 camera_start_position_y = 0x000BFC80;
+		Ptr32 camera_start_position_y = 0x000BFC82;
 		Ptr32 music_id = 0x000BFC90;
 		Ptr32 game_over_timer = 0x000BFC98 ;
 		Ptr32 camera_activation_sector_anim_obj_ids = 0x000BFD14;
