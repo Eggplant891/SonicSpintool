@@ -2314,7 +2314,7 @@ namespace spintool
 		ImGui::InputInt("Flippers", &flipper_count);
 		int ring_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.ring_count));
 		ImGui::InputInt("Rings", &ring_count);
-		int music_id = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.music_id);
+		int music_id = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.music_id);
 		ImGui::InputInt("Music Bank", &music_id, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
 		int player_start_x = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.player_start_position_x);
 		int player_start_y = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.player_start_position_y);
