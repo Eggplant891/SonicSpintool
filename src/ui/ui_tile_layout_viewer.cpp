@@ -6,6 +6,7 @@
 
 #include <cassert>
 #include <filesystem>
+#include "rom/ssc_compressor.h"
 
 
 namespace spintool
@@ -59,6 +60,44 @@ namespace spintool
 						}
 
 						m_level->SaveToROM(m_owning_ui.GetROM());
+					}
+				}
+
+				if (ImGui::Selectable("Save Tilesets"))
+				{
+					if (m_level != nullptr)
+					{
+						rom::Ptr32 next_tileset_location = 0x100000;
+						const rom::SSCCompressionResult compressed_data = rom::SSCCompressor::CompressData(m_level->m_tile_layers[0].tileset->uncompressed_data, 0, m_level->m_tile_layers[0].tileset->num_tiles * 64);
+						if (m_level->m_tile_layers[0].tileset->compressed_size < compressed_data.size())
+						{
+							const rom::Ptr32 tileset_ptr_location = m_level->m_data_offsets.background_tileset;
+							m_owning_ui.GetROM().WriteUint32(m_level->m_data_offsets.background_tileset, next_tileset_location);
+							m_owning_ui.GetROM().m_buffer.resize(0x200000);
+							next_tileset_location = m_level->m_tile_layers[0].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), next_tileset_location);
+							if ((next_tileset_location % 2) == 1)
+							{
+								next_tileset_location += 1;
+							}
+						}
+						else
+						{
+							m_level->m_tile_layers[0].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tileset));
+						}
+
+						const rom::SSCCompressionResult compressed_fg_data = rom::SSCCompressor::CompressData(m_level->m_tile_layers[1].tileset->uncompressed_data, 0, m_level->m_tile_layers[1].tileset->num_tiles * 64);
+
+						if (m_level->m_tile_layers[1].tileset->compressed_size < compressed_fg_data.size())
+						{
+							const rom::Ptr32 tileset_ptr_location = m_level->m_data_offsets.foreground_tileset;
+							m_owning_ui.GetROM().WriteUint32(m_level->m_data_offsets.foreground_tileset, next_tileset_location);
+							m_owning_ui.GetROM().m_buffer.resize(0x200000);
+							m_level->m_tile_layers[1].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), next_tileset_location);
+						}
+						else
+						{
+							m_level->m_tile_layers[1].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tileset));
+						}
 					}
 				}
 

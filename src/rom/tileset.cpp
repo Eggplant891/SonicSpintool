@@ -25,6 +25,19 @@ namespace spintool::rom
 		}
 	}
 
+	Ptr32 TileSet::SaveToROM_SSCCompression(SpinballROM& src_rom, Uint32 rom_offset) const
+	{
+		Ptr32 current_offset = rom_offset;
+		current_offset = src_rom.WriteUint16(current_offset, num_tiles);
+		const SSCCompressionResult compressed_data = rom::SSCCompressor::CompressData(uncompressed_data, 0, num_tiles * 64);
+		for (size_t i = 0; i < compressed_data.size(); ++i)
+		{
+			current_offset = src_rom.WriteUint8(current_offset, compressed_data.at(i));
+		}
+
+		return current_offset;
+	}
+
 	TilesetEntry TileSet::LoadFromROM_SSCCompression(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
 		constexpr Uint32 uncompressed_tile_size = TileSet::s_tile_total_bytes;
@@ -33,10 +46,7 @@ namespace spintool::rom
 		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
-		SSCDecompressionResult initial_results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
-		SSCCompressionResult recompressed_data = rom::SSCCompressor::CompressData(initial_results.uncompressed_data, 0, new_tileset->num_tiles * 64);
-		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(recompressed_data, 0, new_tileset->num_tiles * 64);
-		assert(initial_results.uncompressed_data == results.uncompressed_data);
+		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
 
 		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
@@ -45,6 +55,11 @@ namespace spintool::rom
 		for (size_t tile_index = 0; tile_index < new_tileset->num_tiles; ++tile_index)
 		{
 			const size_t relative_offset = (tile_index * s_tile_total_bytes);
+			if (relative_offset >= new_tileset->uncompressed_data.size())
+			{
+				break;
+			}
+
 			rom::Tile new_tile;
 			
 			const Uint8* tile_start_byte = &new_tileset->uncompressed_data[relative_offset];
@@ -68,7 +83,7 @@ namespace spintool::rom
 				{
 					const Uint32 flip_lhs_index = (y * 8) + x;
 					const Uint32 flip_rhs_index = (y * 8) + (7 - x);
-					if (new_tile.pixel_data[flip_lhs_index] != new_tile.pixel_data[flip_rhs_index])
+					if (flip_lhs_index < new_tile.pixel_data.size() && flip_rhs_index < new_tile.pixel_data.size() && new_tile.pixel_data[flip_lhs_index] != new_tile.pixel_data[flip_rhs_index])
 					{
 						new_tile.is_x_symmetrical = false;
 					}
@@ -81,7 +96,7 @@ namespace spintool::rom
 				{
 					const Uint32 flip_lhs_index = (y * 8) + x;
 					const Uint32 flip_rhs_index = ((7 - y) * 8) + x;
-					if (new_tile.pixel_data[flip_lhs_index] != new_tile.pixel_data[flip_rhs_index])
+					if (flip_lhs_index < new_tile.pixel_data.size() && flip_rhs_index < new_tile.pixel_data.size() &&  new_tile.pixel_data[flip_lhs_index] != new_tile.pixel_data[flip_rhs_index])
 					{
 						new_tile.is_y_symmetrical = false;
 					}

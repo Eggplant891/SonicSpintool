@@ -2,6 +2,7 @@
 
 #include "rom/rom_data.h"
 #include "types/decompression_result.h"
+#include "types/rom_ptr.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include "types/sdl_handle_defs.h"
@@ -50,6 +51,9 @@ namespace spintool::rom
 		static TilesetEntry LoadFromROM(const SpinballROM& src_rom, Uint32 rom_offset, CompressionAlgorithm compression_algorithm);
 		static TilesetEntry LoadFromROM_SSCCompression(const SpinballROM& src_rom, Uint32 rom_offset);
 		static TilesetEntry LoadFromROM_LZSSCompression(const SpinballROM& src_rom, Uint32 rom_offset);
+
+		Ptr32 SaveToROM_SSCCompression(SpinballROM& src_rom, Uint32 rom_offset) const;
+
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const Uint32 offset) const;
 		std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const Uint32 tile_index) const;
 
