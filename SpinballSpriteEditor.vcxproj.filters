@@ -219,6 +219,9 @@
     <ClCompile Include="src\rom\tile_brush.cpp">
       <Filter>Source Files\rom</Filter>
     </ClCompile>
+    <ClCompile Include="src\rom\ssc_compressor.cpp">
+      <Filter>Source Files\rom</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="external\imgui\imconfig.h">
@@ -390,6 +393,9 @@
       <Filter>Header Files\rom</Filter>
     </ClInclude>
     <ClInclude Include="redist\rom\tile_brush.h">
+      <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\rom\ssc_compressor.h">
       <Filter>Header Files\rom</Filter>
     </ClInclude>
   </ItemGroup>

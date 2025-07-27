@@ -5,6 +5,7 @@
 #include "rom/ssc_decompressor.h"
 #include "rom/lzss_decompressor.h"
 #include "rom/tile.h"
+#include "rom/ssc_compressor.h"
 
 namespace spintool::rom
 {
@@ -32,7 +33,11 @@ namespace spintool::rom
 		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
-		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
+		SSCDecompressionResult initial_results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
+		SSCCompressionResult recompressed_data = rom::SSCCompressor::CompressData(initial_results.uncompressed_data, 0, new_tileset->num_tiles * 64);
+		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(recompressed_data, 0, new_tileset->num_tiles * 64);
+		assert(initial_results.uncompressed_data == results.uncompressed_data);
+
 		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);

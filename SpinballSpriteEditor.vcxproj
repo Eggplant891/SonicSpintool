@@ -231,6 +231,7 @@
     <ClCompile Include="src\rom\spinball_rom.cpp" />
     <ClCompile Include="src\rom\sprite.cpp" />
     <ClCompile Include="src\rom\sprite_tile.cpp" />
+    <ClCompile Include="src\rom\ssc_compressor.cpp" />
     <ClCompile Include="src\rom\ssc_decompressor.cpp" />
     <ClCompile Include="src\rom\tile.cpp" />
     <ClCompile Include="src\rom\tileset.cpp" />
@@ -288,6 +289,7 @@
     <ClInclude Include="redist\rom\spinball_rom.h" />
     <ClInclude Include="redist\rom\sprite.h" />
     <ClInclude Include="redist\rom\sprite_tile.h" />
+    <ClInclude Include="redist\rom\ssc_compressor.h" />
     <ClInclude Include="redist\rom\ssc_decompressor.h" />
     <ClInclude Include="redist\rom\tile.h" />
     <ClInclude Include="redist\rom\tileset.h" />
