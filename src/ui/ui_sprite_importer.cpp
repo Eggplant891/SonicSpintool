@@ -4,6 +4,7 @@
 #include "rom/spinball_rom.h"
 #include "ui/ui_editor.h"
 #include "ui/ui_palette_viewer.h"
+#include "ui/ui_file_selector.h"
 #include "rom/sprite.h"
 
 #include "SDL3/SDL_image.h"
@@ -13,12 +14,27 @@ namespace spintool
 {
 	void EditorSpriteImporter::InnerUpdate()
 	{
-		static char path_buffer[4096] = "E:\\Development\\_RETRODEV\\MegaDrive\\Spinball\\_ASSETS\\tails_spinball\\tails_idle.png";;
+		static char path_buffer[4096] = "";;
 		bool update_preview = false;
 
-		if (ImGui::InputText("Path", path_buffer, sizeof(path_buffer), ImGuiInputTextFlags_EnterReturnsTrue))
+		static FileSelectorSettings settings;
+		settings.object_typename = "Image";
+		settings.target_directory = m_owning_ui.GetSpriteExportPath();
+		settings.file_extension_filter = { ".png", ".gif", ".bmp" };
+		settings.tiled_previews = true;
+		settings.num_columns = 4;
+
+		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, m_owning_ui, path_buffer);
+
+		const bool path_changed = ImGui::InputText("Path", path_buffer, sizeof(path_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::SameLine();
+		settings.open_popup = ImGui::Button("Choose Image");
+		settings.close_popup = false;
+
+		if(selected_path)
 		{
-			SDLSurfaceHandle loaded_surface{ IMG_Load(path_buffer) };
+			settings.close_popup = true;
+			SDLSurfaceHandle loaded_surface{ IMG_Load(selected_path->generic_u8string().c_str()) };
 			if (loaded_surface != nullptr)
 			{
 				m_loaded_path = path_buffer;
