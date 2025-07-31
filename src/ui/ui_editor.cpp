@@ -1,13 +1,18 @@
 #include "ui/ui_editor.h"
 
-#include "rom/spinball_rom.h"
 #include "render.h"
-#include "SDL3/SDL_image.h"
+#include "rom/spinball_rom.h"
+#include "ui/ui_file_selector.h"
+
 #include "imgui.h"
+#include "SDL3/SDL_image.h"
+#include "nlohmann/json.hpp"
+
 #include <thread>
 #include <algorithm>
-#include "ui/ui_file_selector.h"
 #include <numeric>
+#include <fstream>
+
 
 namespace spintool
 {
@@ -19,31 +24,66 @@ namespace spintool
 		, m_sprite_importer(*this)
 		, m_animation_navigator(*this)
 	{
-		m_rom_load_path = std::filesystem::current_path().append("roms");
-		if (std::filesystem::exists(m_rom_load_path) == false)
-		{
-			std::filesystem::create_directory(m_rom_load_path);
-		}
-		m_sprite_export_path = std::filesystem::current_path().append("sprite_export");
-		if (std::filesystem::exists(m_sprite_export_path) == false)
-		{
-			std::filesystem::create_directory(m_sprite_export_path);
-		}
-		m_rom_export_path = std::filesystem::current_path().append("rom_export");
-		if (std::filesystem::exists(m_rom_export_path) == false)
-		{
-			std::filesystem::create_directory(m_rom_export_path);
-		}
+		auto setup_directory = [](const std::string& dir_name)
+			{
+				std::filesystem::path out_path{ std::filesystem::current_path().append(dir_name) };
+				if (std::filesystem::exists(out_path) == false)
+				{
+					std::filesystem::create_directory(out_path);
+				}
+
+				return out_path;
+			};
+
+		m_rom_load_path = setup_directory("roms");
+		m_sprite_export_path = setup_directory("sprite_export");
+		m_rom_export_path = setup_directory("rom_export");
+		m_projects_path = setup_directory("projects");
+		m_config_path = setup_directory("config");
+
+		LoadROMConfig();
 	}
 
-	SDLTextureHandle tails;
+	void EditorUI::SaveROMConfig() const
+	{
+		std::filesystem::path config_path = m_config_path;
+		config_path.append("roms.json");
+
+		std::ofstream config_out{ config_path };
+		nlohmann::json config_json_writer;
+		config_json_writer["usa_rom_path"] = m_usa_rom_path.generic_u8string();
+		config_json_writer["eur_rom_path"] = "";
+		config_json_writer["jp_rom_path"] = "";
+
+		config_out << config_json_writer.dump(4);
+	}
+
+	void EditorUI::LoadROMConfig()
+	{
+		std::filesystem::path config_path = m_config_path;
+		config_path.append("roms.json");
+
+		if (std::filesystem::exists(config_path) == false)
+		{
+			SaveROMConfig();
+		}
+
+		std::ifstream config_in{ config_path };
+		nlohmann::json config_json_reader{ nlohmann::json::parse(config_in) };
+		std::string rom_path = config_json_reader["usa_rom_path"];
+		if (rom_path.empty() == false)
+		{
+			AttemptLoadROM(rom_path);
+		}
+	}
 
 	bool EditorUI::AttemptLoadROM(const std::filesystem::path& rom_path)
 	{
 		if (m_rom.LoadROMFromPath(rom_path))
 		{
-			m_rom_path = rom_path;
+			m_usa_rom_path = rom_path;
 			m_palettes = m_rom.LoadPalettes(48);
+			SaveROMConfig();
 			//m_palettes = m_rom.LoadPalettes(8);
 			return true;
 		}
@@ -53,7 +93,7 @@ namespace spintool
 
 	void EditorUI::Initialise()
 	{
-		AttemptLoadROM(m_rom_path);
+		AttemptLoadROM(m_usa_rom_path);
 	}
 
 	void EditorUI::Update()
@@ -74,7 +114,7 @@ namespace spintool
 
 					if (ImGui::MenuItem("Reload ROM"))
 					{
-						AttemptLoadROM(m_rom_path);
+						AttemptLoadROM(m_usa_rom_path);
 					}
 					ImGui::EndMenu();
 				}
@@ -92,7 +132,7 @@ namespace spintool
 				ImGui::SameLine();
 			}
 			ImGui::BeginDisabled();
-			ImGui::Text(m_rom_path.filename().generic_u8string().c_str());
+			ImGui::Text(m_usa_rom_path.filename().generic_u8string().c_str());
 			ImGui::EndDisabled();
 			ImGui::SameLine();
 			if (ImGui::Button("Change ROM Filename"))
@@ -134,7 +174,7 @@ namespace spintool
 		settings.target_directory = GetROMLoadPath();
 		settings.file_extension_filter = { ".bin", ".md" };
 
-		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, m_rom_path);
+		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, m_usa_rom_path);
 
 		settings.close_popup = false;
 		if (selected_path && AttemptLoadROM(selected_path.value()))

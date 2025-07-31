@@ -26,6 +26,9 @@ namespace spintool
 	public:
 		EditorUI();
 
+		void SaveROMConfig() const;
+		void LoadROMConfig();
+		void StartupWithConfig();
 		void Initialise();
 		bool AttemptLoadROM(const std::filesystem::path& rom_path);
 		void Update();
@@ -46,10 +49,12 @@ namespace spintool
 	private:
 		rom::SpinballROM m_rom;
 
-		std::filesystem::path m_rom_path;
+		std::filesystem::path m_usa_rom_path;
 		std::filesystem::path m_rom_load_path;
 		std::filesystem::path m_rom_export_path;
 		std::filesystem::path m_sprite_export_path;
+		std::filesystem::path m_projects_path;
+		std::filesystem::path m_config_path;
 
 		std::vector<std::shared_ptr<rom::Palette>> m_palettes;
 
