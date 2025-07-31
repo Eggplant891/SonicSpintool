@@ -3169,9 +3169,36 @@ namespace spintool
 				return;
 			}
 
-			ImGui::GetWindowDrawList()->AddLine(screen_origin + (spline.spline_vector.min * m_zoom), screen_origin + (spline.spline_vector.max * m_zoom)
-				, ImGui::GetColorU32(colour), 2.0f);
-			ImGui::SetCursorPos(origin + (spline.spline_vector.min * m_zoom));
+			const ImVec2 spline_vector{ (original_bbox.max - original_bbox.min) * m_zoom };
+			const float  spline_length = std::hypotf(spline_vector.x, spline_vector.y);
+			const ImVec2 spline_unit_vector = spline_vector / spline_length;
+			const ImVec2 spline_perpendicular_vector = ImVec2{ spline_unit_vector.y, -spline_unit_vector.x } * 8.0f;
+			ImGui::GetWindowDrawList()->AddLine(screen_origin + (original_bbox.min * m_zoom), screen_origin + (original_bbox.max * m_zoom), ImGui::GetColorU32(colour), 2.0f);
+
+			const int num_arrows = static_cast<int>(spline_length / 32);
+
+			const ImVec2 spline_halfway_point = (original_bbox.min * m_zoom) + (spline_vector * 0.5f);
+
+
+			if (num_arrows == 0 || (num_arrows % 2) == 1)
+			{
+				ImGui::GetWindowDrawList()->AddTriangle(screen_origin + spline_halfway_point
+					, screen_origin + spline_halfway_point + (spline_perpendicular_vector - (spline_unit_vector * 4.0f))
+					, screen_origin + spline_halfway_point + (spline_perpendicular_vector + (spline_unit_vector * 4.0f))
+					, ImGui::GetColorU32(colour), 1.0f);
+			}
+
+			for (int i = 0; i <= num_arrows; ++i)
+			{
+				const ImVec2 spline_halfway_point = (original_bbox.min * m_zoom) + ((spline_vector / static_cast<float>(num_arrows)) * static_cast<float>(i));
+
+
+				ImGui::GetWindowDrawList()->AddTriangle(screen_origin + spline_halfway_point
+					, screen_origin + spline_halfway_point + (spline_perpendicular_vector - (spline_unit_vector * 4.0f))
+					, screen_origin + spline_halfway_point + (spline_perpendicular_vector + (spline_unit_vector * 4.0f))
+					, ImGui::GetColorU32(colour), 1.0f);
+			}
+			
 
 			if (current_layer_settings.spline_culling == true)
 			{
@@ -3186,11 +3213,8 @@ namespace spintool
 
 			if (is_working_spline || (m_working_spline.has_value() == false && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom))))
 			{
-				const ImVec2 spline_vector{ (original_bbox.max - original_bbox.min) * m_zoom };
-				const float spline_length = std::sqrtf(std::powf(spline_vector.x, 2) + std::powf(spline_vector.y, 2));
-
 				const ImVec2 spline_to_cursor_vector{ ImGui::GetMousePos() - (screen_origin + (original_bbox.min * m_zoom)) };
-				const float spline_to_cursor_length = std::sqrtf(std::powf(spline_to_cursor_vector.x, 2) + std::powf(spline_to_cursor_vector.y, 2));
+				const float spline_to_cursor_length = std::hypotf(spline_to_cursor_vector.x, spline_to_cursor_vector.y);
 
 				if (is_working_spline || spline_to_cursor_length <= spline_length)
 				{
