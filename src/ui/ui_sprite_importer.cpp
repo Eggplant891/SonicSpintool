@@ -110,10 +110,12 @@ namespace spintool
 						}))
 					{
 						const auto& swatches = m_selected_palette.palette_swatches;
+						const Uint16 packed_pixel_value = rom::Swatch::Pack(pixel.Value.x, pixel.Value.y, pixel.Value.z);
+
 						const auto matched_colour = std::find_if(std::begin(swatches), std::end(swatches),
-							[&pixel](const rom::Swatch& swatch)
+							[&packed_pixel_value](const rom::Swatch& swatch)
 							{
-								return swatch.AsImColor() == ImVec4{ pixel };
+								return swatch.packed_value == packed_pixel_value;
 							});
 
 						const Uint8 mapped_palette_index = (matched_colour != std::end(swatches)) ? static_cast<Uint8>(std::distance(std::begin(swatches), matched_colour)) : 0;

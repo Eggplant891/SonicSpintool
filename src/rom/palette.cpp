@@ -33,11 +33,15 @@ namespace spintool::rom
 
 	Uint16 Swatch::Pack(float r, float g, float b)
 	{
-		Uint8 red = static_cast<Uint8>(r * 15);
-		Uint8 green = static_cast<Uint8>(g * 15);
-		Uint8 blue = static_cast<Uint8>(b * 15);
+		const auto red_it = std::find(std::begin(Colour::levels_lookup), std::end(Colour::levels_lookup), static_cast<Uint8>(std::clamp(r * 255.0f, 0.0f, 255.0f)));
+		const auto green_it = std::find(std::begin(Colour::levels_lookup), std::end(Colour::levels_lookup), static_cast<Uint8>(std::clamp(g * 255.0f, 0.0f, 255.0f)));
+		const auto blue_it = std::find(std::begin(Colour::levels_lookup), std::end(Colour::levels_lookup), static_cast<Uint8>(std::clamp(b * 255.0f, 0.0f, 255.0f)));
 
-		return static_cast<Uint16>((0x0F00 & Colour::levels_lookup[blue]) << 8) | static_cast<Uint16>((0x00F0 & Colour::levels_lookup[green]) << 4) | static_cast<Uint16>(0x000F & Colour::levels_lookup[red]);
+		const Uint8 red = red_it != std::end(Colour::levels_lookup) ? static_cast<Uint8>(std::distance(std::begin(Colour::levels_lookup), red_it)) : 0;
+		const Uint8 green = green_it != std::end(Colour::levels_lookup) ? static_cast<Uint8>(std::distance(std::begin(Colour::levels_lookup), green_it)) : 0;
+		const Uint8 blue = blue_it != std::end(Colour::levels_lookup) ? static_cast<Uint8>(std::distance(std::begin(Colour::levels_lookup), blue_it)) : 0;
+
+		return static_cast<Uint16>(0x0F00 & (blue << 8)) | static_cast<Uint16>(0x00F0 & (green << 4)) | static_cast<Uint16>(0x000F & red);
 	}
 
 	ImColor rom::Swatch::AsImColor() const

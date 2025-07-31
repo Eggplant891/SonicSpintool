@@ -2,7 +2,7 @@
 
 namespace spintool::rom
 {
-	std::array<Uint8, 17> Colour::levels_lookup =
+	std::array<Uint8, 15> Colour::levels_lookup =
 	{
 		  0,
 		 29,
