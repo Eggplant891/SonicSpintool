@@ -2136,6 +2136,11 @@ namespace spintool
 								ImGui::CloseCurrentPopup();
 							}
 							ImGui::SameLine();
+							if (ImGui::Button("Flip"))
+							{
+								std::swap(m_working_spline->spline.spline_vector.min, m_working_spline->spline.spline_vector.max);
+							}
+							ImGui::SameLine();
 							if (ImGui::Button("Cancel"))
 							{
 								m_working_spline.reset();
