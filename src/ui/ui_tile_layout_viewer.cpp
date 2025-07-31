@@ -293,13 +293,12 @@ namespace spintool
 		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
-			bool render_flippers = false;
-			bool render_rings = false;
 
 			RenderRequestType render_request = DrawMenuBar();
 			if (render_request != RenderRequestType::NONE)
 			{
 				PrepareRenderRequest(render_request);
+				ProcessRenderRequests(render_request);
 			}
 
 			if (m_popup_msg)
@@ -325,511 +324,6 @@ namespace spintool
 					m_popup_msg.reset();
 				}
 			}
-
-			if (render_request == RenderRequestType::LEVEL)
-			{
-				render_flippers = true;
-				render_rings = true;
-			}
-
-			if (render_flippers)
-			{
-				const rom::AnimObjectDefinition flipper_def = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_object_definition));
-				AnimSpriteEntry entry;
-				entry.sprite_table = m_owning_ui.GetROM().ReadUint32(flipper_def.sprite_table);
-				entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), flipper_def.starting_animation, entry.sprite_table);
-
-				const auto& command_sequence = entry.anim_sequence->command_sequence;
-				const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
-					{
-						return command.ui_frame_sprite != nullptr;
-					});
-
-				if ((m_flipper_preview.sprite == nullptr || m_render_from_edit == false) && first_frame_with_sprite != std::end(command_sequence))
-				{
-					m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_def.palette_index % 4]);
-					SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
-					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
-					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
-					first_frame_with_sprite->ui_frame_sprite->sprite->RenderToSurface(m_flipper_preview.sprite.get());
-					m_flipper_preview.texture = Renderer::RenderToTexture(m_flipper_preview.sprite.get());
-				}
-				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_data);
-				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.flipper_count);
-
-				m_level->m_flipper_instances.clear();
-				m_level->m_flipper_instances.reserve(num_flippers);
-
-				Uint32 current_table_offset = flippers_table_begin;
-
-				for (Uint32 i = 0; i < num_flippers; ++i)
-				{
-					m_level->m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-					current_table_offset = m_level->m_flipper_instances.back().rom_data.rom_offset_end;
-				}
-			}
-
-			if (render_rings)
-			{
-				if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
-				{
-					const static Uint32 ring_sprite_offset = 0x0000F6D8;
-
-					std::shared_ptr<const rom::Sprite> ring_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
-					m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(ring_sprite->GetBoundingBox().Width(), ring_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-					m_ring_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[3].get());
-					SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
-					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
-					SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, 0);
-					ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
-					m_ring_preview.texture = Renderer::RenderToTexture(m_ring_preview.sprite.get());
-				}
-
-				/////////////
-
-				m_game_object_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(32, 32, SDL_PIXELFORMAT_RGBA32) };
-				SDL_ClearSurface(m_game_object_preview.sprite.get(), 255, 255, 255, 255);
-				SDL_SetSurfaceColorKey(m_game_object_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_game_object_preview.sprite->format), nullptr, 255, 0, 0, 255));
-
-				m_game_object_manager.game_objects.clear();
-				m_anim_sprite_instances.clear();
-				m_level->m_game_obj_instances.clear();
-				m_level->m_game_obj_instances.reserve(m_level->m_data_offsets.object_instances.count);
-
-				{
-					Uint32 current_table_offset = m_level->m_data_offsets.object_instances.offset;
-
-					for (Uint32 i = 0; i < m_level->m_data_offsets.object_instances.count; ++i)
-					{
-						{
-							auto new_def = rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset);
-							m_level->m_game_obj_instances.emplace_back(std::move(new_def));
-							if (new_def.instance_id == 0)
-							{
-								current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
-								continue;
-							}
-						}
-
-						const rom::Ptr32 anim_def_offset = m_level->m_game_obj_instances.back().animation_definition;
-						rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
-
-						auto found_sprite = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
-							{
-								return anim_obj.sprite_table == entry.sprite_table && anim_obj.starting_animation == entry.anim_sequence->rom_data.rom_offset;
-							});
-
-						if (found_sprite == std::end(m_anim_sprite_instances))
-						{
-							AnimSpriteEntry entry;
-							entry.sprite_table = m_owning_ui.GetROM().ReadUint32(anim_obj.sprite_table);
-							entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), anim_obj.starting_animation, entry.sprite_table);
-
-							const auto& command_sequence = entry.anim_sequence->command_sequence;
-							const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
-								{
-									return command.ui_frame_sprite != nullptr;
-								});
-
-							if (first_frame_with_sprite != std::end(command_sequence))
-							{
-								entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
-								const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
-								auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-								entry.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get());
-								SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
-								SDL_FillSurfaceRect(new_sprite_surface.get(), nullptr, 0);
-								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, 0);
-								first_frame_sprite->RenderToSurface(new_sprite_surface.get());
-
-								entry.sprite_surface = std::move(new_sprite_surface);
-							}
-
-
-							m_anim_sprite_instances.emplace_back(std::move(entry));
-						}
-						current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
-					}
-				}
-			}
-
-			const bool will_be_rendering_preview = m_tile_layout_render_requests.empty() == false;
-			const bool export_combined = m_tile_layout_render_requests.size() > 1;
-			if (will_be_rendering_preview && export_combined == false)
-			{
-				m_current_preview_data = m_tile_layout_render_requests.front();
-			}
-
-			char combined_buffer[128];
-			if (export_combined)
-			{
-				sprintf_s(combined_buffer, "%s_combined", m_tile_layout_render_requests.front().layout_type_name.c_str());
-			}
-			const std::string combined_layout_name = export_combined ? m_tile_layout_render_requests.front().layout_layout_name : "";
-			const std::string combined_type_name = export_combined ? combined_buffer : "";
-			SDLSurfaceHandle layout_preview_bg_surface;
-			SDLSurfaceHandle layout_preview_fg_surface;
-			if (will_be_rendering_preview)
-			{
-				bool will_require_mirror = false;
-				int largest_width = std::numeric_limits<int>::min();
-				int largest_height = std::numeric_limits<int>::min();
-
-				if (m_render_from_edit == false)
-				{
-					m_tileset_preview_list.clear();
-					m_tile_picker_list.clear();
-				}
-				m_render_from_edit = false;
-
-				for (const auto& request : m_tile_layout_render_requests)
-				{
-					largest_width = std::max<int>(request.tile_layout_width * request.tile_brush_width, largest_width);
-					largest_height = std::max<int>(request.tile_layout_height * request.tile_brush_height, largest_height);
-					will_require_mirror |= request.draw_mirrored_layout;
-				}
-
-				if (will_require_mirror)
-				{
-					largest_width *= 2;
-				}
-
-				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
-				layout_preview_bg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
-				SDL_ClearSurface(layout_preview_bg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-
-				layout_preview_fg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
-				SDL_ClearSurface(layout_preview_fg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-			}
-
-			while (m_tile_layout_render_requests.empty() == false)
-			{
-				bool preserve_rendered_items = false;
-				const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
-
-				if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
-				{
-					m_working_tileset = *request.store_tileset;
-					preserve_rendered_items = true;
-				}
-				else
-				{
-					m_working_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address, request.compression_algorithm).tileset;
-					if (request.store_tileset != nullptr)
-					{
-						*request.store_tileset = m_working_tileset;
-					}
-				}
-
-				if (request.store_layout != nullptr && *request.store_layout != nullptr)
-				{
-					m_working_tile_layout = *request.store_layout;
-					preserve_rendered_items = true;
-				}
-				else
-				{
-					if (request.compression_algorithm == CompressionAlgorithm::SSC)
-					{
-						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_layout_width, request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
-					}
-					else if (request.compression_algorithm == CompressionAlgorithm::LZSS) // Cases using LZSS don't require specifying start/end of tile layout address range.
-					{
-						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_working_tileset, request.tile_layout_address, request.tile_layout_address_end);
-					}
-
-					if (request.store_layout != nullptr)
-					{
-						*request.store_layout = m_working_tile_layout;
-					}
-				}
-
-				m_working_tile_layout->layout_width = request.tile_layout_width;
-				m_working_tile_layout->layout_height = request.tile_layout_height;
-
-				if (export_combined == false)
-				{
-					m_current_preview_data->tile_layout_address = m_working_tile_layout->rom_data.rom_offset;
-					m_current_preview_data->tile_layout_address_end = m_working_tile_layout->rom_data.rom_offset_end;
-				}
-
-				if (preserve_rendered_items == false)
-				{
-					m_tileset_preview_list.emplace_back();
-					auto& tile_picker = m_tile_picker_list.emplace_back(m_owning_ui);
-					if (render_request == RenderRequestType::LEVEL)
-					{
-						m_working_tile_layout->CollapseTilesIntoBrushes(*m_working_tileset);
-					}
-
-					std::vector<rom::Sprite> brushes;
-					brushes.reserve(m_working_tile_layout->tile_brushes.size());
-
-					auto& brush_previews = m_tileset_preview_list.back().brushes;
-					brush_previews.clear();
-					brush_previews.reserve(brushes.capacity());
-
-					// Render source/preview sprites for tile brush definitions (4x4 tiles)
-					for (size_t brush_index = 0; brush_index < m_working_tile_layout->tile_brushes.size(); ++brush_index)
-					{
-						rom::TileBrush& brush = *m_working_tile_layout->tile_brushes[brush_index].get();
-						brush_previews.emplace_back(brush.CreateTileBrushPreview(*m_working_tileset, m_working_palette_set, brush_index, request.is_chroma_keyed));
-					}
-				}
-
-				// Render instances of Tile brushes
-				for (size_t i = 0; i < m_working_tile_layout->tile_instances.size(); ++i)
-				{
-					const auto tile_index = m_working_tile_layout->tile_instances[i].tile_index;
-					if (tile_index >= m_working_tileset->tiles.size())
-					{
-						break;
-					}
-
-					const rom::Tile& tile = m_working_tileset->tiles[tile_index];
-					const rom::TileInstance& tile_instance = m_working_tile_layout->tile_instances[i];
-					static SDLSurfaceHandle temp_surface{ SDL_CreateSurface(rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, SDL_PIXELFORMAT_INDEX8) };
-					SDLPaletteHandle tile_palette = Renderer::CreateSDLPalette(tile_instance.palette_line == 0 && request.palette_line.has_value() ? *m_working_palette_set.palette_lines.at(*request.palette_line) : *m_working_palette_set.palette_lines.at(tile_instance.palette_line));
-					SDL_SetSurfacePalette(temp_surface.get(), tile_palette.get());
-					SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, 0);
-					SDL_FillSurfaceRect(temp_surface.get(), nullptr, 0);
-
-					const size_t x_size = rom::TileSet::s_tile_width;
-					const size_t y_size = rom::TileSet::s_tile_height;
-					if (tile.surface != nullptr)
-					{
-						SDL_BlitSurface(temp_surface.get(), nullptr, tile.surface.get(), nullptr);
-					}
-					else
-					{
-						size_t target_pixel_index = 0;
-						for (size_t i = 0; i < tile.pixel_data.size() && i < temp_surface->pitch * temp_surface->h && (i / x_size) < y_size; ++i, target_pixel_index += 1)
-						{
-							if ((i % x_size) == 0)
-							{
-								target_pixel_index = temp_surface->pitch * (i / x_size);
-							}
-
-							reinterpret_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
-						}
-					}
-
-					if (m_working_tile_layout->tile_instances[i].is_flipped_horizontally)
-					{
-						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
-					}
-
-					if (m_working_tile_layout->tile_instances[i].is_flipped_vertically)
-					{
-						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
-					}
-
-					const auto adjusted_layout_width = (request.tile_layout_width * request.tile_brush_width);
-					const int x_off = static_cast<int>(i % adjusted_layout_width) * rom::TileSet::s_tile_width;
-					const int y_off = static_cast<int>(((i - (i % adjusted_layout_width)) / adjusted_layout_width)) * rom::TileSet::s_tile_height;
-
-					const SDL_Rect target_rect{ x_off, y_off, x_size, y_size };
-					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
-				}
-
-				if (m_export_result && export_combined == false)
-				{
-					static char path_buffer[4096];
-					sprintf_s(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
-					std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-					assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
-				}
-
-				m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
-			}
-
-			if (render_flippers)
-			{
-				for (size_t i = 0; i < m_level->m_flipper_instances.size(); ++i)
-				{
-					const rom::FlipperInstance& flipper = m_level->m_flipper_instances[i];
-
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_flipper_preview.sprite.get()) };
-					int x_off = -24;
-					if (flipper.is_x_flipped)
-					{
-						SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
-						x_off = -20;
-					}
-
-					SDL_Rect target_rect{ flipper.x_pos + x_off, flipper.y_pos - rom::FlipperInstance::height, rom::FlipperInstance::width, rom::FlipperInstance::height };
-					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
-				}
-			}
-
-			if (render_rings)
-			{
-				for (size_t i = 0; i < m_level->m_ring_instances.size(); ++i)
-				{
-					const rom::RingInstance& ring = m_level->m_ring_instances[i];
-
-					SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_ring_preview.sprite.get()) };
-					SDL_Rect target_rect{ ring.x_pos + ring.draw_pos_offset.x, ring.y_pos + ring.draw_pos_offset.y, static_cast<int>(ring.dimensions.x), static_cast<int>(ring.dimensions.y) };
-					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
-					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
-				}
-
-				static rom::Colour bbox_colours[]
-				{
-					{255,255,255,255},
-					{255,255,0,0},
-					{255,0,255,0},
-					{255,16,0,255},
-					{255,255,255,0},
-					{255,255,0,255},
-					{255,0,255,255},
-					{255,128,128,128},
-					{255,64,192,128},
-					{255,192,32,210},
-					{255,128,128,255},
-					{255,128,128,255},
-				};
-				static rom::Colour collision_box_colour = { 0, 255, 255, 255 };
-
-				for (size_t i = 0; i < m_level->m_game_obj_instances.size(); ++i)
-				{
-					const rom::GameObjectDefinition& game_obj = m_level->m_game_obj_instances[i];
-
-					if (game_obj.instance_id == 0)
-					{
-						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
-						new_obj->obj_definition = game_obj;
-						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
-						continue;
-					}
-
-					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_level->m_game_obj_instances[i].animation_definition);
-
-					auto anim_entry = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
-						{
-							return entry.anim_sequence->rom_data.rom_offset == anim_obj.starting_animation;
-						});
-
-					if (anim_entry != std::end(m_anim_sprite_instances) && anim_entry->sprite_surface != nullptr)
-					{
-						const AnimSpriteEntry& animSpriteEntry = *anim_entry;
-						const rom::AnimationCommand& command_sprite_came_from = anim_entry->anim_sequence->command_sequence.at(anim_entry->anim_command_used_for_surface);
-						auto origin_offset = command_sprite_came_from.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds();
-
-						SDLSurfaceHandle temp_sprite_surface{ SDL_ScaleSurface(anim_entry->sprite_surface.get(), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.x), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.y), SDL_SCALEMODE_NEAREST) };
-						SDL_Rect sprite_target_rect{ game_obj.x_pos - origin_offset.x, game_obj.y_pos - origin_offset.y, anim_entry->sprite_surface->w, anim_entry->sprite_surface->h };
-
-						if (game_obj.FlipX())
-						{
-							SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_HORIZONTAL);
-							sprite_target_rect.x = game_obj.x_pos - (anim_entry->sprite_surface->w - origin_offset.x);
-						}
-
-						if (game_obj.FlipY())
-						{
-							SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_VERTICAL);
-							sprite_target_rect.y = game_obj.y_pos - (anim_entry->sprite_surface->h - origin_offset.y);
-						}
-
-						SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, 0);
-						SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_bg_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
-
-						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
-						new_obj->obj_definition = game_obj;
-						new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(sprite_target_rect.x) - game_obj.x_pos, static_cast<float>(sprite_target_rect.y) - game_obj.y_pos };
-						new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
-						new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
-						new_obj->ui_sprite->texture = new_obj->ui_sprite->RenderTextureForPalette(UIPalette{ *m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get() });
-						new_obj->sprite_table_address = animSpriteEntry.sprite_table;
-						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
-					}
-					else
-					{
-						SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(m_game_object_preview.sprite.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
-
-						auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
-						SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
-						SDL_ClearSurface(cutting_surface.get(), 255.0f, 0.0f, 0.0f, 255.0f);
-						const SDL_Rect cutting_target_rect{ 2,2,temp_surface->w - 4, temp_surface->h - 4 };
-						SDL_BlitSurfaceScaled(cutting_surface.get(), nullptr, temp_surface.get(), &cutting_target_rect, SDL_SCALEMODE_NEAREST);
-
-						SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width / 2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
-						SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
-						SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
-
-						std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
-						new_obj->obj_definition = game_obj;
-						new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(target_rect.x) - game_obj.x_pos, static_cast<float>(target_rect.y) - game_obj.y_pos };
-						new_obj->dimensions = ImVec2{ static_cast<float>(target_rect.w) , static_cast<float>(target_rect.h) };
-						//new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
-						//new_obj->sprite_table_address = animSpriteEntry.sprite_table;
-						m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
-					}
-				}
-
-				if (m_level->m_data_offsets.collision_tile_obj_ids.offset != 0)
-				{
-					rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_tile_obj_ids.offset);
-					for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
-					{
-						const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
-						for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
-						{
-							for (const Uint16 obj_id : cell.obj_instance_ids)
-							{
-								if (obj_id == game_object->obj_definition.instance_id)
-								{
-									game_object->had_collision_sectors_on_rom = true;
-								}
-							}
-						}
-					}
-				}
-
-				rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids));
-				for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
-				{
-					const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
-					for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
-					{
-						for (const Uint16 obj_id : cell.obj_instance_ids)
-						{
-							if (obj_id == game_object->obj_definition.instance_id)
-							{
-								game_object->had_culling_sectors_on_rom = true;
-							}
-						}
-					}
-				}
-			}
-
-			if (m_export_result && export_combined)
-			{
-				static char path_buffer[4096];
-
-				sprintf_s(path_buffer, "spinball_%s.png", combined_type_name.c_str());
-				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-				if (export_combined)
-				{
-					SDLSurfaceHandle combined{ SDL_DuplicateSurface(layout_preview_bg_surface.get()) };
-					SDL_BlitSurface(layout_preview_fg_surface.get(), nullptr, combined.get(), nullptr);
-					assert(IMG_SavePNG(combined.get(), export_path.generic_u8string().c_str()));
-				}
-				else
-				{
-					assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
-				}
-			}
-
-			if (will_be_rendering_preview)
-			{
-				m_tile_layout_preview_bg = Renderer::RenderToTexture(layout_preview_bg_surface.get());
-				m_tile_layout_preview_fg = Renderer::RenderToTexture(layout_preview_fg_surface.get());
-			}
-
-
-			//////////// BEGIN IMGUI ///////////////////////////////////
 
 			bool has_just_selected_item = false;
 
@@ -868,6 +362,514 @@ namespace spintool
 			}
 		}
 		ImGui::End();
+	}
+
+	void EditorTileLayoutViewer::ProcessRenderRequests(RenderRequestType render_request)
+	{
+		bool render_flippers = false;
+		bool render_rings = false;
+
+		if (render_request == RenderRequestType::LEVEL)
+		{
+			render_flippers = true;
+			render_rings = true;
+		}
+
+		if (render_flippers)
+		{
+			const rom::AnimObjectDefinition flipper_def = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_object_definition));
+			AnimSpriteEntry entry;
+			entry.sprite_table = m_owning_ui.GetROM().ReadUint32(flipper_def.sprite_table);
+			entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), flipper_def.starting_animation, entry.sprite_table);
+
+			const auto& command_sequence = entry.anim_sequence->command_sequence;
+			const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+				{
+					return command.ui_frame_sprite != nullptr;
+				});
+
+			if ((m_flipper_preview.sprite == nullptr || m_render_from_edit == false) && first_frame_with_sprite != std::end(command_sequence))
+			{
+				m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
+				m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_def.palette_index % 4]);
+				SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
+				SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
+				SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
+				first_frame_with_sprite->ui_frame_sprite->sprite->RenderToSurface(m_flipper_preview.sprite.get());
+				m_flipper_preview.texture = Renderer::RenderToTexture(m_flipper_preview.sprite.get());
+			}
+			const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_data);
+			const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.flipper_count);
+
+			m_level->m_flipper_instances.clear();
+			m_level->m_flipper_instances.reserve(num_flippers);
+
+			Uint32 current_table_offset = flippers_table_begin;
+
+			for (Uint32 i = 0; i < num_flippers; ++i)
+			{
+				m_level->m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+				current_table_offset = m_level->m_flipper_instances.back().rom_data.rom_offset_end;
+			}
+		}
+
+		if (render_rings)
+		{
+			if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
+			{
+				const static Uint32 ring_sprite_offset = 0x0000F6D8;
+
+				std::shared_ptr<const rom::Sprite> ring_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
+				m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(ring_sprite->GetBoundingBox().Width(), ring_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+				m_ring_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[3].get());
+				SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
+				SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
+				SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, 0);
+				ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
+				m_ring_preview.texture = Renderer::RenderToTexture(m_ring_preview.sprite.get());
+			}
+
+			/////////////
+
+			m_game_object_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(32, 32, SDL_PIXELFORMAT_RGBA32) };
+			SDL_ClearSurface(m_game_object_preview.sprite.get(), 255, 255, 255, 255);
+			SDL_SetSurfaceColorKey(m_game_object_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_game_object_preview.sprite->format), nullptr, 255, 0, 0, 255));
+
+			m_game_object_manager.game_objects.clear();
+			m_anim_sprite_instances.clear();
+			m_level->m_game_obj_instances.clear();
+			m_level->m_game_obj_instances.reserve(m_level->m_data_offsets.object_instances.count);
+
+			{
+				Uint32 current_table_offset = m_level->m_data_offsets.object_instances.offset;
+
+				for (Uint32 i = 0; i < m_level->m_data_offsets.object_instances.count; ++i)
+				{
+					{
+						auto new_def = rom::GameObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), current_table_offset);
+						m_level->m_game_obj_instances.emplace_back(std::move(new_def));
+						if (new_def.instance_id == 0)
+						{
+							current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
+							continue;
+						}
+					}
+
+					const rom::Ptr32 anim_def_offset = m_level->m_game_obj_instances.back().animation_definition;
+					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
+
+					auto found_sprite = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
+						{
+							return anim_obj.sprite_table == entry.sprite_table && anim_obj.starting_animation == entry.anim_sequence->rom_data.rom_offset;
+						});
+
+					if (found_sprite == std::end(m_anim_sprite_instances))
+					{
+						AnimSpriteEntry entry;
+						entry.sprite_table = m_owning_ui.GetROM().ReadUint32(anim_obj.sprite_table);
+						entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), anim_obj.starting_animation, entry.sprite_table);
+
+						const auto& command_sequence = entry.anim_sequence->command_sequence;
+						const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+							{
+								return command.ui_frame_sprite != nullptr;
+							});
+
+						if (first_frame_with_sprite != std::end(command_sequence))
+						{
+							entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
+							const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
+							auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+							entry.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get());
+							SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
+							SDL_FillSurfaceRect(new_sprite_surface.get(), nullptr, 0);
+							SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, 0);
+							first_frame_sprite->RenderToSurface(new_sprite_surface.get());
+
+							entry.sprite_surface = std::move(new_sprite_surface);
+						}
+
+
+						m_anim_sprite_instances.emplace_back(std::move(entry));
+					}
+					current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
+				}
+			}
+		}
+
+		const bool will_be_rendering_preview = m_tile_layout_render_requests.empty() == false;
+		const bool export_combined = m_tile_layout_render_requests.size() > 1;
+		if (will_be_rendering_preview && export_combined == false)
+		{
+			m_current_preview_data = m_tile_layout_render_requests.front();
+		}
+
+		char combined_buffer[128];
+		if (export_combined)
+		{
+			sprintf_s(combined_buffer, "%s_combined", m_tile_layout_render_requests.front().layout_type_name.c_str());
+		}
+		const std::string combined_layout_name = export_combined ? m_tile_layout_render_requests.front().layout_layout_name : "";
+		const std::string combined_type_name = export_combined ? combined_buffer : "";
+		SDLSurfaceHandle layout_preview_bg_surface;
+		SDLSurfaceHandle layout_preview_fg_surface;
+		if (will_be_rendering_preview)
+		{
+			bool will_require_mirror = false;
+			int largest_width = std::numeric_limits<int>::min();
+			int largest_height = std::numeric_limits<int>::min();
+
+			if (m_render_from_edit == false)
+			{
+				m_tileset_preview_list.clear();
+				m_tile_picker_list.clear();
+			}
+			m_render_from_edit = false;
+
+			for (const auto& request : m_tile_layout_render_requests)
+			{
+				largest_width = std::max<int>(request.tile_layout_width * request.tile_brush_width, largest_width);
+				largest_height = std::max<int>(request.tile_layout_height * request.tile_brush_height, largest_height);
+				will_require_mirror |= request.draw_mirrored_layout;
+			}
+
+			if (will_require_mirror)
+			{
+				largest_width *= 2;
+			}
+
+			const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
+			layout_preview_bg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
+			SDL_ClearSurface(layout_preview_bg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+
+			layout_preview_fg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
+			SDL_ClearSurface(layout_preview_fg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
+		}
+
+		while (m_tile_layout_render_requests.empty() == false)
+		{
+			bool preserve_rendered_items = false;
+			const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
+
+			if (request.store_tileset != nullptr && *request.store_tileset != nullptr)
+			{
+				m_working_tileset = *request.store_tileset;
+				preserve_rendered_items = true;
+			}
+			else
+			{
+				m_working_tileset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), request.tileset_address, request.compression_algorithm).tileset;
+				if (request.store_tileset != nullptr)
+				{
+					*request.store_tileset = m_working_tileset;
+				}
+			}
+
+			if (request.store_layout != nullptr && *request.store_layout != nullptr)
+			{
+				m_working_tile_layout = *request.store_layout;
+				preserve_rendered_items = true;
+			}
+			else
+			{
+				if (request.compression_algorithm == CompressionAlgorithm::SSC)
+				{
+					m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_layout_width, request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
+				}
+				else if (request.compression_algorithm == CompressionAlgorithm::LZSS) // Cases using LZSS don't require specifying start/end of tile layout address range.
+				{
+					m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_working_tileset, request.tile_layout_address, request.tile_layout_address_end);
+				}
+
+				if (request.store_layout != nullptr)
+				{
+					*request.store_layout = m_working_tile_layout;
+				}
+			}
+
+			m_working_tile_layout->layout_width = request.tile_layout_width;
+			m_working_tile_layout->layout_height = request.tile_layout_height;
+
+			if (export_combined == false)
+			{
+				m_current_preview_data->tile_layout_address = m_working_tile_layout->rom_data.rom_offset;
+				m_current_preview_data->tile_layout_address_end = m_working_tile_layout->rom_data.rom_offset_end;
+			}
+
+			if (preserve_rendered_items == false)
+			{
+				m_tileset_preview_list.emplace_back();
+				auto& tile_picker = m_tile_picker_list.emplace_back(m_owning_ui);
+				if (render_request == RenderRequestType::LEVEL)
+				{
+					m_working_tile_layout->CollapseTilesIntoBrushes(*m_working_tileset);
+				}
+
+				std::vector<rom::Sprite> brushes;
+				brushes.reserve(m_working_tile_layout->tile_brushes.size());
+
+				auto& brush_previews = m_tileset_preview_list.back().brushes;
+				brush_previews.clear();
+				brush_previews.reserve(brushes.capacity());
+
+				// Render source/preview sprites for tile brush definitions (4x4 tiles)
+				for (size_t brush_index = 0; brush_index < m_working_tile_layout->tile_brushes.size(); ++brush_index)
+				{
+					rom::TileBrush& brush = *m_working_tile_layout->tile_brushes[brush_index].get();
+					brush_previews.emplace_back(brush.CreateTileBrushPreview(*m_working_tileset, m_working_palette_set, brush_index, request.is_chroma_keyed));
+				}
+			}
+
+			// Render instances of Tile brushes
+			for (size_t i = 0; i < m_working_tile_layout->tile_instances.size(); ++i)
+			{
+				const auto tile_index = m_working_tile_layout->tile_instances[i].tile_index;
+				if (tile_index >= m_working_tileset->tiles.size())
+				{
+					break;
+				}
+
+				const rom::Tile& tile = m_working_tileset->tiles[tile_index];
+				const rom::TileInstance& tile_instance = m_working_tile_layout->tile_instances[i];
+				static SDLSurfaceHandle temp_surface{ SDL_CreateSurface(rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, SDL_PIXELFORMAT_INDEX8) };
+				SDLPaletteHandle tile_palette = Renderer::CreateSDLPalette(tile_instance.palette_line == 0 && request.palette_line.has_value() ? *m_working_palette_set.palette_lines.at(*request.palette_line) : *m_working_palette_set.palette_lines.at(tile_instance.palette_line));
+				SDL_SetSurfacePalette(temp_surface.get(), tile_palette.get());
+				SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, 0);
+				SDL_FillSurfaceRect(temp_surface.get(), nullptr, 0);
+
+				const size_t x_size = rom::TileSet::s_tile_width;
+				const size_t y_size = rom::TileSet::s_tile_height;
+				if (tile.surface != nullptr)
+				{
+					SDL_BlitSurface(temp_surface.get(), nullptr, tile.surface.get(), nullptr);
+				}
+				else
+				{
+					size_t target_pixel_index = 0;
+					for (size_t i = 0; i < tile.pixel_data.size() && i < temp_surface->pitch * temp_surface->h && (i / x_size) < y_size; ++i, target_pixel_index += 1)
+					{
+						if ((i % x_size) == 0)
+						{
+							target_pixel_index = temp_surface->pitch * (i / x_size);
+						}
+
+						reinterpret_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
+					}
+				}
+
+				if (m_working_tile_layout->tile_instances[i].is_flipped_horizontally)
+				{
+					SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
+				}
+
+				if (m_working_tile_layout->tile_instances[i].is_flipped_vertically)
+				{
+					SDL_FlipSurface(temp_surface.get(), SDL_FLIP_VERTICAL);
+				}
+
+				const auto adjusted_layout_width = (request.tile_layout_width * request.tile_brush_width);
+				const int x_off = static_cast<int>(i % adjusted_layout_width) * rom::TileSet::s_tile_width;
+				const int y_off = static_cast<int>(((i - (i % adjusted_layout_width)) / adjusted_layout_width)) * rom::TileSet::s_tile_height;
+
+				const SDL_Rect target_rect{ x_off, y_off, x_size, y_size };
+				SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
+			}
+
+			if (m_export_result && export_combined == false)
+			{
+				static char path_buffer[4096];
+				sprintf_s(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
+				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
+			}
+
+			m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
+		}
+
+		if (render_flippers)
+		{
+			for (size_t i = 0; i < m_level->m_flipper_instances.size(); ++i)
+			{
+				const rom::FlipperInstance& flipper = m_level->m_flipper_instances[i];
+
+				SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_flipper_preview.sprite.get()) };
+				int x_off = -24;
+				if (flipper.is_x_flipped)
+				{
+					SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
+					x_off = -20;
+				}
+
+				SDL_Rect target_rect{ flipper.x_pos + x_off, flipper.y_pos - rom::FlipperInstance::height, rom::FlipperInstance::width, rom::FlipperInstance::height };
+				SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
+				SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
+			}
+		}
+
+		if (render_rings)
+		{
+			for (size_t i = 0; i < m_level->m_ring_instances.size(); ++i)
+			{
+				const rom::RingInstance& ring = m_level->m_ring_instances[i];
+
+				SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_ring_preview.sprite.get()) };
+				SDL_Rect target_rect{ ring.x_pos + ring.draw_pos_offset.x, ring.y_pos + ring.draw_pos_offset.y, static_cast<int>(ring.dimensions.x), static_cast<int>(ring.dimensions.y) };
+				SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
+				SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
+			}
+
+			static rom::Colour bbox_colours[]
+			{
+				{255,255,255,255},
+				{255,255,0,0},
+				{255,0,255,0},
+				{255,16,0,255},
+				{255,255,255,0},
+				{255,255,0,255},
+				{255,0,255,255},
+				{255,128,128,128},
+				{255,64,192,128},
+				{255,192,32,210},
+				{255,128,128,255},
+				{255,128,128,255},
+			};
+			static rom::Colour collision_box_colour = { 0, 255, 255, 255 };
+
+			for (size_t i = 0; i < m_level->m_game_obj_instances.size(); ++i)
+			{
+				const rom::GameObjectDefinition& game_obj = m_level->m_game_obj_instances[i];
+
+				if (game_obj.instance_id == 0)
+				{
+					std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+					new_obj->obj_definition = game_obj;
+					m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
+					continue;
+				}
+
+				rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_level->m_game_obj_instances[i].animation_definition);
+
+				auto anim_entry = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
+					{
+						return entry.anim_sequence->rom_data.rom_offset == anim_obj.starting_animation;
+					});
+
+				if (anim_entry != std::end(m_anim_sprite_instances) && anim_entry->sprite_surface != nullptr)
+				{
+					const AnimSpriteEntry& animSpriteEntry = *anim_entry;
+					const rom::AnimationCommand& command_sprite_came_from = anim_entry->anim_sequence->command_sequence.at(anim_entry->anim_command_used_for_surface);
+					auto origin_offset = command_sprite_came_from.ui_frame_sprite->sprite->GetOriginOffsetFromMinBounds();
+
+					SDLSurfaceHandle temp_sprite_surface{ SDL_ScaleSurface(anim_entry->sprite_surface.get(), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.x), static_cast<int>(command_sprite_came_from.ui_frame_sprite->dimensions.y), SDL_SCALEMODE_NEAREST) };
+					SDL_Rect sprite_target_rect{ game_obj.x_pos - origin_offset.x, game_obj.y_pos - origin_offset.y, anim_entry->sprite_surface->w, anim_entry->sprite_surface->h };
+
+					if (game_obj.FlipX())
+					{
+						SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_HORIZONTAL);
+						sprite_target_rect.x = game_obj.x_pos - (anim_entry->sprite_surface->w - origin_offset.x);
+					}
+
+					if (game_obj.FlipY())
+					{
+						SDL_FlipSurface(temp_sprite_surface.get(), SDL_FLIP_VERTICAL);
+						sprite_target_rect.y = game_obj.y_pos - (anim_entry->sprite_surface->h - origin_offset.y);
+					}
+
+					SDL_SetSurfaceColorKey(temp_sprite_surface.get(), true, 0);
+					SDL_BlitSurfaceScaled(temp_sprite_surface.get(), nullptr, layout_preview_bg_surface.get(), &sprite_target_rect, SDL_SCALEMODE_NEAREST);
+
+					std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+					new_obj->obj_definition = game_obj;
+					new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(sprite_target_rect.x) - game_obj.x_pos, static_cast<float>(sprite_target_rect.y) - game_obj.y_pos };
+					new_obj->dimensions = ImVec2{ static_cast<float>(sprite_target_rect.w) , static_cast<float>(sprite_target_rect.h) };
+					new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
+					new_obj->ui_sprite->texture = new_obj->ui_sprite->RenderTextureForPalette(UIPalette{ *m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get() });
+					new_obj->sprite_table_address = animSpriteEntry.sprite_table;
+					m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
+				}
+				else
+				{
+					SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(m_game_object_preview.sprite.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
+
+					auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
+					SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
+					SDL_ClearSurface(cutting_surface.get(), 255.0f, 0.0f, 0.0f, 255.0f);
+					const SDL_Rect cutting_target_rect{ 2,2,temp_surface->w - 4, temp_surface->h - 4 };
+					SDL_BlitSurfaceScaled(cutting_surface.get(), nullptr, temp_surface.get(), &cutting_target_rect, SDL_SCALEMODE_NEAREST);
+
+					SDL_Rect target_rect{ game_obj.x_pos - game_obj.collision_width / 2, game_obj.y_pos - game_obj.collision_height, game_obj.collision_width, game_obj.collision_height };
+					SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 255, 0, 0, 255));
+					SDL_BlitSurfaceScaled(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect, SDL_SCALEMODE_NEAREST);
+
+					std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
+					new_obj->obj_definition = game_obj;
+					new_obj->sprite_pos_offset = ImVec2{ static_cast<float>(target_rect.x) - game_obj.x_pos, static_cast<float>(target_rect.y) - game_obj.y_pos };
+					new_obj->dimensions = ImVec2{ static_cast<float>(target_rect.w) , static_cast<float>(target_rect.h) };
+					//new_obj->ui_sprite = command_sprite_came_from.ui_frame_sprite;
+					//new_obj->sprite_table_address = animSpriteEntry.sprite_table;
+					m_game_object_manager.game_objects.emplace_back(std::move(new_obj));
+				}
+			}
+
+			if (m_level->m_data_offsets.collision_tile_obj_ids.offset != 0)
+			{
+				rom::GameObjectCullingTable game_obj_table = rom::GameObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_tile_obj_ids.offset);
+				for (Uint32 sector_index = 0; sector_index < game_obj_table.cells.size() - 1; ++sector_index)
+				{
+					const rom::GameObjectCullingCell& cell = game_obj_table.cells[sector_index];
+					for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
+					{
+						for (const Uint16 obj_id : cell.obj_instance_ids)
+						{
+							if (obj_id == game_object->obj_definition.instance_id)
+							{
+								game_object->had_collision_sectors_on_rom = true;
+							}
+						}
+					}
+				}
+			}
+
+			rom::AnimatedObjectCullingTable anim_obj_table = rom::AnimatedObjectCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.camera_activation_sector_anim_obj_ids));
+			for (Uint32 sector_index = 0; sector_index < anim_obj_table.cells.size() - 1; ++sector_index)
+			{
+				const rom::AnimatedObjectCullingCell& cell = anim_obj_table.cells[sector_index];
+				for (const std::unique_ptr<UIGameObject>& game_object : m_game_object_manager.game_objects)
+				{
+					for (const Uint16 obj_id : cell.obj_instance_ids)
+					{
+						if (obj_id == game_object->obj_definition.instance_id)
+						{
+							game_object->had_culling_sectors_on_rom = true;
+						}
+					}
+				}
+			}
+		}
+
+		if (m_export_result && export_combined)
+		{
+			static char path_buffer[4096];
+
+			sprintf_s(path_buffer, "spinball_%s.png", combined_type_name.c_str());
+			std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+			if (export_combined)
+			{
+				SDLSurfaceHandle combined{ SDL_DuplicateSurface(layout_preview_bg_surface.get()) };
+				SDL_BlitSurface(layout_preview_fg_surface.get(), nullptr, combined.get(), nullptr);
+				assert(IMG_SavePNG(combined.get(), export_path.generic_u8string().c_str()));
+			}
+			else
+			{
+				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
+			}
+		}
+
+		if (will_be_rendering_preview)
+		{
+			m_tile_layout_preview_bg = Renderer::RenderToTexture(layout_preview_bg_surface.get());
+			m_tile_layout_preview_fg = Renderer::RenderToTexture(layout_preview_fg_surface.get());
+		}
 	}
 
 	void EditorTileLayoutViewer::DrawSidebar(bool& has_just_selected_item)
@@ -975,7 +977,7 @@ namespace spintool
 						ImGui::EndTabItem();
 					}
 
-					if (m_tileset_preview_list.empty() == false && ImGui::BeginTabItem("Brushes"))
+					if (m_level != nullptr && m_tileset_preview_list.empty() == false && ImGui::BeginTabItem("Brushes"))
 					{
 						if (ImGui::BeginTabBar("tile_layers"))
 						{
@@ -1012,70 +1014,72 @@ namespace spintool
 										tileset_preview.current_page = std::min<int>((static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page), tileset_preview.current_page + 1);
 									}
 									ImGui::EndDisabled();
+
 									if (ImGui::Button("Pick from layout"))
 									{
 										m_selected_brush.StartPickingFromLayout(m_level->m_tile_layers[layer_index], m_tile_picker_list[layer_index]);
 									}
 
 									for (size_t page_index = tileset_preview.current_page * num_previews_per_page; page_index < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++page_index)
-									{
-										TileBrushPreview& preview_brush = tileset_preview.brushes[page_index];
-										if (preview_brush.brush_index >= m_level->m_tile_layers[layer_index].tile_layout->tile_brushes.size())
 										{
-											continue;
-										}
-
-										const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
-										if (preview_brush.texture != nullptr)
-										{
-											if (page_index % preview_brushes_per_row != 0)
+											TileBrushPreview& preview_brush = tileset_preview.brushes[page_index];
+											if (preview_brush.brush_index >= m_level->m_tile_layers[layer_index].tile_layout->tile_brushes.size())
 											{
-												ImGui::SameLine();
+												continue;
 											}
 
-											ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w) * m_zoom, static_cast<float>(preview_brush.texture->h) * m_zoom));
-
-											//const ImVec2 preview_min = ImGui::GetItemRectMin();
-											//const ImVec2 preview_max = ImGui::GetItemRectMax();
-											//if (real_brush->is_x_symmetrical)
-											//{
-											//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-											//
-											//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 0,16 }, preview_max - ImVec2{ 0,16 }, colour);
-											//}
-											//
-											//if (real_brush->is_y_symmetrical)
-											//{
-											//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-											//
-											//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 16,0 }, preview_max - ImVec2{ 16,0 }, colour);
-											//}
-
-											if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+											const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
+											if (preview_brush.texture != nullptr)
 											{
-												m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
-												m_selected_brush.tile_picker = &m_tile_picker_list[layer_index];
-												m_selected_brush.PickBrush(*m_selected_brush.tile_layer->tile_layout->tile_brushes.at(preview_brush.brush_index));
-												has_just_selected_item = true;
-											}
-
-											if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
-											{
-												m_working_brush = preview_brush.brush_index;
-												m_working_layer_index = layer_index;
-												request_open_brush_popup = true;
-											}
-
-											if (m_working_brush.has_value() == false)
-											{
-												if (ImGui::BeginItemTooltip())
+												if (page_index % preview_brushes_per_row != 0)
 												{
-													ImGui::Text("Tile Index: 0x%02X", page_index);
-													ImGui::EndTooltip();
+													ImGui::SameLine();
+												}
+
+												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w), static_cast<float>(preview_brush.texture->h)));
+
+												//const ImVec2 preview_min = ImGui::GetItemRectMin();
+												//const ImVec2 preview_max = ImGui::GetItemRectMax();
+												//if (real_brush->is_x_symmetrical)
+												//{
+												//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+												//
+												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 0,16 }, preview_max - ImVec2{ 0,16 }, colour);
+												//}
+												//
+												//if (real_brush->is_y_symmetrical)
+												//{
+												//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+												//
+												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 16,0 }, preview_max - ImVec2{ 16,0 }, colour);
+												//}
+
+												if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+												{
+													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
+													m_selected_brush.tile_picker = &m_tile_picker_list[layer_index];
+													m_selected_brush.PickBrush(*m_selected_brush.tile_layer->tile_layout->tile_brushes.at(preview_brush.brush_index));
+													has_just_selected_item = true;
+												}
+
+												if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+												{
+													m_working_brush = preview_brush.brush_index;
+													m_working_layer_index = layer_index;
+													request_open_brush_popup = true;
+												}
+
+												if (m_working_brush.has_value() == false)
+												{
+													if (ImGui::BeginItemTooltip())
+													{
+														ImGui::Text("Tile Index: 0x%02X", page_index);
+														ImGui::EndTooltip();
+													}
 												}
 											}
 										}
-									}
+									
 									ImGui::PopID();
 									ImGui::EndTabItem();
 								}

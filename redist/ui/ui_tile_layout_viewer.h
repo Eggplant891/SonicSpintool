@@ -276,6 +276,7 @@ namespace spintool
 	public:
 		EditorTileLayoutViewer(EditorUI& owning_ui);
 		void Update() override;
+		void ProcessRenderRequests(RenderRequestType request);
 		void DrawSidebar(bool& has_just_selected_item);
 		void DrawViewport(bool& has_just_selected_item);
 		void DrawLevelInfo();
