@@ -83,7 +83,6 @@ namespace spintool
 		{
 			m_usa_rom_path = rom_path;
 			m_palettes = m_rom.LoadPalettes(48);
-			SaveROMConfig();
 			//m_palettes = m_rom.LoadPalettes(8);
 			return true;
 		}
@@ -179,6 +178,7 @@ namespace spintool
 		settings.close_popup = false;
 		if (selected_path && AttemptLoadROM(selected_path.value()))
 		{
+			SaveROMConfig();
 			settings.close_popup = true;
 		}
 
