@@ -293,7 +293,6 @@ namespace spintool
 		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
 		if (ImGui::Begin("Tile Layout Viewer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
-
 			RenderRequestType render_request = DrawMenuBar();
 			if (render_request != RenderRequestType::NONE)
 			{
@@ -366,54 +365,14 @@ namespace spintool
 
 	void EditorTileLayoutViewer::ProcessRenderRequests(RenderRequestType render_request)
 	{
-		bool render_flippers = false;
-		bool render_rings = false;
+		bool render_game_objs = false;
 
 		if (render_request == RenderRequestType::LEVEL)
 		{
-			render_flippers = true;
-			render_rings = true;
+			render_game_objs = true;
 		}
 
-		if (render_flippers)
-		{
-			const rom::AnimObjectDefinition flipper_def = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_object_definition));
-			AnimSpriteEntry entry;
-			entry.sprite_table = m_owning_ui.GetROM().ReadUint32(flipper_def.sprite_table);
-			entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), flipper_def.starting_animation, entry.sprite_table);
-
-			const auto& command_sequence = entry.anim_sequence->command_sequence;
-			const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
-				{
-					return command.ui_frame_sprite != nullptr;
-				});
-
-			if ((m_flipper_preview.sprite == nullptr || m_render_from_edit == false) && first_frame_with_sprite != std::end(command_sequence))
-			{
-				m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
-				m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_def.palette_index % 4]);
-				SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
-				SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
-				SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
-				first_frame_with_sprite->ui_frame_sprite->sprite->RenderToSurface(m_flipper_preview.sprite.get());
-				m_flipper_preview.texture = Renderer::RenderToTexture(m_flipper_preview.sprite.get());
-			}
-			const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_data);
-			const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.flipper_count);
-
-			m_level->m_flipper_instances.clear();
-			m_level->m_flipper_instances.reserve(num_flippers);
-
-			Uint32 current_table_offset = flippers_table_begin;
-
-			for (Uint32 i = 0; i < num_flippers; ++i)
-			{
-				m_level->m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
-				current_table_offset = m_level->m_flipper_instances.back().rom_data.rom_offset_end;
-			}
-		}
-
-		if (render_rings)
+		if (render_game_objs)
 		{
 			if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
 			{
@@ -427,6 +386,44 @@ namespace spintool
 				SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, 0);
 				ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
 				m_ring_preview.texture = Renderer::RenderToTexture(m_ring_preview.sprite.get());
+			}
+
+			// Flippers
+			{
+				const rom::AnimObjectDefinition flipper_def = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_object_definition));
+				AnimSpriteEntry entry;
+				entry.sprite_table = m_owning_ui.GetROM().ReadUint32(flipper_def.sprite_table);
+				entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), flipper_def.starting_animation, entry.sprite_table);
+
+				const auto& command_sequence = entry.anim_sequence->command_sequence;
+				const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+					{
+						return command.ui_frame_sprite != nullptr;
+					});
+
+				if ((m_flipper_preview.sprite == nullptr || m_render_from_edit == false) && first_frame_with_sprite != std::end(command_sequence))
+				{
+					m_flipper_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(44, 31, SDL_PIXELFORMAT_INDEX8) };
+					m_flipper_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[flipper_def.palette_index % 4]);
+					SDL_SetSurfacePalette(m_flipper_preview.sprite.get(), m_flipper_preview.palette.get());
+					SDL_FillSurfaceRect(m_game_object_preview.sprite.get(), nullptr, 0);
+					SDL_SetSurfaceColorKey(m_flipper_preview.sprite.get(), true, 0);
+					first_frame_with_sprite->ui_frame_sprite->sprite->RenderToSurface(m_flipper_preview.sprite.get());
+					m_flipper_preview.texture = Renderer::RenderToTexture(m_flipper_preview.sprite.get());
+				}
+				const Uint32 flippers_table_begin = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_data);
+				const Uint32 num_flippers = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.flipper_count);
+
+				m_level->m_flipper_instances.clear();
+				m_level->m_flipper_instances.reserve(num_flippers);
+
+				Uint32 current_table_offset = flippers_table_begin;
+
+				for (Uint32 i = 0; i < num_flippers; ++i)
+				{
+					m_level->m_flipper_instances.emplace_back(rom::FlipperInstance::LoadFromROM(m_owning_ui.GetROM(), current_table_offset));
+					current_table_offset = m_level->m_flipper_instances.back().rom_data.rom_offset_end;
+				}
 			}
 
 			/////////////
@@ -686,7 +683,7 @@ namespace spintool
 			m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
 		}
 
-		if (render_flippers)
+		if (render_game_objs)
 		{
 			for (size_t i = 0; i < m_level->m_flipper_instances.size(); ++i)
 			{
@@ -704,10 +701,7 @@ namespace spintool
 				SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
 				SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 			}
-		}
 
-		if (render_rings)
-		{
 			for (size_t i = 0; i < m_level->m_ring_instances.size(); ++i)
 			{
 				const rom::RingInstance& ring = m_level->m_ring_instances[i];
@@ -878,6 +872,8 @@ namespace spintool
 		{
 			if (ImGui::BeginChild("InfoSizebar", ImVec2{ 340, -1 }, 0, ImGuiWindowFlags_AlwaysVerticalScrollbar))
 			{
+				const bool is_window_hovered = ImGui::IsWindowHovered();
+
 				ImGui::SliderFloat("Zoom", &m_zoom, 0, 8.0f, "%.1f");
 				ImGui::SliderInt("Grid Snap", &m_grid_snap, 1, 128);
 
@@ -1054,7 +1050,7 @@ namespace spintool
 												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 16,0 }, preview_max - ImVec2{ 16,0 }, colour);
 												//}
 
-												if (ImGui::IsItemClicked(ImGuiMouseButton_Left))
+												if (is_window_hovered && ImGui::IsItemClicked(ImGuiMouseButton_Left))
 												{
 													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
 													m_selected_brush.tile_picker = &m_tile_picker_list[layer_index];
@@ -1062,7 +1058,7 @@ namespace spintool
 													has_just_selected_item = true;
 												}
 
-												if (ImGui::IsItemClicked(ImGuiMouseButton_Right))
+												if (is_window_hovered && ImGui::IsItemClicked(ImGuiMouseButton_Right))
 												{
 													m_working_brush = preview_brush.brush_index;
 													m_working_layer_index = layer_index;
@@ -1155,9 +1151,10 @@ namespace spintool
 		{
 			if (ImGui::BeginChild("Preview info Area", ImVec2{ 0,0 }, 0, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar))
 			{
-				const ImVec2 panel_screen_origin = ImGui::GetCursorScreenPos();
 				ImGuiWindow* tile_area = ImGui::GetCurrentContext()->CurrentWindow;
-				const bool is_hovering_tile_area = (ImGui::GetCurrentContext()->HoveredWindow == tile_area);
+				const bool is_viewport_hovered  = ImGui::IsWindowHovered();
+
+				const ImVec2 panel_screen_origin = ImGui::GetCursorScreenPos();
 				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
 				{
 					LayerSettings current_layer_settings = m_layer_settings;
@@ -1314,7 +1311,7 @@ namespace spintool
 							ImVec2 min_pos;
 							ImVec2 max_pos;
 
-							if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
+							if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
 							{
 								const ImVec2 start_grid_pos = m_selected_tile.dragging_start_ref.value();
 								const ImVec2 end_grid_pos = tile_grid_pos;
@@ -1353,7 +1350,7 @@ namespace spintool
 								ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
 							}
 
-							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_tile.tile_layer != nullptr)
+							if (is_viewport_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_tile.tile_layer != nullptr)
 							{
 								if (m_selected_tile.IsPickingFromLayout())
 								{
@@ -1403,7 +1400,7 @@ namespace spintool
 								}
 							}
 
-							if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
+							if (is_viewport_hovered && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
 							{
 								const ImVec2 start_grid_pos = m_selected_tile.dragging_start_ref.value();
 								const ImVec2 end_grid_pos = tile_grid_pos;
@@ -1457,7 +1454,7 @@ namespace spintool
 								ImVec2 min_pos;
 								ImVec2 max_pos;
 
-								if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+								if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
 								{
 									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
 									const ImVec2 end_grid_pos = tile_grid_pos;
@@ -1504,7 +1501,7 @@ namespace spintool
 									ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
 								}
 
-								if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
+								if (is_viewport_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && m_selected_brush.tile_layer != nullptr)
 								{
 									if (brush_grid_ref < m_selected_brush.tile_layer->tile_layout->tile_brush_instances.size())
 									{
@@ -1512,7 +1509,7 @@ namespace spintool
 									}
 								}
 
-								if (ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
+								if (is_viewport_hovered && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
 								{
 									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
 									const ImVec2 end_grid_pos = tile_grid_pos;
@@ -1616,7 +1613,7 @@ namespace spintool
 							}
 							else
 							{
-								if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) == false)
+								if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseClicked(ImGuiMouseButton_Left) == false)
 								{
 									const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_game_obj->initial_drag_offset - m_working_game_obj->destination->sprite_pos_offset;
 									m_working_game_obj->game_obj.obj_definition.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
@@ -1662,9 +1659,9 @@ namespace spintool
 							}
 							else
 							{
-								if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+								if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left))
 								{
-									if (ImGui::IsKeyPressed(ImGuiKey_R))
+									if (ImGui::IsKeyPressed(ImGuiKey_R) || ImGui::IsKeyPressed(ImGuiKey_H))
 									{
 										m_working_flipper->flipper_obj.is_x_flipped = !m_working_flipper->flipper_obj.is_x_flipped;
 									}
@@ -1697,7 +1694,7 @@ namespace spintool
 							}
 							else
 							{
-								if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+								if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left))
 								{
 									const ImVec2 pos = ((ImGui::GetMousePos() - screen_origin) / m_zoom) - *m_working_ring->initial_drag_offset - m_working_ring->destination->draw_pos_offset;
 									m_working_ring->ring_obj.x_pos = static_cast<Uint16>(pos.x / m_grid_snap) * m_grid_snap;
@@ -1729,7 +1726,7 @@ namespace spintool
 
 								ImGui::SetCursorPos(origin + (game_obj->GetSpriteDrawPos() * m_zoom));
 								ImGui::Dummy(game_obj->dimensions * m_zoom);
-								if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()) || m_sidebar_hover == game_obj->obj_definition.instance_id || (m_working_game_obj && m_working_game_obj->game_obj.obj_definition.instance_id == game_obj->obj_definition.instance_id))
+								if (is_viewport_hovered && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()) || m_sidebar_hover == game_obj->obj_definition.instance_id || (m_working_game_obj && m_working_game_obj->game_obj.obj_definition.instance_id == game_obj->obj_definition.instance_id))
 								{
 									ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
@@ -1796,7 +1793,7 @@ namespace spintool
 											m_working_game_obj->destination = game_obj.get();
 											m_working_game_obj->game_obj = *game_obj;
 										}
-										else if (IsDraggingObject() == false && IsObjectPopupOpen() == false && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+										else if (IsDraggingObject() == false && IsObjectPopupOpen() == false && is_viewport_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 										{
 											m_working_game_obj.emplace();
 											m_working_game_obj->destination = game_obj.get();
@@ -1847,7 +1844,7 @@ namespace spintool
 
 									ImGui::SetCursorPos(origin + (flipper_realpos * m_zoom));
 									ImGui::Dummy(flipper_dimensions * m_zoom);
-									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+									if (is_viewport_hovered && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 									{
 										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
@@ -1886,7 +1883,7 @@ namespace spintool
 
 									ImGui::SetCursorPos(origin + (ring_realpos * m_zoom));
 									ImGui::Dummy(ring_dimensions * m_zoom);
-									if (ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
+									if (is_viewport_hovered && ImGui::IsMouseHoveringRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax()))
 									{
 										ImGui::GetWindowDrawList()->AddRect(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(), ImGui::GetColorU32(ImVec4{ 0,192,0,255 }), 1.0f, 0, 2);
 
@@ -1976,7 +1973,7 @@ namespace spintool
 						m_request_open_obj_popup = false;
 					}
 
-					if (is_hovering_tile_area && has_just_selected_item == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && IsEditingSomething() == false && IsObjectPopupOpen() == false)
+					if (is_viewport_hovered && has_just_selected_item == false && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && IsEditingSomething() == false && IsObjectPopupOpen() == false)
 					{
 						ImGui::OpenPopup("create_new");
 					}
@@ -2290,9 +2287,9 @@ namespace spintool
 					static ImVec2 drag_start_pos = ImGui::GetMousePos();
 					static ImVec2 scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
 
-					if (ImGui::IsMouseDown(ImGuiMouseButton_Middle))
+					if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Middle))
 					{
-						if (is_dragging == false && is_hovering_tile_area && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
+						if (is_dragging == false && is_viewport_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Middle))
 						{
 							drag_start_pos = ImGui::GetMousePos();
 							scroll_start_pos = ImGui::GetCurrentContext()->CurrentWindow->Scroll;
@@ -2311,7 +2308,7 @@ namespace spintool
 
 					int scroll_multiplier = 1;
 
-					if (is_hovering_tile_area && ImGui::IsKeyDown(ImGuiKey_ModCtrl))
+					if (is_viewport_hovered && ImGui::IsKeyDown(ImGuiKey_ModCtrl))
 					{
 						m_zoom += ImGui::GetIO().MouseWheel / 10.0f;
 					}
@@ -2422,7 +2419,7 @@ namespace spintool
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 192, 0, 192));
 					}
-					const bool is_hovered = (ImGui::TableGetHoveredRow() == ImGui::TableGetRowIndex());
+					const bool is_hovered = ImGui::IsWindowHovered() && (ImGui::TableGetHoveredRow() == ImGui::TableGetRowIndex());
 					const bool is_selected = (previous_game_object && m_working_game_obj && m_working_game_obj->destination == previous_game_object->get());
 					if (is_hovered || is_selected)
 					{
@@ -3057,6 +3054,7 @@ namespace spintool
 
 	void EditorTileLayoutViewer::DrawCollisionSpline(rom::CollisionSpline& spline, ImVec2 origin, ImVec2 screen_origin, LayerSettings& current_layer_settings, bool is_working_spline, bool draw_bbox)
 	{
+		const bool is_viewport_hovered = ImGui::IsWindowHovered();//&& ImGui::GetTopMostPopupModal() == nullptr;
 		const BoundingBox& spline_bbox = spline.spline_vector;
 		ImVec4 colour{ 192,192,0,128 };
 		if (spline.IsBumper())
@@ -3115,7 +3113,7 @@ namespace spintool
 				return;
 			}
 
-			const bool is_hovering_radial = ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom));
+			const bool is_hovering_radial = is_viewport_hovered && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom));
 
 			if( is_hovering_radial)
 			{
@@ -3220,7 +3218,7 @@ namespace spintool
 				ImGui::GetWindowDrawList()->AddRect((screen_origin + (fixed_bbox.min * m_zoom)), (screen_origin + (fixed_bbox.max * m_zoom)), bbox_colour, 0, ImDrawFlags_None, 2.0f);
 			}
 
-			if (is_working_spline || (m_working_spline.has_value() == false && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom))))
+			if (is_working_spline || (m_working_spline.has_value() == false && is_viewport_hovered && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom))))
 			{
 				const ImVec2 spline_to_cursor_vector{ ImGui::GetMousePos() - (screen_origin + (original_bbox.min * m_zoom)) };
 				const float spline_to_cursor_length = std::hypotf(spline_to_cursor_vector.x, spline_to_cursor_vector.y);

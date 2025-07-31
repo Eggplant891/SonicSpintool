@@ -104,7 +104,7 @@ namespace spintool
 
 						const ImVec2 min = ImVec2{ static_cast<float>(cursor_start_pos.x + (tile.x_offset * zoom)), static_cast<float>(cursor_start_pos.y + (tile.y_offset * zoom)) };
 						const ImVec2 max = ImVec2{ static_cast<float>(min.x + (tile.x_size * zoom) + 1), static_cast<float>(min.y + (tile.y_size * zoom) + 1) };
-						const bool is_hovered = ImGui::IsMouseHoveringRect(min, max);
+						const bool is_hovered = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max);
 						
 						//if (m_tile_layer->tileset->tiles[target_index].is_x_symmetrical)
 						//{
