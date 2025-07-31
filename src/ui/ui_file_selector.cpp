@@ -17,7 +17,12 @@ namespace spintool
 			s_highlighted_path = current_selection;
 		}
 
-		if (ImGui::BeginPopup(popup_title.c_str()))
+		if (ImGui::IsPopupOpen(popup_title.c_str()))
+		{
+			ImGui::SetNextWindowPos(ImGui::GetMainViewport()->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+		}
+
+		if (ImGui::BeginPopup(popup_title.c_str(), ImGuiWindowFlags_Modal))
 		{
 			if (settings.close_popup)
 			{
@@ -42,6 +47,10 @@ namespace spintool
 					{
 						s_highlighted_path = filepath;
 					}
+					if (ImGui::IsItemClicked(ImGuiMouseButton_Left) && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+					{
+						return_path = s_highlighted_path;
+					}
 				}
 			}
 
@@ -56,6 +65,12 @@ namespace spintool
 			if (ImGui::Button(selection_str.c_str()) && s_highlighted_path.has_value())
 			{
 				return_path = s_highlighted_path;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+			{
+				s_highlighted_path.reset();
+				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndDisabled();
 			ImGui::EndPopup();
