@@ -205,7 +205,7 @@ namespace spintool
 			{
 				for (const TilesetEntry& tileset_entry : m_owning_ui.GetTilesets())
 				{
-					const std::shared_ptr<const rom::TileSet>& tileset = tileset_entry.tileset;
+					const std::unique_ptr<rom::TileSet>& tileset = tileset_entry.tileset;
 
 					ImGui::SeparatorText("Tileset");
 					Uint32 offset = 0;
@@ -397,7 +397,7 @@ namespace spintool
 					{
 						if (ImGui::MenuItem("Import image to this location"))
 						{
-							m_owning_ui.OpenSpriteImporter(static_cast<int>(tex->sprite->rom_data.rom_offset));
+							m_owning_ui.OpenImageImporter(const_cast<rom::Sprite&>(*tex->sprite));
 						}
 
 						sprintf_s(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));

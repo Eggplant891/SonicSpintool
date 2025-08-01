@@ -104,10 +104,10 @@ namespace spintool
 							const auto& tile = *m_tile_picker.currently_selected_tile;
 
 							ImGui::SetCursorScreenPos(min);
-							ImGui::Image((ImTextureID)m_tile_picker.texture.get(),
+							ImGui::Image((ImTextureID)m_tile_picker.m_texture.get(),
 								ImVec2{ (max.x - min.x), (max.y - min.y) },
-								ImVec2{ static_cast<float>(tile.x_offset) / m_tile_picker.texture->w , static_cast<float>(tile.y_offset) / m_tile_picker.texture->h },
-								ImVec2{ static_cast<float>(tile.x_offset + tile.x_size) / m_tile_picker.texture->w, static_cast<float>(tile.y_offset + tile.y_size) / m_tile_picker.texture->h });
+								ImVec2{ static_cast<float>(tile.x_offset) / m_tile_picker.m_texture->w , static_cast<float>(tile.y_offset) / m_tile_picker.m_texture->h },
+								ImVec2{ static_cast<float>(tile.x_offset + tile.x_size) / m_tile_picker.m_texture->w, static_cast<float>(tile.y_offset + tile.y_size) / m_tile_picker.m_texture->h });
 
 							if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 							{

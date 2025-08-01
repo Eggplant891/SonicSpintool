@@ -44,7 +44,8 @@ namespace spintool
 		const std::vector<TilesetEntry>& GetTilesets() const;
 		const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
-		void OpenSpriteImporter(int rom_offset);
+		void OpenImageImporter(rom::Sprite& sprite);
+		void OpenImageImporter(rom::TileSet& tileset, rom::PaletteSet& available_palettes);
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
@@ -66,7 +67,7 @@ namespace spintool
 		EditorTileLayoutViewer m_tile_layout_viewer;
 		EditorAnimationNavigator m_animation_navigator;
 		EditorPaletteViewer m_palette_viewer;
-		EditorSpriteImporter m_sprite_importer;
+		EditorImageImporter m_sprite_importer;
 
 		bool m_change_path_popup_open = false;
 	};

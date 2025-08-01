@@ -47,8 +47,8 @@ namespace spintool
 
 		std::vector<std::shared_ptr<rom::SpriteTile>> tiles;
 		const rom::SpriteTile* currently_selected_tile = nullptr;
-		SDLSurfaceHandle surface;
-		SDLTextureHandle texture;
+		SDLSurfaceHandle m_surface;
+		SDLTextureHandle m_texture;
 		int current_palette_line = 0;
 		Uint32 picker_height = 1;
 

@@ -8,6 +8,9 @@
 
 #include "imgui.h"
 #include "ui/ui_palette_viewer.h"
+#include "ui/ui_file_selector.h"
+#include "ui/ui_editor.h"
+#include "SDL3/SDL_image.h"
 
 namespace spintool
 {
@@ -26,8 +29,8 @@ namespace spintool
 		}
 
 		auto palette_line = current_palette_line;
-		surface.reset();
-		texture.reset();
+		m_surface.reset();
+		m_texture.reset();
 		current_palette_line = palette_line;
 
 		int max_x_size = 0;
@@ -58,37 +61,37 @@ namespace spintool
 			tiles.emplace_back(std::move(sprite_tile));
 		}
 
-		surface = SDLSurfaceHandle{ SDL_CreateSurface(max_x_size, max_y_size, SDL_PIXELFORMAT_RGBA32) };
-		SDL_SetSurfaceColorKey(surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(surface->format), nullptr, 0, 0, 0, 0));
-		SDL_ClearSurface(surface.get(), 0.0f, 0, 0, 0);
+		m_surface = SDLSurfaceHandle{ SDL_CreateSurface(max_x_size, max_y_size, SDL_PIXELFORMAT_RGBA32) };
+		SDL_SetSurfaceColorKey(m_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format), nullptr, 0, 0, 0, 0));
+		SDL_ClearSurface(m_surface.get(), 0.0f, 0, 0, 0);
 
 		picker_height = (m_tile_layer->tileset->num_tiles / picker_width) + 1;
 
-		BoundingBox picker_bbox{ 0, 0, surface->w, surface->h };
+		BoundingBox picker_bbox{ 0, 0, m_surface->w, m_surface->h };
 
 		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : tiles)
 		{
-			sprite_tile->BlitPixelDataToSurface(surface.get(), picker_bbox, sprite_tile->pixel_data);
+			sprite_tile->BlitPixelDataToSurface(m_surface.get(), picker_bbox, sprite_tile->pixel_data);
 		}
 
-		texture = Renderer::RenderToTexture(surface.get());
+		m_texture = Renderer::RenderToTexture(m_surface.get());
 	}
 
 	void TilePicker::Draw()
 	{
-		if (spintool::DrawPaletteLineSelector(current_palette_line, m_tile_layer->palette_set, m_owning_ui))
+		if (spintool::DrawPaletteLineSelector(current_palette_line, m_tile_layer->palette_set))
 		{
 			RenderTileset();
 		}
-		if (texture != nullptr)
+		if (m_texture != nullptr)
 		{
-			if (ImGui::BeginChild("TilePicker", ImVec2{ static_cast<float>(texture->w) * zoom + 16, -1 }))
+			if (ImGui::BeginChild("TilePicker", ImVec2{ static_cast<float>(m_texture->w) * zoom + 16, -1 }))
 			{
 
 				const ImVec2 cursor_start_pos = ImGui::GetCursorScreenPos();
-				ImGui::Image((ImTextureID)texture.get(),
-					ImVec2{ static_cast<float>(texture->w) * zoom, static_cast<float>(texture->h) * zoom },
-					ImVec2{ 0,0 }, ImVec2{ static_cast<float>(surface->w) / texture->w, static_cast<float>(surface->h) / texture->h });
+				ImGui::Image((ImTextureID)m_texture.get(),
+					ImVec2{ static_cast<float>(m_texture->w) * zoom, static_cast<float>(m_texture->h) * zoom },
+					ImVec2{ 0,0 }, ImVec2{ static_cast<float>(m_surface->w) / m_texture->w, static_cast<float>(m_surface->h) / m_texture->h });
 
 				for (unsigned int grid_y = 0; grid_y < picker_height; ++grid_y)
 				{
@@ -105,24 +108,15 @@ namespace spintool
 						const ImVec2 min = ImVec2{ static_cast<float>(cursor_start_pos.x + (tile.x_offset * zoom)), static_cast<float>(cursor_start_pos.y + (tile.y_offset * zoom)) };
 						const ImVec2 max = ImVec2{ static_cast<float>(min.x + (tile.x_size * zoom) + 1), static_cast<float>(min.y + (tile.y_size * zoom) + 1) };
 						const bool is_hovered = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(min, max);
-						
-						//if (m_tile_layer->tileset->tiles[target_index].is_x_symmetrical)
-						//{
-						//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-						//
-						//	ImGui::GetWindowDrawList()->AddRect(min + ImVec2{ 0,4 }, max - ImVec2{ 0,4 }, colour);
-						//}
-						//
-						//if (m_tile_layer->tileset->tiles[target_index].is_y_symmetrical)
-						//{
-						//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-						//
-						//	ImGui::GetWindowDrawList()->AddRect(min + ImVec2{ 4,0 }, max - ImVec2{ 4,0 }, colour);
-						//}
 
 						if (is_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
 						{
 							currently_selected_tile = &tile;
+						}
+
+						if (is_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+						{
+							ImGui::OpenPopup("TilesetOptions");
 						}
 
 						if (is_hovered || &tile == currently_selected_tile)
@@ -132,6 +126,31 @@ namespace spintool
 							ImGui::GetWindowDrawList()->AddRect(min, max, colour);
 						}
 					}
+				}
+
+				static FileSelectorSettings settings;
+				settings.object_typename = "Image";
+				settings.target_directory = m_owning_ui.GetSpriteExportPath();
+				settings.file_extension_filter = { ".png", ".gif", ".bmp" };
+				settings.tiled_previews = true;
+				settings.num_columns = 4;
+
+				if (ImGui::BeginPopup("TilesetOptions"))
+				{
+					if (ImGui::Selectable("Import Image"))
+					{
+						m_owning_ui.OpenImageImporter(const_cast<rom::TileSet&>(*m_tile_layer->tileset), m_tile_layer->palette_set);
+					}
+
+					if (ImGui::Selectable("Export Tileset"))
+					{
+						static char path_buffer[2048];
+						sprintf_s(path_buffer, "spinball_tileset_%X02.png", static_cast<unsigned int>(m_tile_layer->tileset->rom_data.rom_offset));
+						std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
+						SDLSurfaceHandle out_surface = m_tile_layer->tileset->RenderToSurface(*m_tile_layer->palette_set.palette_lines.at(current_palette_line));
+						assert(IMG_SavePNG(out_surface.get(), export_path.generic_u8string().c_str()));
+					}
+					ImGui::EndPopup();
 				}
 			}
 			else
@@ -195,8 +214,8 @@ namespace spintool
 
 		const rom::SpriteTile& tile = *currently_selected_tile;
 
-		ImVec2 uv0 = { static_cast<float>(tile.x_offset) / texture->w , static_cast<float>(tile.y_offset) / texture->h };
-		ImVec2 uv1 = { static_cast<float>(tile.x_offset + tile.x_size) / texture->w, static_cast<float>(tile.y_offset + tile.y_size) / texture->h };
+		ImVec2 uv0 = { static_cast<float>(tile.x_offset) / m_texture->w , static_cast<float>(tile.y_offset) / m_texture->h };
+		ImVec2 uv1 = { static_cast<float>(tile.x_offset + tile.x_size) / m_texture->w, static_cast<float>(tile.y_offset + tile.y_size) / m_texture->h };
 		if (flip_x)
 		{
 			std::swap(uv0.x, uv1.x);
@@ -206,7 +225,7 @@ namespace spintool
 			std::swap(uv0.y, uv1.y);
 		}
 
-		ImGui::Image((ImTextureID)texture.get(), ImVec2{ static_cast<float>(tile.x_size), static_cast<float>(tile.y_size) } * zoom, uv0, uv1);
+		ImGui::Image((ImTextureID)m_texture.get(), ImVec2{ static_cast<float>(tile.x_size), static_cast<float>(tile.y_size) } * zoom, uv0, uv1);
 	}
 
 }

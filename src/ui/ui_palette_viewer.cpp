@@ -9,7 +9,7 @@ namespace spintool
 {
 	bool DrawPaletteSelectorWithPreview(int& palette_index, const EditorUI& owning_ui)
 	{
-		const bool selection_changed = DrawPaletteSelector(palette_index, owning_ui);
+		const bool selection_changed = DrawPaletteSelector(palette_index, owning_ui.GetPalettes());
 		ImGui::SameLine();
 		const rom::Palette& palette = *owning_ui.GetPalettes().at(palette_index);
 		DrawPaletteName(palette, palette_index);
@@ -59,14 +59,14 @@ namespace spintool
 		ImGui::PopStyleVar();
 	}
 
-	bool DrawPaletteSelector(int& chosen_palette, const EditorUI& owning_ui)
+	bool DrawPaletteSelector(int& chosen_palette, const std::vector<std::shared_ptr<rom::Palette>>& palettes)
 	{
 		ImGui::SetNextItemWidth(256);
-		const bool selection_changed = ImGui::SliderInt("###Palette Index", &chosen_palette, 0, static_cast<int>(owning_ui.GetPalettes().size() - 1));
+		const bool selection_changed = ImGui::SliderInt("###Palette Index", &chosen_palette, 0, static_cast<int>(palettes.size() - 1));
 		return selection_changed;
 	}
 
-	bool DrawPaletteLineSelector(int& chosen_palette_line, const rom::PaletteSet& palette_set, const EditorUI& owning_ui)
+	bool DrawPaletteLineSelector(int& chosen_palette_line, const rom::PaletteSet& palette_set)
 	{
 		ImGui::SetNextItemWidth(256);
 		const bool selection_changed = ImGui::SliderInt("###Palette Line", &chosen_palette_line, 0, static_cast<int>(palette_set.palette_lines.size() - 1));

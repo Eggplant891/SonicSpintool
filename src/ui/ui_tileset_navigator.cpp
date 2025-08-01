@@ -131,7 +131,7 @@ namespace spintool
 
 			for (const TilesetEntry& tileset_entry : m_tilesets)
 			{
-				const std::shared_ptr<const rom::TileSet>& tileset = tileset_entry.tileset;
+				const std::unique_ptr<rom::TileSet>& tileset = tileset_entry.tileset;
 
 				static std::string s_no_errors_str = "No Errors";
 				char name_buffer[1024];

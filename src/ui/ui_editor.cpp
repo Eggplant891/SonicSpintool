@@ -3,6 +3,7 @@
 #include "render.h"
 #include "rom/spinball_rom.h"
 #include "ui/ui_file_selector.h"
+#include "editor/editor_project.h"
 
 #include "imgui.h"
 #include "SDL3/SDL_image.h"
@@ -12,7 +13,6 @@
 #include <algorithm>
 #include <numeric>
 #include <fstream>
-#include "project/editor_project.h"
 
 
 namespace spintool
@@ -301,10 +301,18 @@ namespace spintool
 		}
 	}
 
-	void EditorUI::OpenSpriteImporter(int rom_offset)
+	void EditorUI::OpenImageImporter(rom::Sprite& sprite)
 	{
 		m_sprite_importer.m_visible = true;
-		m_sprite_importer.ChangeTargetWriteLocation(rom_offset);
+		m_sprite_importer.SetTarget(sprite);
+		m_sprite_importer.SetAvailablePalettes(m_palettes);
+	}
+
+	void EditorUI::OpenImageImporter(rom::TileSet& tileset, rom::PaletteSet& available_palettes)
+	{
+		m_sprite_importer.m_visible = true;
+		m_sprite_importer.SetTarget(tileset);
+		m_sprite_importer.SetAvailablePalettes(available_palettes.palette_lines);
 	}
 
 }

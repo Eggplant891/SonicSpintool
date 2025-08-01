@@ -1,6 +1,5 @@
 #include "ui/ui_sprite_importer.h"
 
-#include "imgui.h"
 #include "rom/spinball_rom.h"
 #include "ui/ui_editor.h"
 #include "ui/ui_palette_viewer.h"
@@ -8,11 +7,20 @@
 #include "rom/sprite.h"
 
 #include "SDL3/SDL_image.h"
+#include "imgui.h"
+
 #include <algorithm>
+#include <iterator>
+#include "rom/tileset.h"
+
+namespace
+{
+	constexpr float img_scale = 2.0f;
+}
 
 namespace spintool
 {
-	void EditorSpriteImporter::InnerUpdate()
+	void EditorImageImporter::InnerUpdate()
 	{
 		static char path_buffer[4096] = "";;
 		bool update_preview = false;
@@ -31,6 +39,11 @@ namespace spintool
 		settings.open_popup = ImGui::Button("Choose Image");
 		settings.close_popup = false;
 
+		if (m_available_palettes.empty())
+		{
+			return;
+		}
+
 		if(selected_path)
 		{
 			settings.close_popup = true;
@@ -44,13 +57,15 @@ namespace spintool
 			}
 		}
 
-		if (DrawPaletteSelector(m_selected_palette_index, m_owning_ui))
+		if (DrawPaletteSelector(m_selected_palette_index, m_available_palettes))
 		{
 			update_preview = true;
 		}
+		m_selected_palette_index = std::clamp(m_selected_palette_index, 0, static_cast<int>(m_available_palettes.size()) - 1);
+
 		ImGui::SameLine();
-		DrawPaletteSwatchPreview(*m_owning_ui.GetPalettes().at(m_selected_palette_index));
-		m_selected_palette = *m_owning_ui.GetPalettes().at(m_selected_palette_index);
+		DrawPaletteSwatchPreview(*m_available_palettes.at(m_selected_palette_index));
+		m_selected_palette = *m_available_palettes.at(m_selected_palette_index);
 
 		if (m_imported_image == nullptr)
 		{
@@ -167,8 +182,6 @@ namespace spintool
 
 		ImGui::BeginGroup();
 		{
-			constexpr float img_scale = 2.0f;
-
 			if (update_preview)
 			{
 				m_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(m_imported_image->w, m_imported_image->h, SDL_PIXELFORMAT_INDEX8) };
@@ -235,119 +248,244 @@ namespace spintool
 			if (m_rendered_preview_image != nullptr)
 			{
 				ImGui::Image((ImTextureID)m_rendered_preview_image.get(), { static_cast<float>(m_preview_image->w) * img_scale, static_cast<float>(m_preview_image->h) * img_scale });
-				ImGui::SetNextItemWidth(256);
-				if (ImGui::InputInt("Target Write Offset", &m_target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal) || m_force_update_write_location)
+
+				if (std::holds_alternative<rom::Sprite*>(m_target_asset))
 				{
-					m_force_update_write_location = false;
-					if (m_result_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_target_write_location))
-					{
-						m_export_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(m_result_sprite->GetBoundingBox().Width(), m_result_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-						SDL_SetSurfacePalette(m_export_preview_image.get(), m_preview_palette.get());
-						Renderer::SetPalette(m_preview_palette);
-						m_result_sprite->RenderToSurface(m_export_preview_image.get());
-						m_export_preview_texture = Renderer::RenderToTexture(m_export_preview_image.get());
-					}
+					DrawSpriteImport();
 				}
-
-				if (m_result_sprite != nullptr)
+				else if (std::holds_alternative<rom::TileSet*>(m_target_asset))
 				{
-					ImGui::Image((ImTextureID)m_export_preview_texture.get()
-						, ImVec2(static_cast<float>(m_result_sprite->GetBoundingBox().Width()) * img_scale, static_cast<float>(m_result_sprite->GetBoundingBox().Height()) * img_scale));
-
-					if (ImGui::Button("/!\\ OVERWRITE SPRITE IN ROM DATA /!\\"))
-					{
-						//assert(m_result_sprite->sprite_tiles.at(0)->x_size == m_preview_image->w && m_result_sprite->sprite_tiles.at(0)->y_size == m_preview_image->h);
-
-						const BoundingBox bounds = m_result_sprite->GetBoundingBox();
-						rom::SpinballROM& rom = m_owning_ui.GetROM();
-						Uint8* current_byte = &rom.m_buffer[m_target_write_location];
-						current_byte += 2; // tiles
-						current_byte += 2; // vdp tiles
-
-						for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
-						{
-							current_byte += 2; // xoffset
-							current_byte += 2; // yoffset
-
-							current_byte += 2; // ysize, xsize
-						}
-
-						for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : m_result_sprite->sprite_tiles)
-						{
-							const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
-							const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);
-							size_t preview_pitch_offset = 0;
-
-
-							const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-							if (total_pixels != 0)
-							{
-								int x_off = (sprite_tile->x_offset - bounds.min.x);
-								int y_off = (sprite_tile->y_offset - bounds.min.y);
-								int x_max = x_off + sprite_tile->x_size;
-								int y_max = y_off + sprite_tile->y_size;
-
-								size_t pixels_written = 0;
-								size_t pixel_source_idx = (y_off * m_preview_image->pitch) + x_off;
-								while (pixels_written < total_pixels && pixel_source_idx < m_preview_image->pitch * m_preview_image->h)
-								{
-									if (pixels_written != 0 && (pixels_written % sprite_tile->x_size) == 0)
-									{
-										pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / sprite_tile->x_size)) + x_off;
-									}
-									*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F) << 4);
-									++pixel_source_idx;
-									++pixels_written;
-
-									if (pixels_written != 0 && (pixels_written % sprite_tile->x_size) == 0)
-									{
-										pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / sprite_tile->x_size)) + x_off;
-									}
-									*current_byte = *current_byte | static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F;
-									++pixel_source_idx;
-									++pixels_written;
-
-									++current_byte;
-								}
-
-								//for (size_t i = 0; i < m_preview_image->w * m_preview_image->h; i += 2)
-								//{
-								//	if (i != 0 && i % m_preview_image->w == 0)
-								//	{
-								//		preview_pitch_offset += preview_pitch_offset_per_line;
-								//	}
-								//
-								//	*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[i] & 0x0F) << 4) | (static_cast<Uint8*>(m_preview_image->pixels)[i + 1] & 0x0F);
-								//	++current_byte;
-								//}
-							}
-						}
-					}
+					DrawTileSetImport();
 				}
 			}
 		}
 		ImGui::EndGroup();
 	}
 
-	void EditorSpriteImporter::Update()
+	static constexpr Uint32 picker_width = 20;
+
+	void EditorImageImporter::RenderTileset(rom::TileSet& tileset)
+	{
+		m_export_preview_image = tileset.RenderToSurface(m_selected_palette);
+		m_export_preview_texture = Renderer::RenderToTexture(m_export_preview_image.get());
+	}
+
+	void EditorImageImporter::DrawTileSetImport()
+	{
+		rom::TileSet& target_tileset = *std::get<rom::TileSet*>(m_target_asset);
+		rom::TileSet* result_tileset = std::get<std::unique_ptr<rom::TileSet>>(m_result_asset).get();
+		ImGui::SetNextItemWidth(256);
+		int target_write_location = static_cast<int>(target_tileset.rom_data.rom_offset);
+		const bool offset_changed = ImGui::InputInt("Target Write Offset", &target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_ReadOnly);
+		const bool append_mode_changed = ImGui::Checkbox("Append exiting tileset", &m_append_existing);
+		if(append_mode_changed || offset_changed || m_force_update_write_location)
+		{
+			m_force_update_write_location = false;
+			m_result_asset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), target_write_location, CompressionAlgorithm::SSC).tileset;
+			result_tileset = std::get<std::unique_ptr<rom::TileSet>>(m_result_asset).get();
+
+			if (m_append_existing == false)
+			{
+				result_tileset->uncompressed_data.clear();
+				result_tileset->tiles.clear();
+			}
+
+			if (result_tileset != nullptr)
+			{
+				if( m_preview_image != nullptr)
+				{
+					const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
+					const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);
+					
+					size_t preview_pitch_offset = 0;
+
+					const size_t total_pixels = rom::TileSet::s_tile_width * rom::TileSet::s_tile_height;
+					for(int y = 0; y < (m_preview_image->h / rom::TileSet::s_tile_height); ++y)
+					{
+						for (int x = 0; x < (m_preview_image->w / rom::TileSet::s_tile_width); ++x)
+						{
+							rom::Tile& new_tile = result_tileset->tiles.emplace_back();
+							new_tile.pixel_data.resize(total_pixels);
+							Uint8* current_byte = new_tile.pixel_data.data();
+
+							int x_off = x * rom::TileSet::s_tile_width;
+							int y_off = y * rom::TileSet::s_tile_height;
+							int x_max = x_off + rom::TileSet::s_tile_width;
+							int y_max = y_off + rom::TileSet::s_tile_height;
+
+							size_t pixels_written = 0;
+							size_t pixel_source_idx = (y_off * m_preview_image->pitch) + x_off;
+							while (pixels_written < total_pixels && pixel_source_idx < m_preview_image->pitch * m_preview_image->h)
+							{
+								if (pixels_written != 0 && (pixels_written % rom::TileSet::s_tile_width) == 0)
+								{
+									pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / rom::TileSet::s_tile_width)) + x_off;
+								}
+								*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F) << 4);
+								++pixel_source_idx;
+								++pixels_written;
+
+								if (pixels_written != 0 && (pixels_written % rom::TileSet::s_tile_width) == 0)
+								{
+									pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / rom::TileSet::s_tile_width)) + x_off;
+								}
+								*current_byte = *current_byte | static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F;
+								++pixel_source_idx;
+								++pixels_written;
+								result_tileset->uncompressed_data.emplace_back(*current_byte);
+								++current_byte;
+							}
+						}
+					}
+
+					result_tileset->num_tiles = static_cast<Uint16>(result_tileset->tiles.size());
+					result_tileset->uncompressed_size = static_cast<Uint16>(result_tileset->uncompressed_data.size());
+				}
+
+
+				RenderTileset(result_tileset != nullptr ? *result_tileset : target_tileset);
+			}
+		}
+
+		if (result_tileset != nullptr)
+		{
+			ImGui::Image((ImTextureID)m_export_preview_texture.get(),
+				ImVec2{ static_cast<float>(m_export_preview_texture->w) * img_scale, static_cast<float>(m_export_preview_texture->h) * img_scale },
+				ImVec2{ 0,0 }, ImVec2{ static_cast<float>(m_export_preview_image->w) / m_export_preview_texture->w, static_cast<float>(m_export_preview_image->h) / m_export_preview_texture->h });
+
+			if (ImGui::Button("/!\\ OVERWRITE TILESET IN ROM DATA /!\\"))
+			{
+				*std::get<rom::TileSet*>(m_target_asset) = std::move(*std::get<std::unique_ptr<rom::TileSet>>(m_result_asset).release());
+			}
+		}
+	}
+
+	void EditorImageImporter::DrawSpriteImport()
+	{
+		rom::Sprite& target_sprite = *std::get<rom::Sprite*>(m_target_asset);
+		std::shared_ptr<const rom::Sprite> result_sprite = std::get<std::shared_ptr<const rom::Sprite>>(m_result_asset);
+		ImGui::SetNextItemWidth(256);
+		int target_write_location = static_cast<int>(target_sprite.rom_data.rom_offset);
+		if (ImGui::InputInt("Target Write Offset", &target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_ReadOnly) || m_force_update_write_location)
+		{
+			m_force_update_write_location = false;
+			m_result_asset = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), target_write_location);
+			result_sprite = std::get<std::shared_ptr<const rom::Sprite>>(m_result_asset);
+			if(result_sprite != nullptr)
+			{
+				m_export_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(result_sprite->GetBoundingBox().Width(), result_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+				SDL_SetSurfacePalette(m_export_preview_image.get(), m_preview_palette.get());
+				Renderer::SetPalette(m_preview_palette);
+				result_sprite->RenderToSurface(m_export_preview_image.get());
+				m_export_preview_texture = Renderer::RenderToTexture(m_export_preview_image.get());
+			}
+		}
+
+		if (result_sprite != nullptr)
+		{
+			ImGui::Image((ImTextureID)m_export_preview_texture.get()
+				, ImVec2(static_cast<float>(result_sprite->GetBoundingBox().Width()) * img_scale, static_cast<float>(result_sprite->GetBoundingBox().Height()) * img_scale));
+
+
+			if (ImGui::Button("/!\\ OVERWRITE SPRITE IN ROM DATA /!\\"))
+			{
+				rom::Sprite& target_sprite = *std::get<rom::Sprite*>(m_target_asset);
+
+				const BoundingBox bounds = result_sprite->GetBoundingBox();
+				rom::SpinballROM& rom = m_owning_ui.GetROM();
+				Uint8* current_byte = &rom.m_buffer[target_write_location];
+				current_byte += 2; // tiles
+				current_byte += 2; // vdp tiles
+
+				for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : result_sprite->sprite_tiles)
+				{
+					current_byte += 2; // xoffset
+					current_byte += 2; // yoffset
+
+					current_byte += 2; // ysize, xsize
+				}
+
+				for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : result_sprite->sprite_tiles)
+				{
+					const SDL_PixelFormatDetails* preview_pixel_format_details = SDL_GetPixelFormatDetails(m_preview_image->format);
+					const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);
+					size_t preview_pitch_offset = 0;
+
+
+					const size_t total_pixels = sprite_tile->x_size * sprite_tile->y_size;
+					if (total_pixels != 0)
+					{
+						int x_off = (sprite_tile->x_offset - bounds.min.x);
+						int y_off = (sprite_tile->y_offset - bounds.min.y);
+						int x_max = x_off + sprite_tile->x_size;
+						int y_max = y_off + sprite_tile->y_size;
+
+						size_t pixels_written = 0;
+						size_t pixel_source_idx = (y_off * m_preview_image->pitch) + x_off;
+						while (pixels_written < total_pixels && pixel_source_idx < m_preview_image->pitch * m_preview_image->h)
+						{
+							if (pixels_written != 0 && (pixels_written % sprite_tile->x_size) == 0)
+							{
+								pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / sprite_tile->x_size)) + x_off;
+							}
+							*current_byte = ((static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F) << 4);
+							++pixel_source_idx;
+							++pixels_written;
+
+							if (pixels_written != 0 && (pixels_written % sprite_tile->x_size) == 0)
+							{
+								pixel_source_idx = (y_off * m_preview_image->pitch) + (m_preview_image->pitch * (pixels_written / sprite_tile->x_size)) + x_off;
+							}
+							*current_byte = *current_byte | static_cast<Uint8*>(m_preview_image->pixels)[pixel_source_idx] & 0x0F;
+							++pixel_source_idx;
+							++pixels_written;
+
+							++current_byte;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	void EditorImageImporter::Update()
 	{
 		if (m_visible == false)
 		{
 			return;
 		}
 
-		ImGui::SetNextWindowSize({ 1024, -1 });
-		if (ImGui::Begin("Sprite Importer", &m_visible))
+		ImGui::SetNextWindowPos(ImVec2{ 0,16 });
+		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
+		if (ImGui::Begin("Image Importer", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
 			InnerUpdate();
 		}
 		ImGui::End();
 	}
 
-	void EditorSpriteImporter::ChangeTargetWriteLocation(size_t rom_offset)
+	void EditorImageImporter::SetTarget(rom::Sprite& target_sprite)
 	{
-		m_target_write_location = static_cast<int>(rom_offset);
+		m_target_asset = &target_sprite;
 		m_force_update_write_location = true;
+	}
+
+	void EditorImageImporter::SetTarget(rom::TileSet& target_tileset)
+	{
+		m_target_asset = &target_tileset;
+		m_force_update_write_location = true;
+	}
+
+	void EditorImageImporter::SetAvailablePalettes(const std::vector<std::shared_ptr<rom::Palette>>& palette_lines)
+	{
+		m_available_palettes.clear();
+		std::copy(std::begin(palette_lines), std::end(palette_lines), std::back_inserter(m_available_palettes));
+	}
+
+	void EditorImageImporter::SetAvailablePalettes(const rom::PaletteSetArray& palette_set_lines)
+	{
+		m_available_palettes.clear();
+		std::copy(std::begin(palette_set_lines), std::end(palette_set_lines), std::back_inserter(m_available_palettes));
 	}
 
 }

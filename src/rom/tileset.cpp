@@ -41,7 +41,7 @@ namespace spintool::rom
 	TilesetEntry TileSet::LoadFromROM_SSCCompression(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
 		constexpr Uint32 uncompressed_tile_size = TileSet::s_tile_total_bytes;
-		auto new_tileset = std::make_shared<rom::TileSet>();
+		auto new_tileset = std::make_unique<rom::TileSet>();
 
 		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
@@ -108,12 +108,12 @@ namespace spintool::rom
 
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset - 2, results.rom_data.rom_offset_end);
 
-		return { new_tileset, results };
+		return { std::move(new_tileset), results };
 	}
 
 	TilesetEntry TileSet::LoadFromROM_LZSSCompression(const SpinballROM& src_rom, Uint32 rom_offset)
 	{
-		auto new_tileset = std::make_shared<rom::TileSet>();
+		auto new_tileset = std::make_unique<rom::TileSet>();
 
 		//new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
@@ -159,7 +159,7 @@ namespace spintool::rom
 		new_tileset->rom_data.SetROMData(results.rom_data.rom_offset, results.rom_data.rom_offset_end);
 
 
-		return { new_tileset, results };
+		return { std::move(new_tileset), results };
 	}
 
 	std::shared_ptr<rom::SpriteTile> TileSet::CreateSpriteTileFromTile(const Uint32 tile_index) const
@@ -246,4 +246,55 @@ namespace spintool::rom
 
 		return new_sprite;
 	}
+
+	SDLSurfaceHandle TileSet::RenderToSurface(const rom::Palette& palette_line) const
+	{
+		SDLSurfaceHandle out_surface;
+
+		constexpr int picker_width = 20;
+		int max_x_size = 0;
+		int max_y_size = 0;
+
+
+		Uint32 offset = 0;
+		std::vector<std::shared_ptr<rom::SpriteTile>> tiles;
+
+		for (Uint16 i = 0; i < num_tiles; ++i)
+		{
+			std::shared_ptr<rom::SpriteTile> sprite_tile = CreateSpriteTileFromTile(i);
+
+			if (sprite_tile == nullptr)
+			{
+				break;
+			}
+
+			const size_t current_brush_offset = i;
+
+			sprite_tile->x_offset = static_cast<Sint16>(current_brush_offset % picker_width) * rom::TileSet::s_tile_width;
+			sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % picker_width)) / picker_width) * rom::TileSet::s_tile_height;
+
+			max_x_size = std::max(max_x_size, sprite_tile->x_offset + rom::TileSet::s_tile_width);
+			max_y_size = std::max(max_x_size, sprite_tile->y_offset + rom::TileSet::s_tile_height);
+
+			sprite_tile->blit_settings.flip_horizontal = false;
+			sprite_tile->blit_settings.flip_vertical = false;
+
+			sprite_tile->blit_settings.palette = std::make_shared<rom::Palette>(palette_line);
+			tiles.emplace_back(std::move(sprite_tile));
+		}
+
+		out_surface = SDLSurfaceHandle{ SDL_CreateSurface(max_x_size, max_y_size, SDL_PIXELFORMAT_RGBA32) };
+		SDL_SetSurfaceColorKey(out_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(out_surface->format), nullptr, 0, 0, 0, 0));
+		SDL_ClearSurface(out_surface.get(), 0.0f, 0, 0, 0);
+
+		BoundingBox picker_bbox{ 0, 0, out_surface->w, out_surface->h };
+
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : tiles)
+		{
+			sprite_tile->BlitPixelDataToSurface(out_surface.get(), picker_bbox, sprite_tile->pixel_data);
+		}
+
+		return out_surface;
+	}
+
 }

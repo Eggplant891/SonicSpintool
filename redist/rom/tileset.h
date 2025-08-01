@@ -23,7 +23,7 @@ namespace spintool
 {
 	struct TilesetEntry
 	{
-		std::shared_ptr<const rom::TileSet> tileset;
+		std::unique_ptr<rom::TileSet> tileset;
 		DecompressionResult result;
 	};
 
@@ -56,6 +56,8 @@ namespace spintool::rom
 
 		std::shared_ptr<const Sprite> CreateSpriteFromTile(const Uint32 offset) const;
 		std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const Uint32 tile_index) const;
+
+		SDLSurfaceHandle RenderToSurface(const rom::Palette& palette_line) const;
 
 		constexpr const static Uint16 s_tile_width = 0x08;
 		constexpr const static Uint16 s_tile_height = 0x08;

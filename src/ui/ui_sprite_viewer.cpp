@@ -46,7 +46,7 @@ namespace spintool
 			ImGui::SameLine();
 			ImGui::Checkbox("Render Origin", &m_render_sprite_origin);
 
-			if (DrawPaletteSelector(m_chosen_palette_index, m_owning_ui))
+			if (DrawPaletteSelector(m_chosen_palette_index, m_owning_ui.GetPalettes()))
 			{
 				m_rendered_sprite_texture.texture.reset();
 				for (UISpriteTileTexture& tile_tex : m_rendered_sprite_tile_textures)

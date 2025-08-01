@@ -5,6 +5,7 @@
 #include "SDL3/SDL_stdinc.h"
 #include <array>
 #include <memory>
+#include "types/rom_ptr.h"
 
 struct ImColor;
 
@@ -39,9 +40,7 @@ namespace spintool::rom
 
 	struct PaletteSet
 	{
-		constexpr static const Uint32 s_max_palettes = 4;
-
-		std::array<std::shared_ptr<Palette>, s_max_palettes> palette_lines;
+		PaletteSetArray palette_lines;
 
 		static std::shared_ptr<PaletteSet> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
 
