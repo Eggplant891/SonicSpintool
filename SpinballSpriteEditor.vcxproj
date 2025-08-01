@@ -212,6 +212,7 @@
     <ClCompile Include="src\editor\tile_brush_manager.cpp" />
     <ClCompile Include="src\editor\tile_layout_manager.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\project\editor_project.cpp" />
     <ClCompile Include="src\render.cpp" />
     <ClCompile Include="src\rom\animated_object.cpp" />
     <ClCompile Include="src\rom\animation_sequence.cpp" />
@@ -269,6 +270,7 @@
     <ClInclude Include="redist\editor\spline_manager.h" />
     <ClInclude Include="redist\editor\tile_brush_manager.h" />
     <ClInclude Include="redist\editor\tile_layout_manager.h" />
+    <ClInclude Include="redist\project\editor_project.h" />
     <ClInclude Include="redist\render.h" />
     <ClInclude Include="redist\rom\animated_object.h" />
     <ClInclude Include="redist\rom\animation_sequence.h" />

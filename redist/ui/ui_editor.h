@@ -28,7 +28,6 @@ namespace spintool
 
 		void SaveROMConfig() const;
 		void LoadROMConfig();
-		void StartupWithConfig();
 		void Initialise();
 		bool AttemptLoadROM(const std::filesystem::path& rom_path);
 		void Update();
@@ -36,9 +35,11 @@ namespace spintool
 
 		bool IsROMLoaded() const;
 		rom::SpinballROM& GetROM();
-		std::filesystem::path GetROMLoadPath() const;
-		std::filesystem::path GetROMExportPath() const;
-		std::filesystem::path GetSpriteExportPath() const;
+		static std::filesystem::path GetROMLoadPath();
+		static std::filesystem::path GetROMExportPath();
+		static std::filesystem::path GetSpriteExportPath();
+		static std::filesystem::path GetProjectsPath();
+		static std::filesystem::path GetConfigPath();
 
 		const std::vector<TilesetEntry>& GetTilesets() const;
 		const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
@@ -50,11 +51,12 @@ namespace spintool
 		rom::SpinballROM m_rom;
 
 		std::filesystem::path m_usa_rom_path;
-		std::filesystem::path m_rom_load_path;
-		std::filesystem::path m_rom_export_path;
-		std::filesystem::path m_sprite_export_path;
-		std::filesystem::path m_projects_path;
-		std::filesystem::path m_config_path;
+
+		static std::filesystem::path s_rom_load_path;
+		static std::filesystem::path s_rom_export_path;
+		static std::filesystem::path s_sprite_export_path;
+		static std::filesystem::path s_projects_path;
+		static std::filesystem::path s_config_path;
 
 		std::vector<std::shared_ptr<rom::Palette>> m_palettes;
 

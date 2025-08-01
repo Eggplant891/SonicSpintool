@@ -12,10 +12,28 @@
 #include <algorithm>
 #include <numeric>
 #include <fstream>
+#include "project/editor_project.h"
 
 
 namespace spintool
 {
+	auto setup_directory = [](const std::string& dir_name)
+		{
+			std::filesystem::path out_path{ std::filesystem::current_path().append(dir_name) };
+			if (std::filesystem::exists(out_path) == false)
+			{
+				std::filesystem::create_directory(out_path);
+			}
+
+			return out_path;
+		};
+
+	std::filesystem::path EditorUI::s_rom_load_path = setup_directory("roms");
+	std::filesystem::path EditorUI::s_sprite_export_path = setup_directory("sprite_export");
+	std::filesystem::path EditorUI::s_rom_export_path = setup_directory("rom_export");
+	std::filesystem::path EditorUI::s_projects_path = setup_directory("projects");
+	std::filesystem::path EditorUI::s_config_path = setup_directory("config");
+
 	EditorUI::EditorUI()
 		: m_sprite_navigator(*this)
 		, m_tileset_navigator(*this)
@@ -24,29 +42,12 @@ namespace spintool
 		, m_sprite_importer(*this)
 		, m_animation_navigator(*this)
 	{
-		auto setup_directory = [](const std::string& dir_name)
-			{
-				std::filesystem::path out_path{ std::filesystem::current_path().append(dir_name) };
-				if (std::filesystem::exists(out_path) == false)
-				{
-					std::filesystem::create_directory(out_path);
-				}
-
-				return out_path;
-			};
-
-		m_rom_load_path = setup_directory("roms");
-		m_sprite_export_path = setup_directory("sprite_export");
-		m_rom_export_path = setup_directory("rom_export");
-		m_projects_path = setup_directory("projects");
-		m_config_path = setup_directory("config");
-
 		LoadROMConfig();
 	}
 
 	void EditorUI::SaveROMConfig() const
 	{
-		std::filesystem::path config_path = m_config_path;
+		std::filesystem::path config_path = s_config_path;
 		config_path.append("roms.json");
 
 		std::ofstream config_out{ config_path };
@@ -60,7 +61,7 @@ namespace spintool
 
 	void EditorUI::LoadROMConfig()
 	{
-		std::filesystem::path config_path = m_config_path;
+		std::filesystem::path config_path = s_config_path;
 		config_path.append("roms.json");
 
 		if (std::filesystem::exists(config_path) == false)
@@ -106,7 +107,13 @@ namespace spintool
 			{
 				if (ImGui::BeginMenu("File"))
 				{
-					if (ImGui::MenuItem("Save ROM"))
+					if (ImGui::MenuItem("New Project..."))
+					{
+						Project::CreateProject("test_project", GetROM());
+					}
+					ImGui::Separator();
+
+					if (ImGui::MenuItem("Export ROM"))
 					{
 						m_rom.SaveROM();
 					}
@@ -244,19 +251,29 @@ namespace spintool
 		return m_rom;
 	}
 
-	std::filesystem::path EditorUI::GetROMLoadPath() const
+	std::filesystem::path EditorUI::GetROMLoadPath()
 	{
-		return m_rom_load_path;
+		return s_rom_load_path;
 	}
 	
-	std::filesystem::path EditorUI::GetROMExportPath() const
+	std::filesystem::path EditorUI::GetROMExportPath()
 	{
-		return m_rom_export_path;
+		return s_rom_export_path;
 	}
 
-	std::filesystem::path EditorUI::GetSpriteExportPath() const
+	std::filesystem::path EditorUI::GetSpriteExportPath()
 	{
-		return m_sprite_export_path;
+		return s_sprite_export_path;
+	}
+
+	std::filesystem::path EditorUI::GetProjectsPath()
+	{
+		return s_projects_path;
+	}
+
+	std::filesystem::path EditorUI::GetConfigPath()
+	{
+		return s_config_path;
 	}
 
 	const std::vector<TilesetEntry>& EditorUI::GetTilesets() const

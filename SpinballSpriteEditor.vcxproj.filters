@@ -61,6 +61,12 @@
     <Filter Include="Header Files\external\nlohmann">
       <UniqueIdentifier>{0e425f21-56b5-4b55-bd4d-62d8a54d5c03}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\project">
+      <UniqueIdentifier>{74ff7761-8266-48ca-ade8-19532fdbdf7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\project">
+      <UniqueIdentifier>{bf67c8fe-8fa3-4790-9d87-2d4de8660877}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="external\imgui\imgui.cpp">
@@ -221,6 +227,9 @@
     </ClCompile>
     <ClCompile Include="src\rom\ssc_compressor.cpp">
       <Filter>Source Files\rom</Filter>
+    </ClCompile>
+    <ClCompile Include="src\project\editor_project.cpp">
+      <Filter>Source Files\project</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -397,6 +406,9 @@
     </ClInclude>
     <ClInclude Include="redist\rom\ssc_compressor.h">
       <Filter>Header Files\rom</Filter>
+    </ClInclude>
+    <ClInclude Include="redist\project\editor_project.h">
+      <Filter>Header Files\project</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
