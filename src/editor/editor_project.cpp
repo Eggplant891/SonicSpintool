@@ -1,14 +1,11 @@
-#include "project/editor_project.h"
+#include "editor/editor_project.h"
 
 #include "ui/ui_editor.h"
-
 #include "nlohmann/json.hpp"
-
 #include <fstream>
 
 namespace spintool
 {
-
 	void Project::SaveProject()
 	{
 		std::filesystem::path project_path = m_project_path_root;

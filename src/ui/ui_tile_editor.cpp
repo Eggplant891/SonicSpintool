@@ -50,14 +50,14 @@ namespace spintool
 
 		ImGui::SetNextWindowPos(ImVec2{ 0,16 });
 		ImGui::SetNextWindowSize(ImVec2{ Renderer::s_window_width, Renderer::s_window_height - 16 });
-		if (ImGui::Begin("Tile Editor", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
+		if (ImGui::Begin("Brush Editor", &m_visible, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
 		{
 			if (m_target_brush == nullptr)
 			{
 				ImGui::Text("<INVALID BRUSH TARGET>");
 			}
 
-			if (ImGui::Button("Save Tile"))
+			if (ImGui::Button("Save Brush"))
 			{
 				m_visible = false;
 			}
@@ -70,7 +70,7 @@ namespace spintool
 			m_tile_picker.Draw();
 			ImGui::SameLine();
 
-			const float max_zoom = 16.0f;
+			const float max_zoom = 4.0f;
 			float zoom = max_zoom;
 
 			const ImVec2 tile_origin_screen = ImGui::GetCursorScreenPos();
@@ -79,7 +79,7 @@ namespace spintool
 
 			for (; zoom >= 1.0f; zoom = zoom / 2.0f)
 			{
-				ImGui::Image((ImTextureID)m_brush_preview.texture.get(), ImVec2{ 32 * zoom ,  32 * zoom }); ImGui::SameLine();
+				ImGui::Image((ImTextureID)m_brush_preview.texture.get(), ImVec2{ m_brush_preview.texture->w * zoom ,  m_brush_preview.texture->h * zoom }); ImGui::SameLine();
 			}
 			ImGui::NewLine();
 			for (unsigned int grid_y = 0; grid_y < m_target_brush->BrushHeight(); ++grid_y)
@@ -167,6 +167,16 @@ namespace spintool
 		, m_brush_index(brush_index)
 	{
 		m_target_brush = m_tile_layer->tile_layout->tile_brushes[m_brush_index].get();
+		m_tile_picker.SetTileLayer(m_tile_layer);
+		RenderBrush();
+	}
+
+	EditorTileEditor::EditorTileEditor(EditorUI& owning_ui, rom::TileLayer& tile_layer, rom::TileBrush& brush)
+		: EditorWindowBase(owning_ui)
+		, m_tile_layer(&tile_layer)
+		, m_tile_picker(owning_ui)
+		, m_target_brush(&brush)
+	{
 		m_tile_picker.SetTileLayer(m_tile_layer);
 		RenderBrush();
 	}

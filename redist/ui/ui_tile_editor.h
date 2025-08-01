@@ -20,6 +20,7 @@ namespace spintool
 	{
 	public:
 		EditorTileEditor(EditorUI& owning_ui, rom::TileLayer& tile_layer, Uint32 brush_index);
+		EditorTileEditor(EditorUI& owning_ui, rom::TileLayer& tile_layer, rom::TileBrush& brush_instance);
 
 		void RenderBrush();
 		void Update() override;

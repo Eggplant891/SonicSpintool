@@ -51,9 +51,4 @@ namespace spintool::rom
 		static Level LoadFromROM(const rom::SpinballROM& rom, int level_index);
 		rom::Ptr32 SaveToROM(rom::SpinballROM& rom) const;
 	};
-
-	class LevelManager
-	{
-		std::vector<Level> m_levels;
-	};
 }

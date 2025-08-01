@@ -7,6 +7,9 @@
 #include <cassert>
 #include <filesystem>
 #include "rom/ssc_compressor.h"
+#include "editor/editor_brush.h"
+#include "nlohmann/json.hpp"
+#include <fstream>
 
 
 namespace spintool
@@ -280,6 +283,14 @@ namespace spintool
 		if (m_brush_editor && m_brush_editor->IsOpen())
 		{
 			m_brush_editor->Update();
+
+			if (m_brush_editor->IsOpen() == false)
+			{
+				if (m_selected_brush.IsActive())
+				{
+					m_selected_brush.PickBrush(m_selected_brush.brush.value());
+				}
+			}
 			return;
 		}
 		else if (m_brush_editor)
@@ -334,11 +345,11 @@ namespace spintool
 			{
 				if (m_selected_brush.IsActive())
 				{
-					if (m_selected_brush.was_picked_from_layout == true)
-					{
-						m_selected_brush.StartPickingFromLayout(*m_selected_brush.tile_layer, *m_selected_brush.tile_picker);
-					}
-					else
+					//if (m_selected_brush.was_picked_from_layout == true)
+					//{
+					//	m_selected_brush.StartPickingFromLayout(*m_selected_brush.tile_layer, *m_selected_brush.tile_picker);
+					//}
+					//else
 					{
 						m_selected_brush.Clear();
 					}
@@ -1011,7 +1022,7 @@ namespace spintool
 									}
 									ImGui::EndDisabled();
 
-									if (ImGui::Button("Pick from layout"))
+									if (ImGui::Button("Pick from layout") || (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyPressed(ImGuiKey_C)))
 									{
 										m_selected_brush.StartPickingFromLayout(m_level->m_tile_layers[layer_index], m_tile_picker_list[layer_index]);
 									}
@@ -1494,8 +1505,14 @@ namespace spintool
 								else if (m_selected_brush.HasSelection())
 								{
 									ImGui::Image((ImTextureID)m_selected_brush.brush_texture.get(), tile_brush_dimensions * m_zoom, uv0, uv1);
-								}
 
+									if (ImGui::IsKeyPressed(ImGuiKey_E, false))
+									{
+										m_brush_editor.emplace(m_owning_ui, m_level->m_tile_layers[1], m_selected_brush.brush.value());
+										m_brush_editor->m_visible = true;
+									}
+								}
+								
 								if (m_selected_brush.dragging_start_ref.has_value() == false)
 								{
 									ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
@@ -1544,6 +1561,15 @@ namespace spintool
 										{
 											m_selected_brush.Clear();
 										}
+
+										CustomTileBrush new_brush;
+										new_brush.tile_brush = std::make_unique<rom::TileBrush>(*m_selected_brush.brush);
+										std::filesystem::path custom_brushes_path{ m_owning_ui.GetProjectsPath() };
+										custom_brushes_path.append("custom_brushes_test.json");
+										std::ofstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
+										nlohmann::json custom_brushes = new_brush.SerialiseToJSON();
+										custom_brushes_file << custom_brushes.dump(4);
+
 										has_just_selected_item = true;
 									}
 									else if (m_selected_brush.HasSelection())
@@ -1561,6 +1587,19 @@ namespace spintool
 										m_selected_brush.dragging_start_ref.reset();
 									}
 								}
+							}
+						}
+						else
+						{
+							if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyPressed(ImGuiKey_V, false))
+							{
+								std::filesystem::path custom_brushes_path{ m_owning_ui.GetProjectsPath() };
+								custom_brushes_path.append("custom_brushes_test.json");
+
+								std::ifstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
+								CustomTileBrush new_brush = CustomTileBrush::DeserialiseFromJSON(nlohmann::json::parse(custom_brushes_file));
+								m_selected_brush.tile_layer = &m_level->m_tile_layers[1];
+								m_selected_brush.PickBrush(*new_brush.tile_brush);
 							}
 						}
 					}
