@@ -1508,7 +1508,7 @@ namespace spintool
 
 									if (ImGui::IsKeyPressed(ImGuiKey_E, false))
 									{
-										m_brush_editor.emplace(m_owning_ui, m_level->m_tile_layers[1], m_selected_brush.brush.value());
+										m_brush_editor.emplace(m_owning_ui, *m_selected_brush.tile_layer, m_selected_brush.brush.value());
 										m_brush_editor->m_visible = true;
 									}
 								}
