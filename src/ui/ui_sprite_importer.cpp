@@ -276,9 +276,11 @@ namespace spintool
 		rom::TileSet* result_tileset = std::get<std::unique_ptr<rom::TileSet>>(m_result_asset).get();
 		ImGui::SetNextItemWidth(256);
 		int target_write_location = static_cast<int>(target_tileset.rom_data.rom_offset);
+		m_num_tiles_to_insert = (m_preview_image->h / rom::TileSet::s_tile_height) * (m_preview_image->w / rom::TileSet::s_tile_width);
 		const bool offset_changed = ImGui::InputInt("Target Write Offset", &target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_ReadOnly);
 		const bool append_mode_changed = ImGui::Checkbox("Append exiting tileset", &m_append_existing);
-		if(append_mode_changed || offset_changed || m_force_update_write_location)
+		bool tile_count_changed = ImGui::InputInt("Num Tiles", &m_num_tiles_to_insert, 0, 0xFF, ImGuiInputTextFlags_CharsHexadecimal);
+		if (tile_count_changed || append_mode_changed || offset_changed || m_force_update_write_location)
 		{
 			m_force_update_write_location = false;
 			m_result_asset = rom::TileSet::LoadFromROM(m_owning_ui.GetROM(), target_write_location, CompressionAlgorithm::SSC).tileset;
@@ -298,11 +300,11 @@ namespace spintool
 					const size_t preview_pitch_offset_per_line = m_preview_image->pitch - (m_preview_image->w * preview_pixel_format_details->bytes_per_pixel);
 					
 					size_t preview_pitch_offset = 0;
-
+					int tiles_to_add = m_num_tiles_to_insert == 0 ? (m_preview_image->h / rom::TileSet::s_tile_height) * (m_preview_image->w / rom::TileSet::s_tile_width) : m_num_tiles_to_insert;
 					const size_t total_pixels = rom::TileSet::s_tile_width * rom::TileSet::s_tile_height;
-					for(int y = 0; y < (m_preview_image->h / rom::TileSet::s_tile_height); ++y)
+					for(int y = 0; y < (m_preview_image->h / rom::TileSet::s_tile_height) && tiles_to_add > 0; ++y)
 					{
-						for (int x = 0; x < (m_preview_image->w / rom::TileSet::s_tile_width); ++x)
+						for (int x = 0; x < (m_preview_image->w / rom::TileSet::s_tile_width) && tiles_to_add > 0; ++x)
 						{
 							rom::Tile& new_tile = result_tileset->tiles.emplace_back();
 							new_tile.pixel_data.resize(total_pixels);
@@ -335,6 +337,8 @@ namespace spintool
 								result_tileset->uncompressed_data.emplace_back(*current_byte);
 								++current_byte;
 							}
+
+							--tiles_to_add;
 						}
 					}
 

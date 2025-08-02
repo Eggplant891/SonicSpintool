@@ -58,13 +58,15 @@ namespace spintool
 		SDLTextureHandle m_export_preview_texture;
 
 		std::vector<ColourPaletteMapping> m_detected_colours;
-		int m_selected_palette_index = 0;
 		std::variant<std::unique_ptr<rom::TileSet>, std::shared_ptr<const rom::Sprite>> m_result_asset;
 		std::variant<rom::TileSet*, rom::Sprite*> m_target_asset;
 		std::vector<std::shared_ptr<rom::Palette>> m_available_palettes;
 		rom::Palette m_selected_palette;
 		SDLPaletteHandle m_preview_palette;
 		std::string m_loaded_path;
+
+		int m_selected_palette_index = 0;
+		int m_num_tiles_to_insert = 0;
 
 		bool m_force_update_write_location = false;
 		bool m_append_existing = true;
