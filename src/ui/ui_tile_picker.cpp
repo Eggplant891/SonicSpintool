@@ -185,14 +185,21 @@ namespace spintool
 		return m_tile_layer;
 	}
 
-	size_t TilePicker::GetSelectedTileIndex() const
+	size_t TilePicker::GetSelectedTileIndex(std::optional<int> tile_index_offset) const
 	{
-		return std::distance(std::begin(tiles)
+		size_t out_index = std::distance(std::begin(tiles)
 			, std::find_if(std::begin(tiles), std::end(tiles),
 				[this](const std::shared_ptr<rom::SpriteTile>& tile)
 				{
 					return currently_selected_tile == tile.get();
 				}));
+
+		if (tile_index_offset)
+		{
+			return (out_index + *tile_index_offset) % tiles.size();
+		}
+
+		return out_index;
 	}
 
 	const rom::Tile* TilePicker::GetSelectedTile() const
@@ -205,17 +212,24 @@ namespace spintool
 		return &m_tile_layer->tileset->tiles.at(GetSelectedTileIndex());
 	}
 
-	void TilePicker::DrawPickedTile(bool flip_x, bool flip_y, float zoom) const
+	void TilePicker::DrawPickedTile(bool flip_x, bool flip_y, float zoom, std::optional<int> tile_index_offset) const
 	{
 		if (currently_selected_tile == nullptr)
 		{
 			return;
 		}
 
-		const rom::SpriteTile& tile = *currently_selected_tile;
+		const rom::SpriteTile* tile = currently_selected_tile;
 
-		ImVec2 uv0 = { static_cast<float>(tile.x_offset) / m_texture->w , static_cast<float>(tile.y_offset) / m_texture->h };
-		ImVec2 uv1 = { static_cast<float>(tile.x_offset + tile.x_size) / m_texture->w, static_cast<float>(tile.y_offset + tile.y_size) / m_texture->h };
+		if (tile_index_offset)
+		{
+			const size_t tile_index = GetSelectedTileIndex(tile_index_offset);
+			tile = tiles.at(tile_index).get();
+		}
+
+
+		ImVec2 uv0 = { static_cast<float>(tile->x_offset) / m_texture->w , static_cast<float>(tile->y_offset) / m_texture->h };
+		ImVec2 uv1 = { static_cast<float>(tile->x_offset + tile->x_size) / m_texture->w, static_cast<float>(tile->y_offset + tile->y_size) / m_texture->h };
 		if (flip_x)
 		{
 			std::swap(uv0.x, uv1.x);
@@ -225,7 +239,7 @@ namespace spintool
 			std::swap(uv0.y, uv1.y);
 		}
 
-		ImGui::Image((ImTextureID)m_texture.get(), ImVec2{ static_cast<float>(tile.x_size), static_cast<float>(tile.y_size) } * zoom, uv0, uv1);
+		ImGui::Image((ImTextureID)m_texture.get(), ImVec2{ static_cast<float>(tile->x_size), static_cast<float>(tile->y_size) } * zoom, uv0, uv1);
 	}
 
 }

@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <vector>
+#include <optional>
 
 namespace spintool
 {
@@ -34,10 +35,10 @@ namespace spintool
 		void SetPaletteLine(int palette_line);
 		void SetTileLayer(rom::TileLayer* layer);
 		rom::TileLayer* GetTileLayer();
-		size_t GetSelectedTileIndex() const;
+		size_t GetSelectedTileIndex(std::optional<int> tile_index_offset = std::nullopt) const;
 		const rom::Tile* GetSelectedTile() const;
 
-		void DrawPickedTile(bool flip_x, bool flip_y, float zoom) const;
+		void DrawPickedTile(bool flip_x, bool flip_y, float zoom, std::optional<int> tile_index_offset = std::nullopt) const;
 
 	//private:
 		static constexpr Uint32 picker_width = 20;
