@@ -90,7 +90,7 @@ namespace spintool
 
 						const rom::SSCCompressionResult compressed_fg_data = rom::SSCCompressor::CompressData(m_level->m_tile_layers[1].tileset->uncompressed_data, 0, m_level->m_tile_layers[1].tileset->num_tiles * 64);
 
-						if (m_level->m_tile_layers[1].tileset->compressed_size < compressed_fg_data.size())
+						if (m_level->m_tile_layers[0].tileset->compressed_size < compressed_data.size() || m_level->m_tile_layers[1].tileset->compressed_size < compressed_fg_data.size())
 						{
 							const rom::Ptr32 tileset_ptr_location = m_level->m_data_offsets.foreground_tileset;
 							m_owning_ui.GetROM().WriteUint32(m_level->m_data_offsets.foreground_tileset, next_tileset_location);
@@ -1022,6 +1022,17 @@ namespace spintool
 									}
 									ImGui::EndDisabled();
 
+									if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyPressed(ImGuiKey_V, false))
+									{
+										std::filesystem::path custom_brushes_path{ m_owning_ui.GetProjectsPath() };
+										custom_brushes_path.append("custom_brushes_test.json");
+
+										std::ifstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
+										CustomTileBrush new_brush = CustomTileBrush::DeserialiseFromJSON(nlohmann::json::parse(custom_brushes_file));
+										m_selected_brush.tile_layer = &m_level->m_tile_layers[layer_index];
+										m_selected_brush.PickBrush(*new_brush.tile_brush);
+									}
+
 									if (ImGui::Button("Pick from layout") || (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyPressed(ImGuiKey_C)))
 									{
 										m_selected_brush.StartPickingFromLayout(m_level->m_tile_layers[layer_index], m_tile_picker_list[layer_index]);
@@ -1587,19 +1598,6 @@ namespace spintool
 										m_selected_brush.dragging_start_ref.reset();
 									}
 								}
-							}
-						}
-						else
-						{
-							if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyPressed(ImGuiKey_V, false))
-							{
-								std::filesystem::path custom_brushes_path{ m_owning_ui.GetProjectsPath() };
-								custom_brushes_path.append("custom_brushes_test.json");
-
-								std::ifstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
-								CustomTileBrush new_brush = CustomTileBrush::DeserialiseFromJSON(nlohmann::json::parse(custom_brushes_file));
-								m_selected_brush.tile_layer = &m_level->m_tile_layers[1];
-								m_selected_brush.PickBrush(*new_brush.tile_brush);
 							}
 						}
 					}
