@@ -1361,7 +1361,7 @@ namespace spintool
 										const ImVec2 snapped_pos{ (ImVec2{x,y} *tile_dimensions) * m_zoom };
 										const ImVec2 final_snapped_pos{ snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 										ImGui::SetCursorScreenPos(final_snapped_pos);
-										m_selected_tile.tile_picker->DrawPickedTile(m_selected_tile.flip_x, m_selected_tile.flip_y, m_zoom, ImGui::IsKeyDown(ImGuiKey_ModShift) ? std::optional<int>{ static_cast<int>(((y - start_y) * (end_x - start_x)) + (x - start_x) ) } : std::nullopt);
+										m_selected_tile.tile_picker->DrawPickedTile(m_selected_tile.flip_x, m_selected_tile.flip_y, m_zoom, ImGui::IsKeyDown(ImGuiKey_ModShift) ? std::optional<int>{ static_cast<int>(((y - start_y) * ((end_x+1) - start_x)) + (x - start_x) ) } : std::nullopt);
 									}
 								}
 
@@ -1432,7 +1432,7 @@ namespace spintool
 									{
 										const size_t tile_index_to_edit = static_cast<size_t>(x) + (static_cast<size_t>(y) * m_selected_tile.tile_layer->tile_layout->layout_width * 4);
 										rom::TileInstance& target_tile = m_selected_tile.tile_layer->tile_layout->tile_instances[tile_index_to_edit];
-										target_tile.tile_index = static_cast<int>(m_selected_tile.tile_picker->GetSelectedTileIndex(ImGui::IsKeyDown(ImGuiKey_ModShift) ? std::optional<int>{ static_cast<int>(((y - start_grid_pos.y)* (end_grid_pos.x - start_grid_pos.x)) + (x - start_grid_pos.x)) } : std::nullopt));
+										target_tile.tile_index = static_cast<int>(m_selected_tile.tile_picker->GetSelectedTileIndex(ImGui::IsKeyDown(ImGuiKey_ModShift) ? std::optional<int>{ static_cast<int>(((y - start_grid_pos.y) * ((end_grid_pos.x+1) - start_grid_pos.x)) + (x - start_grid_pos.x)) } : std::nullopt));
 										target_tile.palette_line = m_selected_tile.tile_picker->current_palette_line;
 										target_tile.is_flipped_horizontally = m_selected_tile.flip_x;
 										target_tile.is_flipped_vertically = m_selected_tile.flip_y;
