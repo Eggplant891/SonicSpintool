@@ -26,7 +26,7 @@ namespace spintool
 		}
 
 		char name[64];
-		sprintf_s(name, "Sprite Viewer (0x%06X)", static_cast<unsigned int>(m_sprite->rom_data.rom_offset));
+		sprintf(name, "Sprite Viewer (0x%06X)", static_cast<unsigned int>(m_sprite->rom_data.rom_offset));
 		ImGui::SetNextWindowSize(ImVec2(static_cast<float>(m_sprite->GetBoundingBox().Width() * m_zoom) + 32, 640), ImGuiCond_Appearing);
 		if (ImGui::Begin(name, &m_visible, ImGuiWindowFlags_NoSavedSettings))
 		{
@@ -119,7 +119,7 @@ namespace spintool
 							tile_tex = &m_rendered_sprite_tile_textures.emplace_back(sprite_tile);
 						}
 
-						sprintf_s(name_buffer, "Tile %d", i);
+						sprintf(name_buffer, "Tile %d", i);
 						if (ImGui::TreeNode(name_buffer))
 						{
 							if (tile_tex->texture == nullptr)

@@ -4,14 +4,17 @@
 #include "ui/ui_editor.h"
 
 #include "imgui.h"
-#include <optional>
-#include <algorithm>
 #include "SDL3/SDL_image.h"
 #include "ui/ui_palette_viewer.h"
-#include <filesystem>
 #include "rom/tile_layout.h"
 #include "rom/tileset.h"
 #include "types/rom_ptr.h"
+
+#include <filesystem>
+#include <optional>
+#include <algorithm>
+#include <thread>
+#include <atomic>
 
 namespace spintool
 {
@@ -109,7 +112,7 @@ namespace spintool
 
 			static int num_searches = 16;
 			char search_ui_text[64];
-			sprintf_s(search_ui_text, "Search for next (%d) sprites###search_button", num_searches);
+			sprintf(search_ui_text, "Search for next (%d) sprites###search_button", num_searches);
 			if (ImGui::Button(search_ui_text))
 			{
 				const auto current_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
@@ -392,7 +395,7 @@ namespace spintool
 					const bool hovered = ImGui::IsItemHovered();
 					const bool clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
 
-					sprintf_s(path_buffer, "popup_%X02",static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
+					sprintf(path_buffer, "popup_%X02",static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 					if (ImGui::BeginPopupContextItem(path_buffer, ImGuiPopupFlags_MouseButtonRight))
 					{
 						if (ImGui::MenuItem("Import image to this location"))
@@ -400,10 +403,10 @@ namespace spintool
 							m_owning_ui.OpenImageImporter(const_cast<rom::Sprite&>(*tex->sprite));
 						}
 
-						sprintf_s(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
+						sprintf(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 						if (ImGui::MenuItem(path_buffer))
 						{
-							sprintf_s(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
+							sprintf(path_buffer, "spinball_image_%X02.png", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 							std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 							SDLPaletteHandle palette = Renderer::CreateSDLPalette(*m_owning_ui.GetPalettes().at(2));
 							SDLSurfaceHandle out_surface{ SDL_CreateSurface(tex->sprite->GetBoundingBox().Width(), tex->sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8)};

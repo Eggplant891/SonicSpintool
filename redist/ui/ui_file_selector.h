@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <filesystem>
+#include <vector>
 
 namespace spintool
 {

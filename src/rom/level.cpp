@@ -22,7 +22,7 @@ namespace spintool::rom
 		const char* level_name = reinterpret_cast<const char*>(&target_rom.m_buffer[level_name_offset]);
 
 		char buffer[256];
-		sprintf_s(buffer, "%s", level_name);
+		sprintf(buffer, "%s", level_name);
 		new_level.m_level_name = buffer;
 		new_level.m_level_index = level_index;
 

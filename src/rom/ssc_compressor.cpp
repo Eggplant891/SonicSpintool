@@ -13,7 +13,7 @@ namespace spintool::rom
 
 		while (current_data_index < in_data.size())
 		{
-			const size_t size_diff = std::min(in_data.size() - current_data_index, 8ull);
+			const size_t size_diff = std::min<size_t>(in_data.size() - current_data_index, 8ull);
 			Uint8 fragment_header = 0x00;
 			switch (size_diff)
 			{

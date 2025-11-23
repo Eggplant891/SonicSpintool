@@ -93,7 +93,7 @@ namespace spintool
 							//if (result.uncompressed_size != decompressed_data_result.uncompressed_data.size())
 							//{
 							//	//char buffer[2048];
-							//	//sprintf_s(buffer, "Mismatched size detected at 0x%08X [Expected: %llu] [Actual: %llu]", static_cast<unsigned int>(result.rom_data.rom_offset), result.uncompressed_size, decompressed_data_result.uncompressed_data.size());
+							//	//sprintf(buffer, "Mismatched size detected at 0x%08X [Expected: %llu] [Actual: %llu]", static_cast<unsigned int>(result.rom_data.rom_offset), result.uncompressed_size, decompressed_data_result.uncompressed_data.size());
 							//	//std::cout << buffer << std::endl;
 							//}
 
@@ -135,18 +135,18 @@ namespace spintool
 
 				static std::string s_no_errors_str = "No Errors";
 				char name_buffer[1024];
-				sprintf_s(name_buffer, "Tileset (0x%06X -> 0x%06X) [%s]", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1), tileset_entry.result.error_msg.value_or(s_no_errors_str).c_str());
+				sprintf(name_buffer, "Tileset (0x%06X -> 0x%06X) [%s]", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1), tileset_entry.result.error_msg.value_or(s_no_errors_str).c_str());
 				if (ImGui::TreeNode(name_buffer))
 				{
 					ImGui::Text("Total size on ROM: %02d (0x%04X)", tileset->rom_data.real_size, tileset->rom_data.real_size);
-					sprintf_s(name_buffer,"Header (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset + 2));
+					sprintf(name_buffer,"Header (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset + 2));
 					if (ImGui::TreeNodeEx(name_buffer, ImGuiTreeNodeFlags_DefaultOpen))
 					{
 						ImGui::Text("Tiles: %02d (0x%04X)", tileset->num_tiles, tileset->num_tiles);
 						ImGui::TreePop();
 					}
 
-					sprintf_s(name_buffer, "Tile Data: (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset + 2), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
+					sprintf(name_buffer, "Tile Data: (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset + 2), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
 					if (ImGui::TreeNodeEx(name_buffer, ImGuiTreeNodeFlags_DefaultOpen))
 					{
 						ImGui::Text("Compressed Size: %02d (0x%04X)", tileset->compressed_size, tileset->compressed_size);

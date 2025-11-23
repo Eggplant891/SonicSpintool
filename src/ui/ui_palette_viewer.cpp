@@ -31,7 +31,7 @@ namespace spintool
 		for (rom::Swatch& swatch : palette.palette_swatches)
 		{
 			char swatch_name[64];
-			sprintf_s(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
+			sprintf(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
 
 			ImColor col = swatch.AsImColor();
 			ImGui::SameLine();
@@ -50,7 +50,7 @@ namespace spintool
 		for (const rom::Swatch& swatch : palette.palette_swatches)
 		{
 			char swatch_name[64];
-			sprintf_s(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
+			sprintf(swatch_name, "0x%02X###swatch_%p", swatch.packed_value, &swatch);
 
 			ImColor col = swatch.AsImColor();
 			ImGui::SameLine();

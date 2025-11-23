@@ -145,7 +145,7 @@ namespace spintool
 					if (ImGui::Selectable("Export Tileset"))
 					{
 						static char path_buffer[2048];
-						sprintf_s(path_buffer, "spinball_tileset_%X02.png", static_cast<unsigned int>(m_tile_layer->tileset->rom_data.rom_offset));
+						sprintf(path_buffer, "spinball_tileset_%X02.png", static_cast<unsigned int>(m_tile_layer->tileset->rom_data.rom_offset));
 						std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 						SDLSurfaceHandle out_surface = m_tile_layer->tileset->RenderToSurface(*m_tile_layer->palette_set.palette_lines.at(current_palette_line));
 						assert(IMG_SavePNG(out_surface.get(), export_path.generic_u8string().c_str()));

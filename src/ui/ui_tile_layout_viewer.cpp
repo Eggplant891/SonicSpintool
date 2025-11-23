@@ -515,7 +515,7 @@ namespace spintool
 		char combined_buffer[128];
 		if (export_combined)
 		{
-			sprintf_s(combined_buffer, "%s_combined", m_tile_layout_render_requests.front().layout_type_name.c_str());
+			sprintf(combined_buffer, "%s_combined", m_tile_layout_render_requests.front().layout_type_name.c_str());
 		}
 		const std::string combined_layout_name = export_combined ? m_tile_layout_render_requests.front().layout_layout_name : "";
 		const std::string combined_type_name = export_combined ? combined_buffer : "";
@@ -686,7 +686,7 @@ namespace spintool
 			if (m_export_result && export_combined == false)
 			{
 				static char path_buffer[4096];
-				sprintf_s(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
+				sprintf(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
 				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
 			}
@@ -856,7 +856,7 @@ namespace spintool
 		{
 			static char path_buffer[4096];
 
-			sprintf_s(path_buffer, "spinball_%s.png", combined_type_name.c_str());
+			sprintf(path_buffer, "spinball_%s.png", combined_type_name.c_str());
 			std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
 			if (export_combined)
 			{
@@ -2388,7 +2388,7 @@ namespace spintool
 	{
 		char working_buffer[256];
 
-		sprintf_s(working_buffer, "%s", m_level->m_level_name.c_str());
+		sprintf(working_buffer, "%s", m_level->m_level_name.c_str());
 		ImGui::InputText("Level Name", working_buffer, std::size(working_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
 		int emerald_count = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.emerald_count);
 		ImGui::InputInt("Emeralds", &emerald_count);
@@ -2617,7 +2617,7 @@ namespace spintool
 					request.is_chroma_keyed = false;
 					request.compression_algorithm = CompressionAlgorithm::SSC;
 					char levelname_buffer[32];
-					sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
+					sprintf(levelname_buffer, "level_%d", m_level->m_level_index);
 					request.layout_type_name = levelname_buffer;
 					request.layout_layout_name = "bg";
 
@@ -2660,7 +2660,7 @@ namespace spintool
 					request.compression_algorithm = CompressionAlgorithm::SSC;
 
 					char levelname_buffer[32];
-					sprintf_s(levelname_buffer, "level_%d", m_level->m_level_index);
+					sprintf(levelname_buffer, "level_%d", m_level->m_level_index);
 					request.layout_type_name = levelname_buffer;
 					request.layout_layout_name = "fg";
 

@@ -150,7 +150,7 @@ namespace spintool
 			for (ColourPaletteMapping& colour_entry : m_detected_colours)
 			{
 				char id_buffer[64];
-				sprintf_s(id_buffer, "col_%d", i);
+				sprintf(id_buffer, "col_%d", i);
 				ImGui::ColorButton(id_buffer, colour_entry.colour);
 				ImGui::SameLine();
 				ImGui::Text("->");
@@ -159,7 +159,7 @@ namespace spintool
 				ImColor col = swatch.AsImColor();
 				ImGui::ColorButton(id_buffer, col.Value);
 
-				sprintf_s(id_buffer, "###pal_sel_%d", i);
+				sprintf(id_buffer, "###pal_sel_%d", i);
 				int out_val = colour_entry.palette_index;
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(64);

@@ -164,7 +164,7 @@ namespace spintool
 						const char* large_command = "0x%08X";
 
 						char id_buffer[64];
-						sprintf_s(id_buffer, "0x%08X", static_cast<rom::Ptr32>(anim.anim_sequence->rom_data.rom_offset));
+						sprintf(id_buffer, "0x%08X", static_cast<rom::Ptr32>(anim.anim_sequence->rom_data.rom_offset));
 						if (ImGui::TreeNode(id_buffer))
 						{
 							char inner_buffer[256];
@@ -173,8 +173,8 @@ namespace spintool
 							{
 								const char* command_data_format = command.data_size == 1 ? small_command : (command.data_size == 2 ? medium_command : large_command);
 								char format_buffer[32];
-								sprintf_s(format_buffer, "%s <%%s (0x%%02X)>###%%08X", command_data_format);
-								sprintf_s(inner_buffer, format_buffer, command.command_data, rom::AnimationCommandTypeToString(command.command_type), static_cast<Uint8>(command.command_type), command.rom_data.rom_offset);
+								sprintf(format_buffer, "%s <%%s (0x%%02X)>###%%08X", command_data_format);
+								sprintf(inner_buffer, format_buffer, command.command_data, rom::AnimationCommandTypeToString(command.command_type), static_cast<Uint8>(command.command_type), command.rom_data.rom_offset);
 								
 								if(ImGui::TreeNode(inner_buffer))
 								{

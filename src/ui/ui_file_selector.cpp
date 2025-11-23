@@ -4,6 +4,8 @@
 #include "ui/ui_editor.h"
 #include "SDL3/SDL_image.h"
 
+#include <vector>
+
 namespace spintool
 {
 	struct FileSelectorEntry
@@ -12,7 +14,7 @@ namespace spintool
 		SDLTextureHandle thumbnail;
 	};
 
-	std::optional<std::filesystem::path> spintool::DrawFileSelector(const FileSelectorSettings& settings, EditorUI& owning_ui, std::optional<std::filesystem::path> current_selection)
+	std::optional<std::filesystem::path> DrawFileSelector(const FileSelectorSettings& settings, EditorUI& owning_ui, std::optional<std::filesystem::path> current_selection)
 	{
 		static std::vector<FileSelectorEntry> s_file_entries;
 		static std::optional<std::filesystem::path> s_highlighted_path;
