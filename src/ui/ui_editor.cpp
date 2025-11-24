@@ -71,10 +71,10 @@ namespace spintool
 
 		std::ifstream config_in{ config_path };
 		nlohmann::json config_json_reader{ nlohmann::json::parse(config_in) };
-		std::string rom_path = config_json_reader["usa_rom_path"];
-		if (rom_path.empty() == false)
+		//std::string rom_path = config_json_reader["usa_rom_path"];
+		//if (rom_path.empty() == false)
 		{
-			AttemptLoadROM(rom_path);
+			//AttemptLoadROM(rom_path);
 		}
 	}
 

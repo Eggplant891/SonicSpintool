@@ -1,5 +1,5 @@
 COMPILER := g++
-COMPILER_FLAGS := -std=c++17 -lSDL3 -D IMGUI_DEFINE_MATH_OPERATORS
+COMPILER_FLAGS := -std=c++17 -D IMGUI_DEFINE_MATH_OPERATORS -lSDL3 -lSDL3_image
 
 OBJ_DIR = intermediate/obj
 DEP_DIR = intermediate/deps
@@ -10,7 +10,7 @@ INCLUDE_DIRS := \
 -I $(realpath ./external/SDL3) \
 -I $(realpath ./external/nlohmann)
 
-CPP_FILES := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard src/*/*/*.cpp)
+CPP_FILES := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard src/*/*/*.cpp) $(wildcard external/imgui/*.cpp) $(wildcard external/imgui/backends/*.cpp)
 
 OUTPUT_EXECUTABLE := SonicSpintool
 

@@ -28,7 +28,7 @@ namespace spintool
 		while (1)
 		{
 			Renderer::NewFrame();
-			if (SDL_PollEvent(&event))
+			while (SDL_PollEvent(&event))
 			{
 				ImGui_ImplSDL3_ProcessEvent(&event);
 				if (event.type == SDL_QUIT)
@@ -38,9 +38,9 @@ namespace spintool
 			}
 
 			editor_ui.Update();
-			Renderer::s_sdl_update_mutex.lock();
+			//Renderer::s_sdl_update_mutex.lock();
 			Renderer::Render();
-			Renderer::s_sdl_update_mutex.unlock();
+			//Renderer::s_sdl_update_mutex.unlock();
 			SDL_Delay(16);
 		}
 		Renderer::Shutdown();
