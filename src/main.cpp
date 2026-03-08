@@ -18,6 +18,7 @@ namespace spintool
 {
 	int SSEMain()
 	{
+		bool quitting = false;
 		SDL_Init(SDL_INIT_VIDEO);
 		SDL_Event event;
 
@@ -25,7 +26,7 @@ namespace spintool
 
 		EditorUI editor_ui;
 		editor_ui.Initialise();
-		while (1)
+		while (quitting == false)
 		{
 			Renderer::NewFrame();
 			while (SDL_PollEvent(&event))
@@ -33,6 +34,7 @@ namespace spintool
 				ImGui_ImplSDL3_ProcessEvent(&event);
 				if (event.type == SDL_QUIT)
 				{
+					quitting = true;
 					break;
 				}
 			}
