@@ -12,9 +12,7 @@ INCLUDE_DIRS := \
 
 CPP_FILES := $(wildcard src/*.cpp) $(wildcard src/*/*.cpp) $(wildcard src/*/*/*.cpp) $(wildcard external/imgui/*.cpp) $(wildcard external/imgui/backends/*.cpp)
 
-OUTPUT_EXECUTABLE := SonicSpintool
-
-$(OUTPUT_EXECUTABLE):
+SonicSpintool:
 	@echo --- Begin Compilation ---
 	$(COMPILER) $(INCLUDE_DIRS) -o $(OUTPUT_EXECUTABLE) $(CPP_FILES) $(COMPILER_FLAGS)
 	@echo -- End Compilation ---
