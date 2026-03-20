@@ -1,5 +1,15 @@
 /.vs/*
+/.vscode/*
+/.idea/*
 /bin/*
 /intermediate/*
 /lib/*
+imgui.ini
+
 *.vcxproj.user
+*.code-workspace
+*.geany
+
+/config/*
+/projects/*
+/roms/*
