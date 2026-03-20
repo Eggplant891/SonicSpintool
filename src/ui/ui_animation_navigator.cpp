@@ -175,7 +175,7 @@ namespace spintool
 								char format_buffer[32];
 								sprintf(format_buffer, "%s <%%s (0x%%02X)>###%%08X", command_data_format);
 								sprintf(inner_buffer, format_buffer, command.command_data, rom::AnimationCommandTypeToString(command.command_type), static_cast<Uint8>(command.command_type), command.rom_data.rom_offset);
-								
+
 								if(ImGui::TreeNode(inner_buffer))
 								{
 									Uint32 current_offset = command.rom_data.rom_offset;

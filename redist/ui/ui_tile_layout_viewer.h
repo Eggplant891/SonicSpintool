@@ -259,7 +259,7 @@ namespace spintool
 
 	struct RenderRequestSettings
 	{
-		RenderRequestType request_type;
+		RenderRequestType request_type = RenderRequestType::NONE;
 		bool show_background = true;
 		bool show_foreground = true;
 		bool show_game_objects = true;
@@ -286,9 +286,9 @@ namespace spintool
 		void DrawFlippersTable();
 		void PrepareRenderRequest(RenderRequestType render_request);
 
-		bool IsDraggingObject() const;
-		bool IsObjectPopupOpen() const;
-		bool IsEditingSomething() const;
+		[[nodiscard]] bool IsDraggingObject() const;
+		[[nodiscard]] bool IsObjectPopupOpen() const;
+		[[nodiscard]] bool IsEditingSomething() const;
 
 		struct AnimSpriteEntry
 		{
