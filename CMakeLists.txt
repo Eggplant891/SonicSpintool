@@ -1,0 +1,81 @@
+cmake_minimum_required(VERSION 4.1)
+project(sonicspintool)
+
+set(CMAKE_CXX_STANDARD 17)
+
+include_directories(external)
+include_directories(external/imgui)
+include_directories(external/imgui/backends)
+include_directories(external/imgui/misc/cpp)
+include_directories(external/imgui/misc/freetype)
+include_directories(external/imgui/misc/single_file)
+include_directories(external/nlohmann)
+include_directories(external/SDL3)
+include_directories(redist)
+include_directories(redist/editor)
+include_directories(redist/rom)
+include_directories(redist/rom/culling_tables)
+include_directories(redist/rom/game_objects)
+include_directories(redist/types)
+include_directories(redist/ui)
+
+add_executable(sonicspintool
+        external/imgui/backends/imgui_impl_sdl3.cpp
+        external/imgui/backends/imgui_impl_sdlrenderer3.cpp
+        external/imgui/misc/cpp/imgui_stdlib.cpp
+        external/imgui/imgui_draw.cpp
+        external/imgui/imgui_demo.cpp
+        external/imgui/imgui_tables.cpp
+        external/imgui/imgui_widgets.cpp
+        external/imgui/imgui.cpp
+        src/editor/editor_brush.cpp
+        src/editor/editor_level.cpp
+        src/editor/editor_project.cpp
+        src/editor/game_obj_manager.cpp
+        src/editor/spline_manager.cpp
+        src/editor/tile_brush_manager.cpp
+        src/editor/tile_layout_manager.cpp
+        src/rom/culling_tables/animated_object_culling_table.cpp
+        src/rom/culling_tables/game_obj_collision_culling_table.cpp
+        src/rom/culling_tables/spline_culling_table.cpp
+        src/rom/game_objects/game_object_definition.cpp
+        src/rom/game_objects/game_object_flipper.cpp
+        src/rom/game_objects/game_object_ring.cpp
+        src/rom/animated_object.cpp
+        src/rom/animation_sequence.cpp
+        src/rom/collision_tile.cpp
+        src/rom/colour.cpp
+        src/rom/level.cpp
+        src/rom/lzss_decompressor.cpp
+        src/rom/palette.cpp
+        src/rom/rom_asset_definitions.cpp
+        src/rom/rom_data.cpp
+        src/rom/spinball_rom.cpp
+        src/rom/sprite.cpp
+        src/rom/sprite_tile.cpp
+        src/rom/ssc_compressor.cpp
+        src/rom/ssc_decompressor.cpp
+        src/rom/tile.cpp
+        src/rom/tile_brush.cpp
+        src/rom/tile_layout.cpp
+        src/rom/tileset.cpp
+        src/types/blit_settings.cpp
+        src/types/bounding_box.cpp
+        src/ui/ui_animation_navigator.cpp
+        src/ui/ui_editor.cpp
+        src/ui/ui_editor_window.cpp
+        src/ui/ui_file_selector.cpp
+        src/ui/ui_palette.cpp
+        src/ui/ui_palette_viewer.cpp
+        src/ui/ui_sprite.cpp
+        src/ui/ui_sprite_importer.cpp
+        src/ui/ui_sprite_navigator.cpp
+        src/ui/ui_sprite_viewer.cpp
+        src/ui/ui_tile_editor.cpp
+        src/ui/ui_tile_layout_viewer.cpp
+        src/ui/ui_tile_picker.cpp
+        src/ui/ui_tileset_navigator.cpp
+        src/main.cpp
+        src/render.cpp)
+
+target_link_libraries(sonicspintool SDL3 SDL3_image)
