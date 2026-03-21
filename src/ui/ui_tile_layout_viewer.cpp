@@ -1132,8 +1132,11 @@ namespace spintool
 					{
 						if (m_level != nullptr)
 						{
+							int layer_index = 0;
 							for (const rom::TileLayer& tile_layer : m_level->m_tile_layers)
 							{
+								++layer_index;
+								ImGui::Text("Layer %d", layer_index);
 								for (const std::shared_ptr<rom::Palette>& palette : tile_layer.palette_set.palette_lines)
 								{
 									if (palette != nullptr)
