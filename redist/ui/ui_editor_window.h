@@ -11,8 +11,9 @@ namespace spintool
 	{
 	public:
 		EditorWindowBase(EditorUI& owning_ui);
+		virtual ~EditorWindowBase();
 
-		bool IsOpen() const;
+		[[nodiscard]] bool IsOpen() const;
 		virtual void Update() = 0;
 		bool m_visible = false;
 

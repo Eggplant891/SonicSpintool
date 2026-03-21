@@ -74,7 +74,6 @@ namespace spintool
 						const rom::SSCCompressionResult compressed_data = rom::SSCCompressor::CompressData(m_level->m_tile_layers[0].tileset->uncompressed_data, 0, m_level->m_tile_layers[0].tileset->num_tiles * 64);
 						if (m_level->m_tile_layers[0].tileset->compressed_size < compressed_data.size())
 						{
-							const rom::Ptr32 tileset_ptr_location = m_level->m_data_offsets.background_tileset;
 							m_owning_ui.GetROM().WriteUint32(m_level->m_data_offsets.background_tileset, next_tileset_location);
 							m_owning_ui.GetROM().m_buffer.resize(0x200000);
 							next_tileset_location = m_level->m_tile_layers[0].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), next_tileset_location);
@@ -92,7 +91,6 @@ namespace spintool
 
 						if (m_level->m_tile_layers[0].tileset->compressed_size < compressed_data.size() || m_level->m_tile_layers[1].tileset->compressed_size < compressed_fg_data.size())
 						{
-							const rom::Ptr32 tileset_ptr_location = m_level->m_data_offsets.foreground_tileset;
 							m_owning_ui.GetROM().WriteUint32(m_level->m_data_offsets.foreground_tileset, next_tileset_location);
 							m_owning_ui.GetROM().m_buffer.resize(0x200000);
 							m_level->m_tile_layers[1].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), next_tileset_location);
@@ -320,7 +318,7 @@ namespace spintool
 				bool is_open = m_popup_msg.has_value();
 				if (ImGui::BeginPopupModal(m_popup_msg->title.c_str(), &is_open, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoScrollbar))
 				{
-					ImGui::Text(m_popup_msg->body.c_str());
+					ImGui::Text("%s", m_popup_msg->body.c_str());
 					if (ImGui::Button("Dismiss"))
 					{
 						m_popup_msg.reset();
@@ -387,7 +385,7 @@ namespace spintool
 		{
 			if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
 			{
-				const static Uint32 ring_sprite_offset = 0x0000F6D8;
+				constexpr static Uint32 ring_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> ring_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
 				m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(ring_sprite->GetBoundingBox().Width(), ring_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
@@ -546,7 +544,6 @@ namespace spintool
 				largest_width *= 2;
 			}
 
-			const RenderTileLayoutRequest& request = m_tile_layout_render_requests.front();
 			layout_preview_bg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
 			SDL_ClearSurface(layout_preview_bg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 
@@ -607,7 +604,7 @@ namespace spintool
 			if (preserve_rendered_items == false)
 			{
 				m_tileset_preview_list.emplace_back();
-				auto& tile_picker = m_tile_picker_list.emplace_back(m_owning_ui);
+				m_tile_picker_list.emplace_back(m_owning_ui);
 				if (render_request == RenderRequestType::LEVEL)
 				{
 					m_working_tile_layout->CollapseTilesIntoBrushes(*m_working_tileset);
@@ -645,8 +642,8 @@ namespace spintool
 				SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, 0);
 				SDL_FillSurfaceRect(temp_surface.get(), nullptr, 0);
 
-				const size_t x_size = rom::TileSet::s_tile_width;
-				const size_t y_size = rom::TileSet::s_tile_height;
+				constexpr size_t x_size = rom::TileSet::s_tile_width;
+				constexpr size_t y_size = rom::TileSet::s_tile_height;
 				if (tile.surface != nullptr)
 				{
 					SDL_BlitSurface(temp_surface.get(), nullptr, tile.surface.get(), nullptr);
@@ -661,7 +658,7 @@ namespace spintool
 							target_pixel_index = temp_surface->pitch * (i / x_size);
 						}
 
-						reinterpret_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
+						static_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
 					}
 				}
 
@@ -738,7 +735,6 @@ namespace spintool
 				{255,128,128,255},
 				{255,128,128,255},
 			};
-			static rom::Colour collision_box_colour = { 0, 255, 255, 255 };
 
 			for (size_t i = 0; i < m_level->m_game_obj_instances.size(); ++i)
 			{
@@ -1013,7 +1009,7 @@ namespace spintool
 									}
 									ImGui::EndDisabled();
 									ImGui::SameLine();
-									ImGui::Text("%d / %d", tileset_preview.current_page + 1, num_previews_per_page != 0 ? static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page + 1 : 1);
+									ImGui::Text("%d / %zu", tileset_preview.current_page + 1, num_previews_per_page != 0 ? static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page + 1 : 1);
 									ImGui::SameLine();
 									ImGui::BeginDisabled((tileset_preview.current_page + 1) * num_previews_per_page >= tileset_preview.brushes.size());
 									if (ImGui::Button("Next Page"))
@@ -1046,7 +1042,6 @@ namespace spintool
 												continue;
 											}
 
-											const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
 											if (preview_brush.texture != nullptr)
 											{
 												if (page_index % preview_brushes_per_row != 0)
@@ -1056,6 +1051,7 @@ namespace spintool
 
 												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w), static_cast<float>(preview_brush.texture->h)));
 
+												//const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
 												//const ImVec2 preview_min = ImGui::GetItemRectMin();
 												//const ImVec2 preview_max = ImGui::GetItemRectMax();
 												//if (real_brush->is_x_symmetrical)
@@ -1091,7 +1087,7 @@ namespace spintool
 												{
 													if (ImGui::BeginItemTooltip())
 													{
-														ImGui::Text("Tile Index: 0x%02X", page_index);
+														ImGui::Text("Tile Index: 0x%02zu", page_index);
 														ImGui::EndTooltip();
 													}
 												}
@@ -1186,7 +1182,7 @@ namespace spintool
 					const ImVec2 mouse_pos{ ImGui::GetMousePos() };
 					const ImVec2 relative_mouse_pos{ (mouse_pos - panel_screen_origin) + origin };
 
-					const ImVec2 tile_dimensions{ rom::TileSet::s_tile_width, rom::TileSet::s_tile_height };
+					constexpr ImVec2 tile_dimensions{ rom::TileSet::s_tile_width, rom::TileSet::s_tile_height };
 					const ImVec2 tile_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (tile_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (tile_dimensions.y * m_zoom))) };
 					const bool is_tile_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || tile_grid_pos.x >= 0 && tile_grid_pos.x < (m_level->m_tile_layers[0].tile_layout->layout_width * 4) && tile_grid_pos.y >= 0 && (tile_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height * 4);
 					const ImVec2 tile_snapped_pos{ (tile_grid_pos * tile_dimensions) * m_zoom };
@@ -1194,9 +1190,6 @@ namespace spintool
 
 					const ImVec2 default_tile_brush_dimensions = ImVec2{ rom::TileBrush::s_default_brush_width, rom::TileBrush::s_default_brush_height } *tile_dimensions;
 					const ImVec2 default_tile_brush_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (default_tile_brush_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (default_tile_brush_dimensions.y * m_zoom))) };
-					const bool is_default_tile_brush_grid_pos_within_bounds = m_level == nullptr || m_level->m_tile_layers.empty() || default_tile_brush_grid_pos.x >= 0 && default_tile_brush_grid_pos.x < m_level->m_tile_layers[0].tile_layout->layout_width && default_tile_brush_grid_pos.y >= 0 && default_tile_brush_grid_pos.y < m_level->m_tile_layers[0].tile_layout->layout_height;
-					const ImVec2 default_tile_brush_snapped_pos{ (default_tile_brush_grid_pos * default_tile_brush_dimensions) * m_zoom };
-					const ImVec2 default_tile_brush_final_snapped_pos{ default_tile_brush_snapped_pos + screen_origin + (panel_screen_origin - screen_origin) };
 
 					const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * default_tile_brush_dimensions.y);
 					const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * default_tile_brush_dimensions.y);
@@ -1330,11 +1323,11 @@ namespace spintool
 								}
 							}
 
-							ImVec2 min_pos;
-							ImVec2 max_pos;
-
 							if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_tile.dragging_start_ref.has_value())
 							{
+								ImVec2 min_pos;
+								ImVec2 max_pos;
+
 								const ImVec2 start_grid_pos = m_selected_tile.dragging_start_ref.value();
 								const ImVec2 end_grid_pos = tile_grid_pos;
 
@@ -1473,11 +1466,11 @@ namespace spintool
 										uv1.y = 0;
 									}
 								}
-								ImVec2 min_pos;
-								ImVec2 max_pos;
 
 								if (is_viewport_hovered && ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_selected_brush.dragging_start_ref.has_value())
 								{
+									ImVec2 min_pos;
+									ImVec2 max_pos;
 									const ImVec2 start_grid_pos = m_selected_brush.dragging_start_ref.value();
 									const ImVec2 end_grid_pos = tile_grid_pos;
 
@@ -1589,8 +1582,6 @@ namespace spintool
 										{
 											for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); y += m_selected_brush.BrushHeight())
 											{
-												const int drag_grid_ref = static_cast<int>((y * m_selected_brush.tile_layer->tile_layout->layout_width) + x);
-
 												m_selected_brush.tile_layer->tile_layout->BlitTileBrushToLayout(*m_selected_brush.brush, static_cast<size_t>(x), static_cast<size_t>(y), m_selected_brush.flip_x, m_selected_brush.flip_y);
 											}
 										}
@@ -1877,7 +1868,7 @@ namespace spintool
 								for (rom::FlipperInstance& flipper_obj : m_level->m_flipper_instances)
 								{
 									const ImVec2 flipper_realpos{ static_cast<float>(flipper_obj.x_pos + flipper_obj.GetDrawPosOffset().x), static_cast<float>(flipper_obj.y_pos + flipper_obj.GetDrawPosOffset().y) };
-									const ImVec2 flipper_dimensions{ rom::FlipperInstance::width, rom::FlipperInstance::height };
+									constexpr ImVec2 flipper_dimensions{ rom::FlipperInstance::width, rom::FlipperInstance::height };
 
 									ImGui::SetCursorPos(origin + (flipper_realpos * m_zoom));
 									ImGui::Dummy(flipper_dimensions * m_zoom);
@@ -1916,7 +1907,7 @@ namespace spintool
 								for (rom::RingInstance& ring_obj : m_level->m_ring_instances)
 								{
 									const ImVec2 ring_realpos{ static_cast<float>(ring_obj.x_pos + ring_obj.draw_pos_offset.x), static_cast<float>(ring_obj.y_pos + ring_obj.draw_pos_offset.y) };
-									const ImVec2 ring_dimensions{ rom::RingInstance::width, rom::RingInstance::height };
+									constexpr ImVec2 ring_dimensions{ rom::RingInstance::width, rom::RingInstance::height };
 
 									ImGui::SetCursorPos(origin + (ring_realpos * m_zoom));
 									ImGui::Dummy(ring_dimensions * m_zoom);
@@ -2125,8 +2116,7 @@ namespace spintool
 							{
 								if (m_working_spline->spline.IsRadial())
 								{
-									const bool is_max_point = true;
-									const Point offset = is_max_point ? Point{ m_working_spline->spline.spline_vector.min - m_working_spline->destination->spline_vector.min } : Point{ m_working_spline->spline.spline_vector.max - m_working_spline->destination->spline_vector.max };
+									const Point offset{ m_working_spline->spline.spline_vector.min - m_working_spline->destination->spline_vector.min };
 									const Uint16 spline_target_id = m_working_spline->spline.instance_id_binding;
 
 									if (m_working_spline->spline.IsRing() && m_working_spline->spline.instance_id_binding != 0)
@@ -2168,7 +2158,7 @@ namespace spintool
 								}
 								else
 								{
-									m_spline_manager.splines.emplace_back(std::move(m_working_spline->spline));
+									m_spline_manager.splines.emplace_back(m_working_spline->spline);
 								}
 								m_working_spline.reset();
 								ImGui::CloseCurrentPopup();
@@ -2589,7 +2579,6 @@ namespace spintool
 			case RenderRequestType::LEVEL:
 			{
 				{
-					const auto& buffer = m_owning_ui.GetROM().m_buffer;
 					const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tileset);
 					const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout);
 					const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes);
@@ -2630,7 +2619,6 @@ namespace spintool
 				}
 
 				{
-					const auto& buffer = m_owning_ui.GetROM().m_buffer;
 					const rom::LevelDataOffsets level_data_offsets{ m_level->m_level_index };
 					const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
 					const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
@@ -2972,6 +2960,8 @@ namespace spintool
 			}
 			break;
 
+			case COUNT:
+			break;
 		}
 	}
 
@@ -2990,7 +2980,7 @@ namespace spintool
 		return false;
 	}
 
-	bool EditorTileLayoutViewer::IsObjectPopupOpen() const
+	bool EditorTileLayoutViewer::IsObjectPopupOpen()
 	{
 		return ImGui::IsPopupOpen("obj_popup") || ImGui::IsPopupOpen("spline_popup");
 	}
@@ -3092,7 +3082,6 @@ namespace spintool
 	void EditorTileLayoutViewer::DrawCollisionSpline(rom::CollisionSpline& spline, ImVec2 origin, ImVec2 screen_origin, LayerSettings& current_layer_settings, bool is_working_spline, bool draw_bbox)
 	{
 		const bool is_viewport_hovered = ImGui::IsWindowHovered();//&& ImGui::GetTopMostPopupModal() == nullptr;
-		const BoundingBox& spline_bbox = spline.spline_vector;
 		ImVec4 colour{ 192,192,0,128 };
 		if (spline.IsBumper())
 		{
@@ -3119,7 +3108,6 @@ namespace spintool
 			colour = ImVec4(0.5f, 0.5f, 1.0f, 1.0f);
 		}
 
-		constexpr float handle_size = 4.0f;
 		ImU32 start_handle_colour = ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f });
 		ImU32 end_handle_colour = ImGui::GetColorU32(ImVec4{ 1.0f,0.0f,1.0f,1.0f });
 		constexpr ImVec2 handle_dimensions{ 4.0f, 4.0f };
@@ -3150,9 +3138,8 @@ namespace spintool
 				return;
 			}
 
-			const bool is_hovering_radial = is_viewport_hovered && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom));
-
-			if( is_hovering_radial)
+			// Is hovering radial collision handle
+			if( is_viewport_hovered && ImGui::IsMouseHoveringRect(screen_origin + (fixed_bbox.min * m_zoom), screen_origin + (fixed_bbox.max * m_zoom)) )
 			{
 				const bool is_hovering_handle = ImGui::IsMouseHoveringRect(selection_rect.min, selection_rect.max);
 				if (is_working_spline || (m_working_spline.has_value() == false && is_hovering_handle))
@@ -3221,11 +3208,10 @@ namespace spintool
 
 			const int num_arrows = static_cast<int>(spline_length / 32);
 
-			const ImVec2 spline_halfway_point = (original_bbox.min * m_zoom) + (spline_vector * 0.5f);
-
-
 			if (num_arrows == 0 || (num_arrows % 2) == 1)
 			{
+				const ImVec2 spline_halfway_point = (original_bbox.min * m_zoom) + (spline_vector * 0.5f);
+
 				ImGui::GetWindowDrawList()->AddTriangle(screen_origin + spline_halfway_point
 					, screen_origin + spline_halfway_point + (spline_perpendicular_vector - (spline_unit_vector * 4.0f))
 					, screen_origin + spline_halfway_point + (spline_perpendicular_vector + (spline_unit_vector * 4.0f))
@@ -3235,7 +3221,6 @@ namespace spintool
 			for (int i = 0; i <= num_arrows; ++i)
 			{
 				const ImVec2 spline_halfway_point = (original_bbox.min * m_zoom) + ((spline_vector / static_cast<float>(num_arrows)) * static_cast<float>(i));
-
 
 				ImGui::GetWindowDrawList()->AddTriangle(screen_origin + spline_halfway_point
 					, screen_origin + spline_halfway_point + (spline_perpendicular_vector - (spline_unit_vector * 4.0f))
@@ -3301,12 +3286,9 @@ namespace spintool
 					ImGui::GetWindowDrawList()->AddRect((screen_origin + (original_bbox.max * m_zoom)) - handle_dimensions, (screen_origin + (original_bbox.max * m_zoom)) + handle_dimensions,
 						end_handle_colour, 0, ImDrawFlags_None, 2.0f);
 
-					const bool is_able_to_click = is_hovering_handles == false && (ImGui::IsMouseHoveringRect(screen_origin + collision_test_pos - handle_dimensions, screen_origin + collision_test_pos + handle_dimensions));
-
-					if (is_able_to_click)
+					// Is able to click
+					if (is_hovering_handles == false && (ImGui::IsMouseHoveringRect(screen_origin + collision_test_pos - handle_dimensions, screen_origin + collision_test_pos + handle_dimensions)))
 					{
-						ImU32 target_handle_colour = ImGui::GetColorU32(ImVec4{ 255,0,0,255 });
-
 						ImGui::GetWindowDrawList()->AddRect((screen_origin + collision_test_pos) - handle_dimensions, (screen_origin + collision_test_pos) + handle_dimensions,
 							ImGui::GetColorU32(ImVec4{ 255,0,0,255 }), 0, ImDrawFlags_None, 2.0f);
 

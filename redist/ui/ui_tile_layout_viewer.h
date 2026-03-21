@@ -155,17 +155,17 @@ namespace spintool
 			*this = TileSelection{};
 		}
 
-		bool IsPickingFromLayout() const
+		[[nodiscard]] bool IsPickingFromLayout() const
 		{
 			return is_picking_from_layout;
 		}
 
-		bool HasSelection() const
+		[[nodiscard]] bool HasSelection() const
 		{
 			return (tile_layer != nullptr && tile_selection != nullptr);
 		}
 
-		bool IsActive() const
+		[[nodiscard]] bool IsActive() const
 		{
 			return (tile_layer != nullptr && tile_selection != nullptr) || (is_picking_from_layout);
 		}
@@ -180,8 +180,8 @@ namespace spintool
 		TilePicker* tile_picker = nullptr;
 		std::optional<rom::TileBrush> brush;
 
-		Uint32 BrushWidth() const { return brush ? brush->BrushWidth() : 1; };
-		Uint32 BrushHeight() const { return brush ? brush->BrushHeight() : 1; }
+		[[nodiscard]] Uint32 BrushWidth() const { return brush ? brush->BrushWidth() : 1; };
+		[[nodiscard]] Uint32 BrushHeight() const { return brush ? brush->BrushHeight() : 1; }
 
 		std::optional<ImVec2> dragging_start_ref;
 		bool is_picking_from_layout = false;
@@ -227,17 +227,17 @@ namespace spintool
 			}
 		}
 
-		bool IsPickingFromLayout() const
+		[[nodiscard]] bool IsPickingFromLayout() const
 		{
 			return is_picking_from_layout;
 		}
 
-		bool HasSelection() const
+		[[nodiscard]] bool HasSelection() const
 		{
 			return (tile_layer != nullptr && brush.has_value());
 		}
 
-		bool IsActive() const
+		[[nodiscard]] bool IsActive() const
 		{
 			return (tile_layer != nullptr && brush.has_value()) || (is_picking_from_layout);
 		}
@@ -287,7 +287,7 @@ namespace spintool
 		void PrepareRenderRequest(RenderRequestType render_request);
 
 		[[nodiscard]] bool IsDraggingObject() const;
-		[[nodiscard]] bool IsObjectPopupOpen() const;
+		[[nodiscard]] static bool IsObjectPopupOpen();
 		[[nodiscard]] bool IsEditingSomething() const;
 
 		struct AnimSpriteEntry

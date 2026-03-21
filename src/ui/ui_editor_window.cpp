@@ -8,6 +8,8 @@ namespace spintool
 
 	}
 
+	EditorWindowBase::~EditorWindowBase() = default;
+
 	bool EditorWindowBase::IsOpen() const
 	{
 		return m_visible;
