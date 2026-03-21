@@ -1036,65 +1036,65 @@ namespace spintool
 									}
 
 									for (size_t page_index = tileset_preview.current_page * num_previews_per_page; page_index < std::min<size_t>((tileset_preview.current_page + 1) * num_previews_per_page, tileset_preview.brushes.size()); ++page_index)
+									{
+										TileBrushPreview& preview_brush = tileset_preview.brushes[page_index];
+										if (preview_brush.brush_index >= m_level->m_tile_layers[layer_index].tile_layout->tile_brushes.size())
 										{
-											TileBrushPreview& preview_brush = tileset_preview.brushes[page_index];
-											if (preview_brush.brush_index >= m_level->m_tile_layers[layer_index].tile_layout->tile_brushes.size())
+											continue;
+										}
+
+										if (preview_brush.texture != nullptr)
+										{
+											if (page_index % preview_brushes_per_row != 0)
 											{
-												continue;
+												ImGui::SameLine();
 											}
 
-											if (preview_brush.texture != nullptr)
+											ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w), static_cast<float>(preview_brush.texture->h)));
+
+											//const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
+											//const ImVec2 preview_min = ImGui::GetItemRectMin();
+											//const ImVec2 preview_max = ImGui::GetItemRectMax();
+											//if (real_brush->is_x_symmetrical)
+											//{
+											//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+											//
+											//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 0,16 }, preview_max - ImVec2{ 0,16 }, colour);
+											//}
+											//
+											//if (real_brush->is_y_symmetrical)
+											//{
+											//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+											//
+											//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 16,0 }, preview_max - ImVec2{ 16,0 }, colour);
+											//}
+
+											if (is_window_hovered && ImGui::IsItemClicked(ImGuiMouseButton_Left))
 											{
-												if (page_index % preview_brushes_per_row != 0)
+												m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
+												m_selected_brush.tile_picker = &m_tile_picker_list[layer_index];
+												m_selected_brush.PickBrush(*m_selected_brush.tile_layer->tile_layout->tile_brushes.at(preview_brush.brush_index));
+												has_just_selected_item = true;
+											}
+
+											if (is_window_hovered && ImGui::IsItemClicked(ImGuiMouseButton_Right))
+											{
+												m_working_brush = preview_brush.brush_index;
+												m_working_layer_index = layer_index;
+												request_open_brush_popup = true;
+											}
+
+											if (m_working_brush.has_value() == false)
+											{
+												if (ImGui::BeginItemTooltip())
 												{
-													ImGui::SameLine();
-												}
-
-												ImGui::Image((ImTextureID)preview_brush.texture.get(), ImVec2(static_cast<float>(preview_brush.texture->w), static_cast<float>(preview_brush.texture->h)));
-
-												//const std::unique_ptr<rom::TileBrush>& real_brush = m_level->m_tile_layers[layer_index].tile_layout->tile_brushes[preview_brush.brush_index];
-												//const ImVec2 preview_min = ImGui::GetItemRectMin();
-												//const ImVec2 preview_max = ImGui::GetItemRectMax();
-												//if (real_brush->is_x_symmetrical)
-												//{
-												//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-												//
-												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 0,16 }, preview_max - ImVec2{ 0,16 }, colour);
-												//}
-												//
-												//if (real_brush->is_y_symmetrical)
-												//{
-												//	const ImU32 colour = ImGui::GetColorU32(ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-												//
-												//	ImGui::GetWindowDrawList()->AddRect(preview_min + ImVec2{ 16,0 }, preview_max - ImVec2{ 16,0 }, colour);
-												//}
-
-												if (is_window_hovered && ImGui::IsItemClicked(ImGuiMouseButton_Left))
-												{
-													m_selected_brush.tile_layer = m_level ? &m_level->m_tile_layers[layer_index] : nullptr;
-													m_selected_brush.tile_picker = &m_tile_picker_list[layer_index];
-													m_selected_brush.PickBrush(*m_selected_brush.tile_layer->tile_layout->tile_brushes.at(preview_brush.brush_index));
-													has_just_selected_item = true;
-												}
-
-												if (is_window_hovered && ImGui::IsItemClicked(ImGuiMouseButton_Right))
-												{
-													m_working_brush = preview_brush.brush_index;
-													m_working_layer_index = layer_index;
-													request_open_brush_popup = true;
-												}
-
-												if (m_working_brush.has_value() == false)
-												{
-													if (ImGui::BeginItemTooltip())
-													{
-														ImGui::Text("Tile Index: 0x%02zu", page_index);
-														ImGui::EndTooltip();
-													}
+													ImGui::Text("Tile Index: 0x%02zu", page_index);
+													ImGui::EndTooltip();
 												}
 											}
 										}
-									
+									}
+
 									ImGui::PopID();
 									ImGui::EndTabItem();
 								}
@@ -1517,7 +1517,7 @@ namespace spintool
 										m_brush_editor->m_visible = true;
 									}
 								}
-								
+
 								if (m_selected_brush.dragging_start_ref.has_value() == false)
 								{
 									ImGui::GetForegroundDrawList()->AddRect(rect_min, rect_max, ImGui::GetColorU32(ImVec4{ 1.0f, 0.0f, 1.0f, 1.0f }), 0, 0, 1.0f);
@@ -3228,7 +3228,7 @@ namespace spintool
 					, screen_origin + spline_halfway_point + (spline_perpendicular_vector + (spline_unit_vector * 4.0f))
 					, ImGui::GetColorU32(colour), 1.0f);
 			}
-			
+
 
 			if (current_layer_settings.spline_culling == true)
 			{
