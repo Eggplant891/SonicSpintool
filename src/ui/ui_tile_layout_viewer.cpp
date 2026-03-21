@@ -678,6 +678,13 @@ namespace spintool
 
 				const SDL_Rect target_rect{ x_off, y_off, x_size, y_size };
 				SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_rect);
+
+				if (request.draw_mirrored_layout)
+				{
+					const SDL_Rect target_mirror_rect{ static_cast<int>((adjusted_layout_width * rom::TileSet::s_tile_width * 2) - x_off - x_size), y_off, x_size, y_size };
+					SDL_FlipSurface(temp_surface.get(), SDL_FLIP_HORIZONTAL);
+					SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_bg_surface.get(), &target_mirror_rect);
+				}
 			}
 
 			if (m_export_result && export_combined == false)
