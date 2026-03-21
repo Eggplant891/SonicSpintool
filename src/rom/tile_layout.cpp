@@ -45,7 +45,7 @@ namespace spintool::rom
 				size_t x_brush_index = x;
 				size_t y_brush_index = y;
 				const size_t source_brush_tile_index = (y_brush_index * brush.BrushWidth()) + x_brush_index;
-				const size_t destination_index = ((y_tile_grid * layout_width * 4) + (y_brush_index * layout_width * 4)) + (x_tile_grid + x_brush_index);
+				const size_t destination_index = ((y_tile_grid * layout_width * brush.BrushWidth()) + (y_brush_index * layout_width * brush.BrushWidth())) + (x_tile_grid + x_brush_index);
 
 				if (source_brush_tile_index < tiles_flipped.size() && destination_index < tile_instances.size())
 				{
