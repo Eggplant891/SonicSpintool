@@ -700,10 +700,8 @@ namespace spintool
 
 		if (render_game_objs)
 		{
-			for (size_t i = 0; i < m_level->m_flipper_instances.size(); ++i)
+			for (const rom::FlipperInstance& flipper : m_level->m_flipper_instances)
 			{
-				const rom::FlipperInstance& flipper = m_level->m_flipper_instances[i];
-
 				SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_flipper_preview.sprite.get()) };
 				int x_off = -24;
 				if (flipper.is_x_flipped)
@@ -717,10 +715,8 @@ namespace spintool
 				SDL_BlitSurface(temp_surface.get(), nullptr, layout_preview_fg_surface.get(), &target_rect);
 			}
 
-			for (size_t i = 0; i < m_level->m_ring_instances.size(); ++i)
+			for (const rom::RingInstance& ring : m_level->m_ring_instances)
 			{
-				const rom::RingInstance& ring = m_level->m_ring_instances[i];
-
 				SDLSurfaceHandle temp_surface{ SDL_DuplicateSurface(m_ring_preview.sprite.get()) };
 				SDL_Rect target_rect{ ring.x_pos + ring.draw_pos_offset.x, ring.y_pos + ring.draw_pos_offset.y, static_cast<int>(ring.dimensions.x), static_cast<int>(ring.dimensions.y) };
 				SDL_SetSurfaceColorKey(temp_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(temp_surface->format), nullptr, 0, 0, 0, 0));
@@ -743,10 +739,8 @@ namespace spintool
 				{255,128,128,255},
 			};
 
-			for (size_t i = 0; i < m_level->m_game_obj_instances.size(); ++i)
+			for (const rom::GameObjectDefinition& game_obj : m_level->m_game_obj_instances)
 			{
-				const rom::GameObjectDefinition& game_obj = m_level->m_game_obj_instances[i];
-
 				if (game_obj.instance_id == 0)
 				{
 					std::unique_ptr<UIGameObject> new_obj = std::make_unique<UIGameObject>();
@@ -755,7 +749,7 @@ namespace spintool
 					continue;
 				}
 
-				rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), m_level->m_game_obj_instances[i].animation_definition);
+				rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), game_obj.animation_definition);
 
 				auto anim_entry = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
 					{
@@ -955,7 +949,7 @@ namespace spintool
 							};
 
 							int tab_index = 0;
-							for (Uint16 layer_index = 0; layer_index < m_tile_picker_list.size(); ++layer_index)
+							for (size_t layer_index = 0; layer_index < m_tile_picker_list.size(); ++layer_index)
 							{
 								TilePicker& tile_picker = m_tile_picker_list[layer_index];
 								tile_picker.SetTileLayer(m_level != nullptr ? &m_level->m_tile_layers[layer_index] : nullptr);
@@ -998,7 +992,7 @@ namespace spintool
 							};
 							int tab_index = 0;
 							constexpr size_t num_previews_per_page = 8 * 16;
-							for (Uint16 layer_index = 0; layer_index < m_tileset_preview_list.size(); ++layer_index)
+							for (size_t layer_index = 0; layer_index < m_tileset_preview_list.size(); ++layer_index)
 							{
 								TilesetPreview& tileset_preview = m_tileset_preview_list[layer_index];
 								if (tab_index >= std::size(layer_names))
@@ -1021,13 +1015,13 @@ namespace spintool
 									ImGui::BeginDisabled((tileset_preview.current_page + 1) * num_previews_per_page >= tileset_preview.brushes.size());
 									if (ImGui::Button("Next Page"))
 									{
-										tileset_preview.current_page = std::min<int>((static_cast<int>(tileset_preview.brushes.size()) / num_previews_per_page), tileset_preview.current_page + 1);
+										tileset_preview.current_page = std::min<int>(static_cast<int>(tileset_preview.brushes.size() / num_previews_per_page), tileset_preview.current_page + 1);
 									}
 									ImGui::EndDisabled();
 
 									if (ImGui::IsKeyDown(ImGuiKey_ModCtrl) && ImGui::IsKeyPressed(ImGuiKey_V, false))
 									{
-										std::filesystem::path custom_brushes_path{ m_owning_ui.GetProjectsPath() };
+										std::filesystem::path custom_brushes_path{ EditorUI::GetProjectsPath() };
 										custom_brushes_path.append("custom_brushes_test.json");
 
 										std::ifstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
