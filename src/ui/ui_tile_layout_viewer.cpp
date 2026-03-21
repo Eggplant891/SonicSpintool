@@ -651,14 +651,14 @@ namespace spintool
 				else
 				{
 					size_t target_pixel_index = 0;
-					for (size_t i = 0; i < tile.pixel_data.size() && i < temp_surface->pitch * temp_surface->h && (i / x_size) < y_size; ++i, target_pixel_index += 1)
+					for (size_t px = 0; px < tile.pixel_data.size() && px < temp_surface->pitch * temp_surface->h && (px / x_size) < y_size; ++px, target_pixel_index += 1)
 					{
-						if ((i % x_size) == 0)
+						if ((px % x_size) == 0)
 						{
-							target_pixel_index = temp_surface->pitch * (i / x_size);
+							target_pixel_index = temp_surface->pitch * (px / x_size);
 						}
 
-						static_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[i];
+						static_cast<Uint8*>(temp_surface->pixels)[target_pixel_index] = tile.pixel_data[px];
 					}
 				}
 
