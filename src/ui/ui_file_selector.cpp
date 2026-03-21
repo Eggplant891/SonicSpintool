@@ -65,7 +65,7 @@ namespace spintool
 				ImGui::CloseCurrentPopup();
 			}
 
-			ImGui::Text(settings.target_directory.generic_u8string().c_str());
+			ImGui::Text("%s", settings.target_directory.generic_u8string().c_str());
 			ImGui::Separator();
 			if (ImGui::BeginChild("file_list", ImVec2{ -1,800 }))
 			{
