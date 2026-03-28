@@ -791,7 +791,7 @@ namespace spintool
 				}
 				else
 				{
-					SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(m_game_object_preview.sprite.get(), game_obj.collision_width, game_obj.collision_height, SDL_SCALEMODE_NEAREST) };
+					SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(m_game_object_preview.sprite.get(), std::max<Uint8>(game_obj.collision_width, 1), std::max<Uint8>(game_obj.collision_height, 1), SDL_SCALEMODE_NEAREST) };
 
 					auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
 					SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
