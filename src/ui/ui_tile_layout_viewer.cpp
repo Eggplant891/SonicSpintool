@@ -266,6 +266,7 @@ namespace spintool
 			m_working_brush.reset();
 			m_working_flipper.reset();
 			m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain)));
+			m_render_from_edit = false;
 		}
 
 		return out_render_request;
@@ -437,7 +438,10 @@ namespace spintool
 
 			/////////////
 
-			m_game_object_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(32, 32, SDL_PIXELFORMAT_RGBA32) };
+			if (m_game_object_preview.sprite == nullptr)
+			{
+				m_game_object_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(32, 32, SDL_PIXELFORMAT_RGBA32) };
+			}
 			SDL_ClearSurface(m_game_object_preview.sprite.get(), 255, 255, 255, 255);
 			SDL_SetSurfaceColorKey(m_game_object_preview.sprite.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_game_object_preview.sprite->format), nullptr, 255, 0, 0, 255));
 
