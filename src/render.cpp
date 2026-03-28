@@ -19,16 +19,8 @@ namespace spintool
 {
 	SDL_Renderer* Renderer::s_renderer = nullptr;
 	SDL_Window* Renderer::s_window = nullptr;
-	SDL_Surface* Renderer::s_window_surface = nullptr;
-	SDLTextureHandle Renderer::s_window_texture;
 	SDLPaletteHandle Renderer::s_current_palette;
 	std::recursive_mutex Renderer::s_sdl_update_mutex;
-
-
-	SDL_Texture* Renderer::GetViewportTexture()
-	{
-		return s_window_texture.get();
-	}
 
 	void Renderer::SetPalette(const SDLPaletteHandle& palette)
 	{
@@ -75,10 +67,6 @@ namespace spintool
 		ImGui::StyleColorsDark();
 		ImGui_ImplSDL3_InitForSDLRenderer(s_window, s_renderer);
 		ImGui_ImplSDLRenderer3_Init(s_renderer);
-
-		s_window_surface = SDL_CreateSurface(s_window_width, s_window_height, SDL_PIXELFORMAT_RGBA32);
-		SDL_ClearSurface(s_window_surface, 0, 0, 255, 255);
-		s_window_texture = SDLTextureHandle{ SDL_CreateTextureFromSurface(s_renderer, s_window_surface) };
 	}
 
 	void Renderer::Shutdown()
@@ -92,19 +80,12 @@ namespace spintool
 		ImGui_ImplSDLRenderer3_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
-
-		SDL_Surface* window_surface = nullptr;
-
-		SDL_LockTextureToSurface(s_window_texture.get(), nullptr, &window_surface);
-		SDL_BlitSurface(s_window_surface, nullptr, window_surface, nullptr);
-		SDL_UnlockTexture(s_window_texture.get());
 	}
 
 	void Renderer::Render()
 	{
 		SDL_RenderClear(s_renderer);
 
-		SDL_RenderTexture(s_renderer, s_window_texture.get(), nullptr, nullptr);
 		ImGui::Render();
 		ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), s_renderer);
 		SDL_RenderPresent(s_renderer);

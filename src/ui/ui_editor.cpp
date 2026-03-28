@@ -189,7 +189,7 @@ namespace spintool
 			settings.close_popup = true;
 		}
 
-		if (SDL_Texture* viewport = Renderer::GetViewportTexture())
+		//if (SDL_Texture* viewport = Renderer::GetViewportTexture())
 		{
 			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
 			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0,0 });
@@ -201,15 +201,7 @@ namespace spintool
 
 			if (ImGui::Begin("main_viewport", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoNavInputs))
 			{
-				float adjusted_height_uv = dim.y / Renderer::s_window_height;
-				if (viewport)
-				{
-					ImGui::Image((ImTextureID)viewport, dim, { 0,0 }, { 1, adjusted_height_uv });
-				}
-				else
-				{
-					ImGui::Dummy(dim);
-				}
+				ImGui::Dummy(dim);
 			}
 			ImGui::End();
 			ImGui::PopStyleVar(2);
