@@ -413,7 +413,7 @@ namespace spintool
 							SDL_SetSurfacePalette(out_surface.get(), palette.get());
 							SDL_SetSurfaceColorKey(out_surface.get(), true, 0);
 							tex->sprite->RenderToSurface(out_surface.get());
-							assert(IMG_SavePNG(out_surface.get(), export_path.generic_u8string().c_str()));
+							assert(IMG_SavePNG(out_surface.get(), export_path.c_str()));
 						}
 						ImGui::EndPopup();
 					}

@@ -696,7 +696,7 @@ namespace spintool
 				static char path_buffer[4096];
 				sprintf(path_buffer, "spinball_%s_%s.png", request.layout_type_name.c_str(), request.layout_layout_name.c_str());
 				std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
+				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.c_str()));
 			}
 
 			m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
@@ -863,11 +863,11 @@ namespace spintool
 			{
 				SDLSurfaceHandle combined{ SDL_DuplicateSurface(layout_preview_bg_surface.get()) };
 				SDL_BlitSurface(layout_preview_fg_surface.get(), nullptr, combined.get(), nullptr);
-				assert(IMG_SavePNG(combined.get(), export_path.generic_u8string().c_str()));
+				assert(IMG_SavePNG(combined.get(), export_path.c_str()));
 			}
 			else
 			{
-				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.generic_u8string().c_str()));
+				assert(IMG_SavePNG(layout_preview_bg_surface.get(), export_path.c_str()));
 			}
 		}
 
@@ -1028,7 +1028,7 @@ namespace spintool
 										std::filesystem::path custom_brushes_path{ EditorUI::GetProjectsPath() };
 										custom_brushes_path.append("custom_brushes_test.json");
 
-										std::ifstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
+										std::ifstream custom_brushes_file{ custom_brushes_path };
 										CustomTileBrush new_brush = CustomTileBrush::DeserialiseFromJSON(nlohmann::json::parse(custom_brushes_file));
 										m_selected_brush.tile_layer = &m_level->m_tile_layers[layer_index];
 										m_selected_brush.PickBrush(*new_brush.tile_brush);
@@ -1578,7 +1578,7 @@ namespace spintool
 										new_brush.tile_brush = std::make_unique<rom::TileBrush>(*m_selected_brush.brush);
 										std::filesystem::path custom_brushes_path{ m_owning_ui.GetProjectsPath() };
 										custom_brushes_path.append("custom_brushes_test.json");
-										std::ofstream custom_brushes_file{ custom_brushes_path.generic_u8string() };
+										std::ofstream custom_brushes_file{ custom_brushes_path };
 										nlohmann::json custom_brushes = new_brush.SerialiseToJSON();
 										custom_brushes_file << custom_brushes.dump(4);
 

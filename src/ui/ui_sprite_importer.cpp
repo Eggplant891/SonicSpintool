@@ -47,7 +47,7 @@ namespace spintool
 		if(selected_path)
 		{
 			settings.close_popup = true;
-			SDLSurfaceHandle loaded_surface{ IMG_Load(selected_path->generic_u8string().c_str()) };
+			SDLSurfaceHandle loaded_surface{ IMG_Load(selected_path->c_str()) };
 			if (loaded_surface != nullptr)
 			{
 				m_loaded_path = path_buffer;

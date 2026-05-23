@@ -1,17 +1,22 @@
 #include "ui/ui_file_selector.h"
 
-#include "imgui.h"
 #include "ui/ui_editor.h"
+
+#include "imgui.h"
+
+#include "sdl_handle_defs.h"
 #include "SDL3/SDL_image.h"
 
 #include <vector>
+#include <optional>
+#include <filesystem>
 
 namespace spintool
 {
 	struct FileSelectorEntry
 	{
-		std::filesystem::path filepath;
-		SDLTextureHandle thumbnail;
+		std::filesystem::path filepath{};
+		SDLTextureHandle thumbnail{};
 	};
 
 	std::optional<std::filesystem::path> DrawFileSelector(const FileSelectorSettings& settings, EditorUI& owning_ui, std::optional<std::filesystem::path> current_selection)
@@ -41,7 +46,7 @@ namespace spintool
 					
 					if (matches_extension && settings.tiled_previews == true)
 					{
-						FileSelectorEntry new_entry{ filepath, SDLTextureHandle{ IMG_LoadTexture(Renderer::s_renderer, filepath.generic_u8string().c_str()) } };
+						FileSelectorEntry new_entry{ filepath, SDLTextureHandle{ IMG_LoadTexture(Renderer::s_renderer, filepath.c_str()) } };
 						SDL_SetTextureScaleMode(new_entry.thumbnail.get(), SDL_ScaleMode::SDL_SCALEMODE_NEAREST);
 						return std::move(new_entry);
 					}
@@ -146,7 +151,7 @@ namespace spintool
 					else
 					{
 						bool selected = is_selected;
-						ImGui::Selectable(file_entry.filepath.filename().generic_u8string().c_str(), &selected, ImGuiSelectableFlags_DontClosePopups);
+						ImGui::Selectable(file_entry.filepath.filename().c_str(), &selected, ImGuiSelectableFlags_DontClosePopups);
 					}
 
 					if (ImGui::IsItemClicked(ImGuiMouseButton_Left))

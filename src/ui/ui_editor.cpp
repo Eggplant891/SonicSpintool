@@ -138,7 +138,7 @@ namespace spintool
 				ImGui::SameLine();
 			}
 			ImGui::BeginDisabled();
-			ImGui::Text(m_usa_rom_path.filename().generic_u8string().c_str());
+			ImGui::Text(m_usa_rom_path.filename().c_str());
 			ImGui::EndDisabled();
 			ImGui::SameLine();
 			if (ImGui::Button("Change ROM Filename"))
