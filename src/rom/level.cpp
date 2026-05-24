@@ -74,7 +74,7 @@ namespace spintool::rom
 		const Uint8 num_emeralds = std::accumulate(std::begin(m_game_obj_instances), std::end(m_game_obj_instances), static_cast<Uint8>(0),
 			[](const Uint8 running_val, const rom::GameObjectDefinition& game_obj)
 			{
-				if (game_obj.instance_id != 0 && game_obj.type_id == 0x6)
+				if (game_obj.instance_id != 0 && game_obj.type_id == GameObjectType::EMERALD)
 				{
 					return running_val + 1;
 				}

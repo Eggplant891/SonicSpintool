@@ -7,6 +7,7 @@
 namespace spintool::rom
 {
 	using Ptr32 = Uint32;
+	static_assert(sizeof(Ptr32) == 4);
 
 	struct Palette;
 	constexpr static const Uint32 s_max_palettes = 4;

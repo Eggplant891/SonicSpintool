@@ -14,6 +14,8 @@
 #include <fstream>
 #include <iostream>
 
+#include "serialisation/editor_serialiser.h"
+
 
 namespace spintool
 {
@@ -32,6 +34,7 @@ namespace spintool
 	std::filesystem::path EditorUI::s_sprite_export_path = setup_directory("sprite_export");
 	std::filesystem::path EditorUI::s_rom_export_path = setup_directory("rom_export");
 	std::filesystem::path EditorUI::s_projects_path = setup_directory("projects");
+	std::filesystem::path EditorUI::s_metadata_path = setup_directory("metadata");
 	std::filesystem::path EditorUI::s_config_path = setup_directory("config");
 
 	EditorUI::EditorUI()
@@ -47,16 +50,13 @@ namespace spintool
 
 	void EditorUI::SaveROMConfig() const
 	{
-		std::filesystem::path config_path = s_config_path;
-		config_path.append("roms.json");
+		std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(s_config_path, "roms.json");
+		nlohmann::json config_json_writer = serialiser->Writer();
 
-		std::ofstream config_out{ config_path };
-		nlohmann::json config_json_writer;
-		config_json_writer["usa_rom_path"] = m_usa_rom_path.c_str();
-		config_json_writer["eur_rom_path"] = m_eur_rom_path.c_str();
-		config_json_writer["jp_rom_path"] = m_jp_rom_path.c_str();
-
-		config_out << config_json_writer.dump(4);
+		for (const rom::ROMMetadata& metadata : m_metadata.rom_metadatas)
+		{
+			config_json_writer[metadata.version_id] = metadata.location_on_disk.c_str();
+		}
 	}
 
 	void EditorUI::LoadROMConfig()
@@ -64,19 +64,22 @@ namespace spintool
 		std::filesystem::path config_path = s_config_path;
 		config_path.append("roms.json");
 
-		if (std::filesystem::exists(config_path) == false)
+		if (Deserialiser::FileExists(config_path, "roms.json") == false)
 		{
 			SaveROMConfig();
 		}
 
+		std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(s_config_path, "roms.json");
 		std::ifstream config_in{ config_path };
-		nlohmann::json config_json_reader{ nlohmann::json::parse(config_in) };
-		auto root_item = config_json_reader.front();
+		nlohmann::json config_json_reader = deserialiser->Reader();
 
-		std::string rom_path = root_item["usa_rom_path"];
-		if (rom_path.empty() == false)
+		for (auto& rom_metadata : m_metadata.rom_metadatas)
 		{
-			AttemptLoadROM(rom_path);
+			const std::string& rom_path = config_json_reader[rom_metadata.version_id];
+			if (rom_path.empty() == false)
+			{
+				AttemptLoadROM(rom_path);
+			}
 		}
 	}
 
@@ -84,7 +87,8 @@ namespace spintool
 	{
 		if (m_rom.LoadROMFromPath(rom_path))
 		{
-			m_usa_rom_path = rom_path;
+			m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
+			m_current_rom_metadata->location_on_disk = rom_path;
 			m_palettes = m_rom.LoadPalettes(48);
 			//m_palettes = m_rom.LoadPalettes(8);
 			return true;
@@ -95,7 +99,10 @@ namespace spintool
 
 	void EditorUI::Initialise()
 	{
-		AttemptLoadROM(m_usa_rom_path);
+		if (auto* rom = m_metadata.GetROMMetadataFor("usa"))
+		{
+			AttemptLoadROM(rom->location_on_disk);
+		}
 	}
 
 	void EditorUI::Update()
@@ -122,7 +129,14 @@ namespace spintool
 
 					if (ImGui::MenuItem("Reload ROM"))
 					{
-						AttemptLoadROM(m_usa_rom_path);
+						AttemptLoadROM(m_current_rom_metadata->location_on_disk);
+					}
+
+					if (ImGui::MenuItem("Export Metadata"))
+					{
+						auto serialiser = Serialiser::OpenFile(s_metadata_path, "metadata.json");
+						auto& writer = serialiser->Writer();
+						m_current_rom_metadata->Serialise(writer);
 					}
 					ImGui::EndMenu();
 				}
@@ -140,7 +154,7 @@ namespace spintool
 				ImGui::SameLine();
 			}
 			ImGui::BeginDisabled();
-			ImGui::Text("%s", m_usa_rom_path.filename().c_str());
+			ImGui::Text("%s", m_current_rom_metadata->location_on_disk.filename().c_str());
 			ImGui::EndDisabled();
 			ImGui::SameLine();
 			if (ImGui::Button("Change ROM Filename"))
@@ -181,7 +195,7 @@ namespace spintool
 		settings.target_directory = GetROMLoadPath();
 		settings.file_extension_filter = { ".bin", ".md" };
 
-		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, m_usa_rom_path);
+		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, m_metadata.GetROMMetadataFor("usa")->location_on_disk);
 
 		settings.close_popup = false;
 		if (selected_path && AttemptLoadROM(selected_path.value()))
@@ -267,6 +281,11 @@ namespace spintool
 	std::filesystem::path EditorUI::GetProjectsPath()
 	{
 		return s_projects_path;
+	}
+
+	std::filesystem::path EditorUI::GetMetadataPath()
+	{
+		return s_metadata_path;
 	}
 
 	std::filesystem::path EditorUI::GetConfigPath()

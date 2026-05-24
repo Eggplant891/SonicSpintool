@@ -2,6 +2,7 @@
 
 #include "render.h"
 #include "rom/spinball_rom.h"
+#include "rom/metadata/rom_metadata.h"
 
 #include "ui/ui_sprite_viewer.h"
 #include "ui/ui_sprite_navigator.h"
@@ -14,6 +15,7 @@
 #include <vector>
 #include <mutex>
 #include <filesystem>
+
 
 namespace spintool
 {
@@ -31,10 +33,12 @@ namespace spintool
 
 		[[nodiscard]] bool IsROMLoaded() const;
 		rom::SpinballROM& GetROM();
+
 		static std::filesystem::path GetROMLoadPath();
 		static std::filesystem::path GetROMExportPath();
 		static std::filesystem::path GetSpriteExportPath();
 		static std::filesystem::path GetProjectsPath();
+		static std::filesystem::path GetMetadataPath();
 		static std::filesystem::path GetConfigPath();
 
 		[[nodiscard]] const std::vector<TilesetEntry>& GetTilesets() const;
@@ -46,15 +50,14 @@ namespace spintool
 
 	private:
 		rom::SpinballROM m_rom;
-
-		std::filesystem::path m_usa_rom_path;
-		std::filesystem::path m_eur_rom_path;
-		std::filesystem::path m_jp_rom_path;
+		rom::ROMMetadata* m_current_rom_metadata = nullptr;
+		rom::Metadata m_metadata;
 
 		static std::filesystem::path s_rom_load_path;
 		static std::filesystem::path s_rom_export_path;
 		static std::filesystem::path s_sprite_export_path;
 		static std::filesystem::path s_projects_path;
+		static std::filesystem::path s_metadata_path;
 		static std::filesystem::path s_config_path;
 
 		std::vector<std::shared_ptr<rom::Palette>> m_palettes;

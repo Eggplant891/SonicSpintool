@@ -1,5 +1,7 @@
 #include "rom/rom_asset_definitions.h"
 
+#include "json.hpp"
+
 namespace spintool::rom
 {
 	Ptr32 RingAnimationFrameIDs = 0x000D3B2A; // Uint8[4]
@@ -32,6 +34,97 @@ namespace spintool::rom
 	Ptr32 IntroCutsceneTileLayoutOcean = 0x000A220C;
 	Ptr32 IntroCutsceneTileLayoutSky = 0x000A2510;
 	Ptr32 IntroCutsceneTileLayoutRobotnikShip = 0x000A30BC;
+
+	void ArrayOffset::Serialise(nlohmann::json &writer)
+	{
+		writer["offset"] = offset;
+		writer["count"] = count;
+
+	}
+
+	void ArrayOffset::Deserialise(const nlohmann::json &reader)
+	{
+		offset = reader["offset"].get<Ptr32>();
+		count = reader["count"].get<Uint16>();
+	}
+
+	void LevelDataTableOffsets::Serialise(nlohmann::json &writer)
+	{
+		writer["foreground_tileset"] = foreground_tileset;
+		writer["background_tileset"] = background_tileset;
+		writer["foreground_tile_layout"] = foreground_tile_layout;
+		writer["background_tile_layout"] = background_tile_layout;
+		writer["foreground_tile_brushes"] = foreground_tile_brushes;
+		writer["background_tile_brushes"] = background_tile_brushes;
+		writer["collision_data_terrain"] = collision_data_terrain;
+		writer["palette_set"] = palette_set;
+		writer["tile_layout_width"] = tile_layout_width;
+		writer["tile_layout_height"] = tile_layout_height;
+		writer["camera_start_position_x"] = camera_start_position_x;
+		writer["camera_start_position_y"] = camera_start_position_y;
+		writer["music_id"] = music_id;
+		writer["game_over_timer "] = game_over_timer;
+		writer["camera_activation_sector_anim_obj_ids"] = camera_activation_sector_anim_obj_ids;
+		writer["switch_hit_msg_id "] = switch_hit_msg_id;
+		writer["bumper_hit_msg_id "] = bumper_hit_msg_id;
+		writer["collision_type0_animation_id"] = collision_type0_animation_id;
+		writer["collision_type1_animation_id"] = collision_type1_animation_id;
+		writer["collision_type2_animation_id"] = collision_type2_animation_id;
+		writer["collision_type3_animation_id"] = collision_type3_animation_id;
+		writer["collision_bumper_animation_id"] = collision_bumper_animation_id;
+		writer["teleporter_animation_id"] = teleporter_animation_id;
+		writer["teleporter_y_offset"] = teleporter_y_offset;
+		writer["player_start_position_x"] = player_start_position_x;
+		writer["player_start_position_y"] = player_start_position_y;
+		writer["emerald_count"] = emerald_count;
+		writer["flipper_data"] = flipper_data;
+		writer["flipper_object_definition"] = flipper_object_definition;
+		writer["flipper_animations"] = flipper_animations;
+		writer["flipper_count"] = flipper_count;
+		writer["flipper_collision_unknown"] = flipper_collision_unknown;
+		writer["level_name"] = level_name;
+		writer["animations"] = animations;
+		writer["ring_count"] = ring_count;
+		writer["rom_level_data_BG_tile_vdp_offset"] = rom_level_data_BG_tile_vdp_offset;
+
+		writer["sprite_tables"] = sprite_table;
+		writer["animation_count"] = animation_count;
+
+		{
+			auto array_writer = writer["collision_tile_obj_ids"].array();
+			for (auto& array_count_entry : collision_tile_obj_ids)
+			{
+				auto& array_entry_writer = array_writer.emplace_back();
+				array_count_entry.Serialise(array_entry_writer);
+			}
+			writer["collision_tile_obj_ids"] = array_writer;
+		}
+
+		{
+			auto array_writer = writer["ring_instances"].array();
+			for (auto& array_count_entry : ring_instances)
+			{
+				auto& array_entry_writer = array_writer.emplace_back();
+				array_count_entry.Serialise(array_entry_writer);
+			}
+			writer["ring_instances"] = array_writer;
+		}
+
+		{
+			auto array_writer = writer["object_instances"].array();
+			for (auto& array_count_entry : object_instances)
+			{
+				auto& array_entry_writer = array_writer.emplace_back();
+				array_count_entry.Serialise(array_entry_writer);
+			}
+			writer["object_instances"] = array_writer;
+		}
+	}
+
+	void LevelDataTableOffsets::Deserialise(const nlohmann::json &reader)
+	{
+		reader;
+	}
 
 	LevelDataOffsets::LevelDataOffsets(const int level_index)
 		: table_offsets(LevelDataTableOffsets{})
@@ -76,6 +169,56 @@ namespace spintool::rom
 		, ring_instances(table_offsets.ring_instances[level_index])
 		, object_instances(table_offsets.object_instances[level_index])
 		, rom_level_data_BG_tile_vdp_offset(table_offsets.rom_level_data_BG_tile_vdp_offset + (sizeof(Ptr32) * level_index))
+	{
+
+	}
+
+	void LevelDataOffsets::Serialise(nlohmann::json &writer)
+	{
+		writer["foreground_tileset"] = foreground_tileset;
+		writer["background_tileset"] = background_tileset;
+		writer["foreground_tile_layout"] = foreground_tile_layout;
+		writer["background_tile_layout"] = background_tile_layout;
+		writer["foreground_tile_brushes"] = foreground_tile_brushes;
+		writer["background_tile_brushes"] = background_tile_brushes;
+		writer["collision_data_terrain"] = collision_data_terrain;
+		writer["palette_set"] = palette_set;
+		writer["tile_layout_width"] = tile_layout_width;
+		writer["tile_layout_height"] = tile_layout_height;
+		writer["camera_start_position_x"] = camera_start_position_x;
+		writer["camera_start_position_y"] = camera_start_position_y;
+		writer["music_id"] = music_id;
+		writer["game_over_timer"] = game_over_timer;
+		writer["camera_activation_sector_anim_obj_ids"] = camera_activation_sector_anim_obj_ids;
+		writer["switch_hit_msg_id"] = switch_hit_msg_id;
+		writer["bumper_hit_msg_id"] = bumper_hit_msg_id;
+		writer["collision_type0_animation_id"] = collision_type0_animation_id;
+		writer["collision_type1_animation_id"] = collision_type1_animation_id;
+		writer["collision_type2_animation_id"] = collision_type2_animation_id;
+		writer["collision_type3_animation_id"] = collision_type3_animation_id;
+		writer["collision_bumper_animation_id"] = collision_bumper_animation_id;
+		writer["teleporter_animation"] = teleporter_animation;
+		writer["teleporter_y_offset"] = teleporter_y_offset;
+		writer["player_start_position_x"] = player_start_position_x;
+		writer["player_start_position_y"] = player_start_position_y;
+		writer["emerald_count"] = emerald_count;
+		writer["flipper_data"] = flipper_data;
+		writer["flipper_object_definition"] = flipper_object_definition;
+		writer["flipper_animations"] = flipper_animations;
+		writer["flipper_count"] = flipper_count;
+		writer["flipper_collision_unknown"] = flipper_collision_unknown;
+		writer["level_name"] = level_name;
+		writer["animations"] = animations;
+		writer["sprite_table"] = sprite_table;
+		writer["animation_count"] = animation_count;
+		writer["ring_count"] = ring_count;
+		collision_tile_obj_ids.Serialise(writer["collision_tile_obj_ids"]);
+		ring_instances.Serialise(writer["ring_instances"]);
+		object_instances.Serialise(writer["object_instances"]);
+		writer["rom_level_data_BG_tile_vdp_offset"] = rom_level_data_BG_tile_vdp_offset;
+	}
+
+	void LevelDataOffsets::Deserialise(const nlohmann::json &reader)
 	{
 
 	}

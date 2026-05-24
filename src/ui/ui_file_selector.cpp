@@ -25,13 +25,13 @@ namespace spintool
 		static std::optional<std::filesystem::path> s_highlighted_path;
 		std::optional<std::filesystem::path> return_path;
 		const std::string popup_title = "Choose " + settings.object_typename;
-		std::filesystem::directory_iterator directory_file_it{ settings.target_directory };
 
 		if (settings.open_popup && settings.close_popup == false)
 		{
 			ImGui::OpenPopup(popup_title.c_str(), ImGuiPopupFlags_AnyPopupLevel);
 			s_highlighted_path = current_selection;
 
+			std::filesystem::directory_iterator directory_file_it = std::filesystem::directory_iterator{settings.target_directory};
 
 			s_file_entries.clear();
 

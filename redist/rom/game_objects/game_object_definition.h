@@ -13,11 +13,17 @@ namespace spintool::rom
 
 namespace spintool::rom
 {
+	enum class GameObjectType : Uint8
+	{
+		NONE = 0,
+		EMERALD = 0x6
+	};
+
 	struct GameObjectDefinition
 	{
 		ROMData rom_data;
 
-		Uint8 type_id = 0;
+		GameObjectType type_id = GameObjectType::NONE;
 		Uint8 instance_id = 0;
 		Uint8 unk_1 = 0;
 		Uint8 unk_2 = 0;

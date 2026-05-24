@@ -11,7 +11,7 @@ namespace spintool::rom
 
 		Uint32 current_offset = offset;
 
-		new_instance.type_id = rom.ReadUint8(current_offset);
+		new_instance.type_id = static_cast<GameObjectType>(rom.ReadUint8(current_offset));
 		current_offset += 1;
 		new_instance.instance_id = rom.ReadUint8(current_offset);
 		current_offset += 1;
@@ -50,7 +50,7 @@ namespace spintool::rom
 	{
 		Uint32 current_offset = rom_data.rom_offset;
 
-		current_offset = writeable_rom.WriteUint8(current_offset, type_id);
+		current_offset = writeable_rom.WriteUint8(current_offset, static_cast<Uint8>(type_id));
 		current_offset = writeable_rom.WriteUint8(current_offset, instance_id);
 		current_offset = writeable_rom.WriteUint8(current_offset, unk_1);
 		current_offset = writeable_rom.WriteUint8(current_offset, unk_2);

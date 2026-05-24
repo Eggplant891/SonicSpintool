@@ -798,7 +798,7 @@ namespace spintool
 					SDLSurfaceHandle temp_surface{ SDL_ScaleSurface(m_game_object_preview.sprite.get(), std::max<Uint8>(game_obj.collision_width, 1), std::max<Uint8>(game_obj.collision_height, 1), SDL_SCALEMODE_NEAREST) };
 
 					auto cutting_surface = SDLSurfaceHandle{ SDL_CreateSurface(temp_surface->w, temp_surface->h, SDL_PIXELFORMAT_RGBA32) };
-					SDL_ClearSurface(temp_surface.get(), bbox_colours[game_obj.type_id % std::size(bbox_colours)].r / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].g / 256.0f, bbox_colours[game_obj.type_id % std::size(bbox_colours)].b / 256.0f, 255.0f);
+					SDL_ClearSurface(temp_surface.get(), bbox_colours[static_cast<size_t>(game_obj.type_id) % std::size(bbox_colours)].r / 256.0f, bbox_colours[static_cast<size_t>(game_obj.type_id) % std::size(bbox_colours)].g / 256.0f, bbox_colours[static_cast<size_t>(game_obj.type_id) % std::size(bbox_colours)].b / 256.0f, 255.0f);
 					SDL_ClearSurface(cutting_surface.get(), 255.0f, 0.0f, 0.0f, 255.0f);
 					const SDL_Rect cutting_target_rect{ 2,2,temp_surface->w - 4, temp_surface->h - 4 };
 					SDL_BlitSurfaceScaled(cutting_surface.get(), nullptr, temp_surface.get(), &cutting_target_rect, SDL_SCALEMODE_NEAREST);

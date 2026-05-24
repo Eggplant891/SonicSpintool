@@ -76,6 +76,8 @@ add_executable(sonicspintool
         src/ui/ui_tile_picker.cpp
         src/ui/ui_tileset_navigator.cpp
         src/main.cpp
-        src/render.cpp)
+        src/render.cpp
+        src/rom/metadata/rom_metadata.cpp
+        src/serialisation/editor_serialiser.cpp)
 
 target_link_libraries(sonicspintool SDL3 SDL3_image)

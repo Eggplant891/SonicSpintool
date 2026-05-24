@@ -1,6 +1,8 @@
 #pragma once
 
 #include "types/rom_ptr.h"
+#include "json_fwd.hpp"
+
 #include <utility>
 
 namespace spintool::rom
@@ -9,12 +11,18 @@ namespace spintool::rom
 
 	struct ArrayOffset
 	{
+		void Serialise(nlohmann::json& writer);
+		void Deserialise(const nlohmann::json &reader);
+
 		Uint32 offset = 0;
 		Uint16 count = 0;
 	};
 
 	struct LevelDataTableOffsets
 	{
+		void Serialise(nlohmann::json& writer);
+		void Deserialise(const nlohmann::json &reader);
+
 		Ptr32 foreground_tileset = 0x000BFBE0;
 		Ptr32 background_tileset = 0x000BFBF0;
 		Ptr32 foreground_tile_layout = 0x000BFC00;
@@ -88,10 +96,14 @@ namespace spintool::rom
 		};
 	};
 
+	// Data structure with resolved data ptrs for the specified level, usualy resolved from the LevelDataTables.
 	struct LevelDataOffsets
 	{
 		LevelDataOffsets() = default;
 		LevelDataOffsets(const int level_index);
+
+		void Serialise(nlohmann::json& writer);
+		void Deserialise(const nlohmann::json &reader);
 
 		LevelDataTableOffsets table_offsets;
 		Ptr32 foreground_tileset = 0;
