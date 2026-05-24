@@ -1,10 +1,7 @@
 #pragma once
 
 #include "render.h"
-#include "types/sdl_handle_defs.h"
 #include "rom/spinball_rom.h"
-#include "ui/ui_sprite.h"
-#include "ui/ui_palette.h"
 
 #include "ui/ui_sprite_viewer.h"
 #include "ui/ui_sprite_navigator.h"
@@ -14,7 +11,6 @@
 #include "ui/ui_sprite_importer.h"
 #include "ui/ui_animation_navigator.h"
 
-#include "imgui.h"
 #include <vector>
 #include <mutex>
 #include <filesystem>
@@ -33,7 +29,7 @@ namespace spintool
 		void Update();
 		void Shutdown();
 
-		bool IsROMLoaded() const;
+		[[nodiscard]] bool IsROMLoaded() const;
 		rom::SpinballROM& GetROM();
 		static std::filesystem::path GetROMLoadPath();
 		static std::filesystem::path GetROMExportPath();
@@ -41,17 +37,19 @@ namespace spintool
 		static std::filesystem::path GetProjectsPath();
 		static std::filesystem::path GetConfigPath();
 
-		const std::vector<TilesetEntry>& GetTilesets() const;
-		const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
+		[[nodiscard]] const std::vector<TilesetEntry>& GetTilesets() const;
+		[[nodiscard]] const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
 		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
 		void OpenImageImporter(rom::Sprite& sprite);
-		void OpenImageImporter(rom::TileSet& tileset, rom::PaletteSet& available_palettes);
+		void OpenImageImporter(rom::TileSet& tileset, const rom::PaletteSet& available_palettes);
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
 		rom::SpinballROM m_rom;
 
 		std::filesystem::path m_usa_rom_path;
+		std::filesystem::path m_eur_rom_path;
+		std::filesystem::path m_jp_rom_path;
 
 		static std::filesystem::path s_rom_load_path;
 		static std::filesystem::path s_rom_export_path;

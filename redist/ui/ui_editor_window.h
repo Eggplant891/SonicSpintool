@@ -15,6 +15,8 @@ namespace spintool
 
 		[[nodiscard]] bool IsOpen() const;
 		virtual void Update() = 0;
+		virtual void Shutdown() {}
+
 		bool m_visible = false;
 
 	protected:

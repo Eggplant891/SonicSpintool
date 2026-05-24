@@ -6,13 +6,13 @@
 #include "editor/editor_project.h"
 
 #include "imgui.h"
-#include "SDL3/SDL_image.h"
 #include "nlohmann/json.hpp"
 
 #include <thread>
 #include <algorithm>
 #include <numeric>
 #include <fstream>
+#include <iostream>
 
 
 namespace spintool
@@ -38,9 +38,9 @@ namespace spintool
 		: m_sprite_navigator(*this)
 		, m_tileset_navigator(*this)
 		, m_tile_layout_viewer(*this)
+		, m_animation_navigator(*this)
 		, m_palette_viewer(*this)
 		, m_sprite_importer(*this)
-		, m_animation_navigator(*this)
 	{
 		LoadROMConfig();
 	}
@@ -52,9 +52,9 @@ namespace spintool
 
 		std::ofstream config_out{ config_path };
 		nlohmann::json config_json_writer;
-		config_json_writer["usa_rom_path"] = m_usa_rom_path.generic_u8string();
-		config_json_writer["eur_rom_path"] = "";
-		config_json_writer["jp_rom_path"] = "";
+		config_json_writer["usa_rom_path"] = m_usa_rom_path.c_str();
+		config_json_writer["eur_rom_path"] = m_eur_rom_path.c_str();
+		config_json_writer["jp_rom_path"] = m_jp_rom_path.c_str();
 
 		config_out << config_json_writer.dump(4);
 	}
@@ -71,10 +71,12 @@ namespace spintool
 
 		std::ifstream config_in{ config_path };
 		nlohmann::json config_json_reader{ nlohmann::json::parse(config_in) };
-		//std::string rom_path = config_json_reader["usa_rom_path"];
-		//if (rom_path.empty() == false)
+		auto root_item = config_json_reader.front();
+
+		std::string rom_path = root_item["usa_rom_path"];
+		if (rom_path.empty() == false)
 		{
-			//AttemptLoadROM(rom_path);
+			AttemptLoadROM(rom_path);
 		}
 	}
 
@@ -138,7 +140,7 @@ namespace spintool
 				ImGui::SameLine();
 			}
 			ImGui::BeginDisabled();
-			ImGui::Text(m_usa_rom_path.filename().c_str());
+			ImGui::Text("%s", m_usa_rom_path.filename().c_str());
 			ImGui::EndDisabled();
 			ImGui::SameLine();
 			if (ImGui::Button("Change ROM Filename"))
@@ -149,9 +151,8 @@ namespace spintool
 			static std::array<double, 32> rolling_frame_times;
 			static size_t current_frame = 0;
 
-			static std::chrono::steady_clock fps_clock;
-			static std::chrono::time_point previous_poll_time = fps_clock.now();
-			const std::chrono::time_point current_poll_time = fps_clock.now();
+			static std::chrono::time_point previous_poll_time = std::chrono::steady_clock::now();
+			const std::chrono::time_point current_poll_time = std::chrono::steady_clock::now();
 			const std::chrono::duration frame_time = current_poll_time - previous_poll_time;
 
 			rolling_frame_times[current_frame] = static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(frame_time).count());
@@ -230,7 +231,12 @@ namespace spintool
 
 	void EditorUI::Shutdown()
 	{
-
+		m_palette_viewer.Shutdown();
+		m_animation_navigator.Shutdown();
+		m_tile_layout_viewer.Shutdown();
+		m_tileset_navigator.Shutdown();
+		m_sprite_navigator.Shutdown();
+		m_sprite_importer.Shutdown();
 	}
 
 	bool EditorUI::IsROMLoaded() const
@@ -300,7 +306,7 @@ namespace spintool
 		m_sprite_importer.SetAvailablePalettes(m_palettes);
 	}
 
-	void EditorUI::OpenImageImporter(rom::TileSet& tileset, rom::PaletteSet& available_palettes)
+	void EditorUI::OpenImageImporter(rom::TileSet& tileset, const rom::PaletteSet& available_palettes)
 	{
 		m_sprite_importer.m_visible = true;
 		m_sprite_importer.SetTarget(tileset);
