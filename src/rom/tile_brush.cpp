@@ -129,6 +129,7 @@ namespace spintool::rom
 			return this == &flipped_brush || *this == flipped_brush;
 		}
 
+		if (tiles.size() != flipped_brush.tiles.size()) return false;
 		for (size_t i = 0; i < flipped_brush.tiles.size(); ++i)
 		{
 			if (tiles[i].tile_index != flipped_brush.tiles[i].tile_index
@@ -192,6 +193,7 @@ namespace spintool::rom
 
 	SDLSurfaceHandle TileBrush::RenderToSurface(const TileLayer& tile_layer) const
 	{
+		if (!tile_layer.tileset || tile_layer.palette_set.palette_lines.empty() || BrushWidth() == 0 || BrushHeight() == 0) return {};
 		rom::Sprite brush_sprite = {};
 
 		for (size_t i = 0; i < tiles.size(); ++i)
@@ -212,13 +214,20 @@ namespace spintool::rom
 			sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
 			sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
 
-			sprite_tile->blit_settings.palette = tile_layer.palette_set.palette_lines.at(tile.palette_line);
+			if (tile.palette_line >= tile_layer.palette_set.palette_lines.size() || !tile_layer.palette_set.palette_lines[tile.palette_line]) continue;
+			sprite_tile->blit_settings.palette = tile_layer.palette_set.palette_lines[tile.palette_line];
 			brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
 		}
 		brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
 
-		SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
-		SDL_SetSurfaceColorKey(new_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(new_surface->format), nullptr, 0, 0, 0, 0));
+		const int surface_w = brush_sprite.GetBoundingBox().Width();
+		const int surface_h = brush_sprite.GetBoundingBox().Height();
+		if (surface_w <= 0 || surface_h <= 0) return {};
+		SDLSurfaceHandle new_surface{ SDL_CreateSurface(surface_w, surface_h, SDL_PIXELFORMAT_RGBA32) };
+		if (!new_surface) return {};
+		const SDL_PixelFormatDetails* details = SDL_GetPixelFormatDetails(new_surface->format);
+		if (!details) return {};
+		SDL_SetSurfaceColorKey(new_surface.get(), true, SDL_MapRGBA(details, nullptr, 0, 0, 0, 0));
 		SDL_ClearSurface(new_surface.get(), 0.0f, 0, 0, 0);
 		brush_sprite.RenderToSurface(new_surface.get());
 		return std::move(new_surface);
@@ -226,6 +235,7 @@ namespace spintool::rom
 
 	TileBrushPreview TileBrush::CreateTileBrushPreview(const TileSet& tileset, const rom::PaletteSet& palette_set, const size_t brush_index, const bool is_chroma_keyed) const
 	{
+		if (palette_set.palette_lines.empty() || BrushWidth() == 0 || BrushHeight() == 0) return {};
 		rom::Sprite brush_sprite;
 		for (size_t i = 0; i < tiles.size(); ++i)
 		{
@@ -245,11 +255,16 @@ namespace spintool::rom
 			sprite_tile->blit_settings.flip_horizontal = tile.is_flipped_horizontally;
 			sprite_tile->blit_settings.flip_vertical = tile.is_flipped_vertically;
 
-			sprite_tile->blit_settings.palette = palette_set.palette_lines.at(tile.palette_line);
+			if (tile.palette_line >= palette_set.palette_lines.size() || !palette_set.palette_lines[tile.palette_line]) continue;
+			sprite_tile->blit_settings.palette = palette_set.palette_lines[tile.palette_line];
 			brush_sprite.sprite_tiles.emplace_back(std::move(sprite_tile));
 		}
 		brush_sprite.num_tiles = static_cast<Uint16>(brush_sprite.sprite_tiles.size());
-		SDLSurfaceHandle new_surface{ SDL_CreateSurface(brush_sprite.GetBoundingBox().Width(), brush_sprite.GetBoundingBox().Height(), SDL_PIXELFORMAT_RGBA32) };
+		const int surface_w = brush_sprite.GetBoundingBox().Width();
+		const int surface_h = brush_sprite.GetBoundingBox().Height();
+		if (surface_w <= 0 || surface_h <= 0) return {};
+		SDLSurfaceHandle new_surface{ SDL_CreateSurface(surface_w, surface_h, SDL_PIXELFORMAT_RGBA32) };
+		if (!new_surface) return {};
 		SDL_SetSurfaceColorKey(new_surface.get(), is_chroma_keyed, 0);
 		SDL_FillSurfaceRect(new_surface.get(), nullptr, 0);
 		brush_sprite.RenderToSurface(new_surface.get());
