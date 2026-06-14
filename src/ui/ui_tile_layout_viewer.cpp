@@ -10,10 +10,28 @@
 #include "editor/editor_brush.h"
 #include "nlohmann/json.hpp"
 #include <fstream>
+#include <iostream>
 
 
 namespace spintool
 {
+	namespace
+	{
+		bool ROMRangeIsValid(const rom::SpinballROM& rom, const Uint32 offset, const std::size_t length)
+		{
+			const std::size_t size = rom.m_buffer.size();
+			const std::size_t start = static_cast<std::size_t>(offset);
+			return start <= size && length <= (size - start);
+		}
+
+		bool ROMPointerIsValid(const rom::SpinballROM& rom, const Uint32 table_offset, Uint32& resolved_offset, const std::size_t minimum_size = 1)
+		{
+			if (!ROMRangeIsValid(rom, table_offset, sizeof(Uint32)))
+				return false;
+			resolved_offset = rom.ReadUint32(table_offset);
+			return ROMRangeIsValid(rom, resolved_offset, minimum_size);
+		}
+	}
 	EditorTileLayoutViewer::EditorTileLayoutViewer(EditorUI& owning_ui)
 		: EditorWindowBase(owning_ui)
 	{
@@ -265,7 +283,16 @@ namespace spintool
 			m_selected_tile.Clear();
 			m_working_brush.reset();
 			m_working_flipper.reset();
-			m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.collision_data_terrain)));
+			Uint32 spline_offset = 0;
+			if (ROMPointerIsValid(m_owning_ui.GetROM(), m_level->m_data_offsets.collision_data_terrain, spline_offset, 2))
+			{
+				m_spline_manager.LoadFromSplineCullingTable(rom::SplineCullingTable::LoadFromROM(m_owning_ui.GetROM(), spline_offset));
+			}
+			else
+			{
+				std::cerr << "Skipping collision splines for level " << level_index
+					<< ": invalid pointer table or target offset\n";
+			}
 			m_render_from_edit = false;
 		}
 
@@ -384,11 +411,36 @@ namespace spintool
 
 		if (render_game_objs)
 		{
+			const auto& rom_data = m_owning_ui.GetROM();
+			Uint32 flipper_definition_offset = 0;
+			Uint32 flipper_data_offset = 0;
+			const bool level_object_metadata_valid =
+				m_level != nullptr &&
+				ROMPointerIsValid(rom_data, m_level->m_data_offsets.flipper_object_definition, flipper_definition_offset, 8) &&
+				ROMPointerIsValid(rom_data, m_level->m_data_offsets.flipper_data, flipper_data_offset, 1) &&
+				ROMRangeIsValid(rom_data, m_level->m_data_offsets.flipper_count, sizeof(Uint16)) &&
+				ROMRangeIsValid(rom_data, m_level->m_data_offsets.object_instances.offset, 1);
+
+			if (!level_object_metadata_valid)
+			{
+				std::cerr << "Skipping level objects: this ROM revision has incompatible level metadata\n";
+				render_game_objs = false;
+			}
+		}
+
+		if (render_game_objs)
+		{
 			if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
 			{
 				constexpr static Uint32 ring_sprite_offset = 0x0000F6D8;
 
 				std::shared_ptr<const rom::Sprite> ring_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
+				if (!ring_sprite || !m_working_palette_set.palette_lines[3])
+				{
+					std::cerr << "Skipping ring preview: sprite or palette is unavailable\n";
+				}
+				else
+				{
 				m_ring_preview.sprite = SDLSurfaceHandle{ SDL_CreateSurface(ring_sprite->GetBoundingBox().Width(), ring_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
 				m_ring_preview.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[3].get());
 				SDL_SetSurfacePalette(m_ring_preview.sprite.get(), m_ring_preview.palette.get());
@@ -396,6 +448,7 @@ namespace spintool
 				SDL_SetSurfaceColorKey(m_ring_preview.sprite.get(), true, 0);
 				ring_sprite->RenderToSurface(m_ring_preview.sprite.get());
 				m_ring_preview.texture = Renderer::RenderToTexture(m_ring_preview.sprite.get());
+				}
 			}
 
 			// Flippers
@@ -548,10 +601,19 @@ namespace spintool
 				largest_width *= 2;
 			}
 
+			if (largest_width <= 0 || largest_height <= 0 || largest_width > 8192 || largest_height > 8192)
+			{
+				m_tile_layout_render_requests.clear();
+				return;
+			}
 			layout_preview_bg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
-			SDL_ClearSurface(layout_preview_bg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
-
 			layout_preview_fg_surface = SDLSurfaceHandle{ SDL_CreateSurface(rom::TileSet::s_tile_width * largest_width, rom::TileSet::s_tile_height * largest_height, SDL_PIXELFORMAT_RGBA32) };
+			if (!layout_preview_bg_surface || !layout_preview_fg_surface)
+			{
+				m_tile_layout_render_requests.clear();
+				return;
+			}
+			SDL_ClearSurface(layout_preview_bg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 			SDL_ClearSurface(layout_preview_fg_surface.get(), 0.0f, 0.0f, 0.0f, 0.0f);
 		}
 
@@ -574,6 +636,13 @@ namespace spintool
 				}
 			}
 
+			if (!m_working_tileset || m_working_tileset->tiles.empty() || m_working_tileset->uncompressed_data.empty())
+			{
+				if (request.store_tileset != nullptr) *request.store_tileset = nullptr;
+				m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
+				continue;
+			}
+
 			if (request.store_layout != nullptr && *request.store_layout != nullptr)
 			{
 				m_working_tile_layout = *request.store_layout;
@@ -594,6 +663,14 @@ namespace spintool
 				{
 					*request.store_layout = m_working_tile_layout;
 				}
+			}
+
+			if (!m_working_tile_layout || request.tile_layout_width == 0 || request.tile_layout_height == 0 ||
+				request.tile_brush_width <= 0 || request.tile_brush_height <= 0)
+			{
+				if (request.store_layout != nullptr) *request.store_layout = nullptr;
+				m_tile_layout_render_requests.erase(std::begin(m_tile_layout_render_requests));
+				continue;
 			}
 
 			m_working_tile_layout->layout_width = request.tile_layout_width;
@@ -624,7 +701,8 @@ namespace spintool
 				// Render source/preview sprites for tile brush definitions (4x4 tiles)
 				for (size_t brush_index = 0; brush_index < m_working_tile_layout->tile_brushes.size(); ++brush_index)
 				{
-					rom::TileBrush& brush = *m_working_tile_layout->tile_brushes[brush_index].get();
+					if (!m_working_tile_layout->tile_brushes[brush_index]) continue;
+					rom::TileBrush& brush = *m_working_tile_layout->tile_brushes[brush_index];
 					brush_previews.emplace_back(brush.CreateTileBrushPreview(*m_working_tileset, m_working_palette_set, brush_index, request.is_chroma_keyed));
 				}
 			}
@@ -641,7 +719,12 @@ namespace spintool
 				const rom::Tile& tile = m_working_tileset->tiles[tile_index];
 				const rom::TileInstance& tile_instance = m_working_tile_layout->tile_instances[i];
 				static SDLSurfaceHandle temp_surface{ SDL_CreateSurface(rom::TileSet::s_tile_width, rom::TileSet::s_tile_height, SDL_PIXELFORMAT_INDEX8) };
-				SDLPaletteHandle tile_palette = Renderer::CreateSDLPalette(tile_instance.palette_line == 0 && request.palette_line.has_value() ? *m_working_palette_set.palette_lines.at(*request.palette_line) : *m_working_palette_set.palette_lines.at(tile_instance.palette_line));
+				if (!temp_surface || m_working_palette_set.palette_lines.empty()) continue;
+				size_t palette_index = tile_instance.palette_line;
+				if (tile_instance.palette_line == 0 && request.palette_line.has_value()) palette_index = *request.palette_line;
+				if (palette_index >= m_working_palette_set.palette_lines.size() || !m_working_palette_set.palette_lines[palette_index]) continue;
+				SDLPaletteHandle tile_palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines[palette_index]);
+				if (!tile_palette) continue;
 				SDL_SetSurfacePalette(temp_surface.get(), tile_palette.get());
 				SDL_SetSurfaceColorKey(temp_surface.get(), request.is_chroma_keyed, 0);
 				SDL_FillSurfaceRect(temp_surface.get(), nullptr, 0);
@@ -677,6 +760,7 @@ namespace spintool
 				}
 
 				const auto adjusted_layout_width = (request.tile_layout_width * request.tile_brush_width);
+				if (adjusted_layout_width == 0 || !layout_preview_bg_surface) continue;
 				const int x_off = static_cast<int>(i % adjusted_layout_width) * rom::TileSet::s_tile_width;
 				const int y_off = static_cast<int>(((i - (i % adjusted_layout_width)) / adjusted_layout_width)) * rom::TileSet::s_tile_height;
 
@@ -1181,7 +1265,28 @@ namespace spintool
 				const bool is_viewport_hovered  = ImGui::IsWindowHovered();
 
 				const ImVec2 panel_screen_origin = ImGui::GetCursorScreenPos();
-				if (m_tile_layout_preview_bg != nullptr || m_tile_layout_preview_fg != nullptr)
+
+				// A level viewport needs two valid layers and two valid preview textures.
+				// Some ROM revisions produce only a partially loaded level; never render it.
+				const bool has_valid_level_layers =
+					m_level == nullptr ||
+					(m_level->m_tile_layers.size() >= 2 &&
+					 m_level->m_tile_layers[0].tile_layout != nullptr &&
+					 m_level->m_tile_layers[1].tile_layout != nullptr);
+
+				const bool has_valid_previews =
+					m_tile_layout_preview_bg != nullptr &&
+					m_tile_layout_preview_fg != nullptr &&
+					m_tile_layout_preview_bg->w > 0 &&
+					m_tile_layout_preview_bg->h > 0 &&
+					m_tile_layout_preview_fg->w > 0 &&
+					m_tile_layout_preview_fg->h > 0;
+
+				if (!has_valid_level_layers || !has_valid_previews || m_zoom <= 0.0f)
+				{
+					ImGui::TextWrapped("Level preview is unavailable because its tile layers, layouts, or textures could not be loaded safely.");
+				}
+				else
 				{
 					LayerSettings current_layer_settings = m_layer_settings;
 
@@ -1199,8 +1304,8 @@ namespace spintool
 					const ImVec2 default_tile_brush_dimensions = ImVec2{ rom::TileBrush::s_default_brush_width, rom::TileBrush::s_default_brush_height } *tile_dimensions;
 					const ImVec2 default_tile_brush_grid_pos{ static_cast<float>(static_cast<int>(relative_mouse_pos.x / (default_tile_brush_dimensions.x * m_zoom))), static_cast<float>(static_cast<int>(relative_mouse_pos.y / (default_tile_brush_dimensions.y * m_zoom))) };
 
-					const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * default_tile_brush_dimensions.y);
-					const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * default_tile_brush_dimensions.y);
+					const float max_layout_width = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->w), static_cast<float>(m_tile_layout_preview_fg->w)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_width) * default_tile_brush_dimensions.x, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_width) * default_tile_brush_dimensions.x);
+					const float max_layout_height = m_level == nullptr ? std::max<float>(static_cast<float>(m_tile_layout_preview_bg->h), static_cast<float>(m_tile_layout_preview_fg->h)) : std::max(static_cast<float>(m_level->m_tile_layers[0].tile_layout->layout_height) * default_tile_brush_dimensions.y, static_cast<float>(m_level->m_tile_layers[1].tile_layout->layout_height) * default_tile_brush_dimensions.y);
 
 					const ImVec2 level_dimensions{ max_layout_width, max_layout_height };
 					const ImVec2 zoomed_level_dimensions{ level_dimensions * m_zoom };
@@ -1377,15 +1482,26 @@ namespace spintool
 							{
 								if (m_selected_tile.IsPickingFromLayout())
 								{
-									if (m_selected_tile.tile_layer->tile_layout->tile_instances.empty() == false && tile_grid_ref < m_selected_tile.tile_layer->tile_layout->tile_instances.size())
+									if (m_selected_tile.tile_layer->tile_layout->tile_instances.empty() == false && tile_grid_ref >= 0 && static_cast<size_t>(tile_grid_ref) < m_selected_tile.tile_layer->tile_layout->tile_instances.size())
 									{
 										const rom::TileInstance& tile_instance = m_selected_tile.tile_layer->tile_layout->tile_instances.at(tile_grid_ref);
 										const int selected_index = tile_instance.tile_index;
-										m_selected_tile.tile_selection = &m_selected_tile.tile_layer->tileset->tiles[selected_index];
-										m_selected_tile.tile_picker->currently_selected_tile = m_selected_tile.tile_picker->tiles[selected_index].get();
+										if (selected_index < 0 ||
+											m_selected_tile.tile_layer->tileset == nullptr ||
+											static_cast<size_t>(selected_index) >= m_selected_tile.tile_layer->tileset->tiles.size() ||
+											static_cast<size_t>(selected_index) >= m_selected_tile.tile_picker->tiles.size())
+										{
+											m_selected_tile.Clear();
+											has_just_selected_item = true;
+										}
+										else
+										{
+										m_selected_tile.tile_selection = &m_selected_tile.tile_layer->tileset->tiles[static_cast<size_t>(selected_index)];
+										m_selected_tile.tile_picker->currently_selected_tile = m_selected_tile.tile_picker->tiles[static_cast<size_t>(selected_index)].get();
 										m_selected_tile.tile_picker->SetPaletteLine(tile_instance.palette_line);
 										m_selected_tile.flip_x = tile_instance.is_flipped_horizontally;
 										m_selected_tile.flip_y = tile_instance.is_flipped_vertically;
+										}
 
 										m_selected_tile.is_picking_from_layout = false;
 										m_selected_tile.was_picked_from_layout = true;
@@ -1398,7 +1514,7 @@ namespace spintool
 								}
 								else if (m_selected_tile.HasSelection())
 								{
-									if (tile_grid_ref < m_selected_tile.tile_layer->tile_layout->tile_instances.size())
+									if (tile_grid_ref >= 0 && static_cast<size_t>(tile_grid_ref) < m_selected_tile.tile_layer->tile_layout->tile_instances.size())
 									{
 										m_selected_tile.dragging_start_ref = tile_grid_pos;
 									}
@@ -1432,6 +1548,10 @@ namespace spintool
 									for (float y = std::min(start_grid_pos.y, end_grid_pos.y); y <= std::max(start_grid_pos.y, end_grid_pos.y); ++y)
 									{
 										const size_t tile_index_to_edit = static_cast<size_t>(x) + (static_cast<size_t>(y) * m_selected_tile.tile_layer->tile_layout->layout_width * 4);
+										if (tile_index_to_edit >= m_selected_tile.tile_layer->tile_layout->tile_instances.size())
+										{
+											continue;
+										}
 										rom::TileInstance& target_tile = m_selected_tile.tile_layer->tile_layout->tile_instances[tile_index_to_edit];
 										target_tile.tile_index = static_cast<int>(m_selected_tile.tile_picker->GetSelectedTileIndex(ImGui::IsKeyDown(ImGuiKey_ModShift) ? std::optional<int>{ static_cast<int>(((y - start_grid_pos.y) * ((end_grid_pos.x+1) - start_grid_pos.x)) + (x - start_grid_pos.x)) } : std::nullopt));
 										target_tile.palette_line = m_selected_tile.tile_picker->current_palette_line;
@@ -2586,86 +2706,106 @@ namespace spintool
 
 			case RenderRequestType::LEVEL:
 			{
+				if (!m_level || m_level->m_tile_layers.size() < 2)
 				{
-					const Uint32 BGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tileset);
-					const Uint32 BGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_layout);
-					const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.background_tile_brushes);
-					const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tile_layout);
-
-
-					const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_width);
-					const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.tile_layout_height);
-
-					RenderTileLayoutRequest request;
-
-					request.tileset_address = BGTilesetOffsets;
-					request.tile_brushes_address = BGTilesetBrushes;
-					request.tile_brushes_address_end = FGTilesetLayouts;
-
-					request.tile_brush_width = 4;
-					request.tile_brush_height = 4;
-
-					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush::s_default_brush_width * rom::TileSet::s_tile_width);
-					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_default_brush_height * rom::TileSet::s_tile_height);
-
-					request.tile_layout_address = BGTilesetLayouts;
-					request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
-
-					request.is_chroma_keyed = false;
-					request.compression_algorithm = CompressionAlgorithm::SSC;
-					char levelname_buffer[32];
-					sprintf(levelname_buffer, "level_%d", m_level->m_level_index);
-					request.layout_type_name = levelname_buffer;
-					request.layout_layout_name = "bg";
-
-					m_working_palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
-					m_level->m_tile_layers[0].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
-					request.store_tileset = &m_level->m_tile_layers[0].tileset;
-					request.store_layout = &m_level->m_tile_layers[0].tile_layout;
-
-					m_tile_layout_render_requests.emplace_back(std::move(request));
+					std::cerr << "Cannot render level: level state is incomplete\\n";
+					break;
 				}
 
+				const auto& rom_data = m_owning_ui.GetROM();
+				const auto& offsets = m_level->m_data_offsets;
+
+				if (!ROMRangeIsValid(rom_data, offsets.tile_layout_width, sizeof(Uint16)) ||
+					!ROMRangeIsValid(rom_data, offsets.tile_layout_height, sizeof(Uint16)))
 				{
-					const rom::LevelDataOffsets level_data_offsets{ m_level->m_level_index };
-					const Uint32 FGTilesetOffsets = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tileset);
-					const Uint32 FGTilesetLayouts = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_layout);
-					const Uint32 FGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.foreground_tile_brushes);
-					const Uint32 BGTilesetBrushes = m_owning_ui.GetROM().ReadUint32(level_data_offsets.background_tile_brushes);
+					std::cerr << "Cannot render level: invalid level dimensions\\n";
+					break;
+				}
 
+				const Uint16 level_width_px = rom_data.ReadUint16(offsets.tile_layout_width);
+				const Uint16 level_height_px = rom_data.ReadUint16(offsets.tile_layout_height);
+				const Uint32 layout_width = level_width_px / (rom::TileBrush::s_default_brush_width * rom::TileSet::s_tile_width);
+				const Uint32 layout_height = level_height_px / (rom::TileBrush::s_default_brush_height * rom::TileSet::s_tile_height);
 
-					const Uint16 LevelDimensionsX = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_width);
-					const Uint16 LevelDimensionsY = m_owning_ui.GetROM().ReadUint16(level_data_offsets.tile_layout_height);
+				if (layout_width == 0 || layout_height == 0 || layout_width > 4096 || layout_height > 4096)
+				{
+					std::cerr << "Cannot render level: invalid layout dimensions\\n";
+					break;
+				}
+
+				auto palette_set = rom::PaletteSet::LoadFromROM(rom_data, offsets.palette_set);
+				const bool palette_valid = palette_set && !palette_set->palette_lines.empty();
+				if (palette_valid)
+					m_working_palette_set = *palette_set;
+				else
+					std::cerr << "Skipping level palette: palette data is unavailable\\n";
+
+				auto make_placeholder = [&](const std::size_t layer_index)
+				{
+					auto layout = std::make_shared<rom::TileLayout>();
+					layout->layout_width = static_cast<int>(layout_width);
+					layout->layout_height = static_cast<int>(layout_height);
+					m_level->m_tile_layers[layer_index].tile_layout = std::move(layout);
+					m_level->m_tile_layers[layer_index].tileset = std::make_shared<rom::TileSet>();
+				};
+
+				auto queue_layer = [&](const char* layer_name, const std::size_t layer_index,
+					const Uint32 tileset_table, const Uint32 layout_table,
+					const Uint32 brushes_table, const Uint32 brushes_end_table,
+					const bool chroma_keyed) -> bool
+				{
+					Uint32 tileset = 0, layout = 0, brushes = 0, brushes_end = 0;
+					const bool valid =
+						ROMPointerIsValid(rom_data, tileset_table, tileset, 1) &&
+						ROMPointerIsValid(rom_data, layout_table, layout, 1) &&
+						ROMPointerIsValid(rom_data, brushes_table, brushes, 1) &&
+						ROMPointerIsValid(rom_data, brushes_end_table, brushes_end, 1) &&
+						brushes < brushes_end && palette_valid;
+
+					if (!valid)
+					{
+						std::cerr << "Skipping " << layer_name << ": incompatible or missing ROM data\\n";
+						make_placeholder(layer_index);
+						return false;
+					}
 
 					RenderTileLayoutRequest request;
-
-					request.tileset_address = FGTilesetOffsets;
-					request.tile_brushes_address = FGTilesetBrushes;
-					request.tile_brushes_address_end = BGTilesetBrushes;
-
+					request.tileset_address = tileset;
+					request.tile_brushes_address = brushes;
+					request.tile_brushes_address_end = brushes_end;
 					request.tile_brush_width = 4;
 					request.tile_brush_height = 4;
-
-					request.tile_layout_width = LevelDimensionsX / (rom::TileBrush::s_default_brush_width * rom::TileSet::s_tile_width);
-					request.tile_layout_height = LevelDimensionsY / (rom::TileBrush::s_default_brush_height * rom::TileSet::s_tile_height);
-
-					request.tile_layout_address = FGTilesetLayouts;
-					request.tile_layout_address_end = request.tile_layout_address + (request.tile_layout_width * request.tile_layout_height * 2);
-
-					request.is_chroma_keyed = true;
+					request.tile_layout_width = layout_width;
+					request.tile_layout_height = layout_height;
+					request.tile_layout_address = layout;
+					const std::size_t layout_bytes = static_cast<std::size_t>(layout_width) * layout_height * sizeof(Uint16);
+					if (!ROMRangeIsValid(rom_data, layout, layout_bytes))
+					{
+						std::cerr << "Skipping " << layer_name << ": layout exceeds ROM bounds\\n";
+						make_placeholder(layer_index);
+						return false;
+					}
+					request.tile_layout_address_end = layout + static_cast<Uint32>(layout_bytes);
+					request.is_chroma_keyed = chroma_keyed;
 					request.compression_algorithm = CompressionAlgorithm::SSC;
-
-					char levelname_buffer[32];
-					sprintf(levelname_buffer, "level_%d", m_level->m_level_index);
-					request.layout_type_name = levelname_buffer;
-					request.layout_layout_name = "fg";
-
-					m_level->m_tile_layers[1].palette_set = *rom::PaletteSet::LoadFromROM(m_owning_ui.GetROM(), m_level->m_data_offsets.palette_set);
-					request.store_tileset = &m_level->m_tile_layers[1].tileset;
-					request.store_layout = &m_level->m_tile_layers[1].tile_layout;;
-
+					request.layout_type_name = "level_" + std::to_string(m_level->m_level_index);
+					request.layout_layout_name = layer_name;
+					m_level->m_tile_layers[layer_index].palette_set = *palette_set;
+					request.store_tileset = &m_level->m_tile_layers[layer_index].tileset;
+					request.store_layout = &m_level->m_tile_layers[layer_index].tile_layout;
 					m_tile_layout_render_requests.emplace_back(std::move(request));
-				}
+					return true;
+				};
+
+				const bool bg_queued = queue_layer("bg", 0, offsets.background_tileset,
+					offsets.background_tile_layout, offsets.background_tile_brushes,
+					offsets.foreground_tile_layout, false);
+				const bool fg_queued = queue_layer("fg", 1, offsets.foreground_tileset,
+					offsets.foreground_tile_layout, offsets.foreground_tile_brushes,
+					offsets.background_tile_brushes, true);
+
+				if (!bg_queued && !fg_queued)
+					std::cerr << "No compatible tile layer could be displayed for this level\\n";
 			}
 			break;
 
