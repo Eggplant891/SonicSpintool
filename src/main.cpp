@@ -19,13 +19,27 @@ namespace spintool
 	int SSEMain()
 	{
 		bool quitting = false;
-		SDL_Init(SDL_INIT_VIDEO);
-		SDL_Event event;
 
-		Renderer::Initialise();
+		if (!SDL_Init(SDL_INIT_VIDEO))
+		{
+			std::cerr << "SDL_Init failed: " << SDL_GetError() << '\n';
+			return 1;
+		}
 
+		SDL_Event event{};
+
+		if (!Renderer::Initialise())
+		{
+			std::cerr << "Renderer initialisation failed: " << SDL_GetError() << '\n';
+			SDL_Quit();
+			return 1;
+		}
+
+		std::cerr << "[startup] Constructing editor UI\n";
 		EditorUI editor_ui;
+		std::cerr << "[startup] Initialising editor UI\n";
 		editor_ui.Initialise();
+		std::cerr << "[startup] Entering main loop\n";
 		while (quitting == false)
 		{
 			Renderer::NewFrame();
@@ -45,6 +59,7 @@ namespace spintool
 			//Renderer::s_sdl_update_mutex.unlock();
 			SDL_Delay(16);
 		}
+		editor_ui.Shutdown();
 		Renderer::Shutdown();
 		SDL_Quit();
 
