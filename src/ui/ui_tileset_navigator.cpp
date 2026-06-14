@@ -66,7 +66,16 @@ namespace spintool
 			if (ImGui::Button("Validate SSC Data"))
 			{
 				validated_data = true;
-				result = rom::SSCDecompressor::IsValidSSCCompressedData(&m_owning_ui.GetROM().m_buffer[actual_offset], actual_offset);
+				const auto& rom_buffer = m_owning_ui.GetROM().m_buffer;
+				if (actual_offset < 0 || static_cast<size_t>(actual_offset) >= rom_buffer.size())
+				{
+					result = {};
+					result.error_msg = "ROM offset is outside the loaded ROM";
+				}
+				else
+				{
+					result = rom::SSCDecompressor::IsValidSSCCompressedData(rom_buffer.data() + actual_offset, static_cast<Uint32>(actual_offset));
+				}
 			}
 			if (validated_data)
 			{
@@ -134,8 +143,15 @@ namespace spintool
 				const std::unique_ptr<rom::TileSet>& tileset = tileset_entry.tileset;
 
 				static std::string s_no_errors_str = "No Errors";
+				if (!tileset)
+				{
+					ImGui::TextUnformatted("Invalid tileset entry");
+					continue;
+				}
+
 				char name_buffer[1024];
-				sprintf(name_buffer, "Tileset (0x%06X -> 0x%06X) [%s]", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1), tileset_entry.result.error_msg.value_or(s_no_errors_str).c_str());
+				const Uint32 display_end = tileset->rom_data.rom_offset_end > 0 ? tileset->rom_data.rom_offset_end - 1 : 0;
+				snprintf(name_buffer, sizeof(name_buffer), "Tileset (0x%06X -> 0x%06X) [%s]", static_cast<unsigned int>(tileset->rom_data.rom_offset), static_cast<unsigned int>(display_end), tileset_entry.result.error_msg.value_or(s_no_errors_str).c_str());
 				if (ImGui::TreeNode(name_buffer))
 				{
 					ImGui::Text("Total size on ROM: %02d (0x%04X)", tileset->rom_data.real_size, tileset->rom_data.real_size);
@@ -146,12 +162,19 @@ namespace spintool
 						ImGui::TreePop();
 					}
 
-					sprintf(name_buffer, "Tile Data: (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset + 2), static_cast<unsigned int>(tileset->rom_data.rom_offset_end-1));
+					sprintf(name_buffer, "Tile Data: (0x%06X -> 0x%06X)", static_cast<unsigned int>(tileset->rom_data.rom_offset + 2), static_cast<unsigned int>(tileset->rom_data.rom_offset_end > 0 ? tileset->rom_data.rom_offset_end - 1 : 0));
 					if (ImGui::TreeNodeEx(name_buffer, ImGuiTreeNodeFlags_DefaultOpen))
 					{
 						ImGui::Text("Compressed Size: %02d (0x%04X)", tileset->compressed_size, tileset->compressed_size);
 						ImGui::Text("Uncompressed Size: %02d (0x%04X)", tileset->uncompressed_size, tileset->uncompressed_size);
-						ImGui::Text("Compression Ratio: %.2f%%", (tileset->compressed_size / static_cast<float>(tileset->uncompressed_size)) * 100);
+						if (tileset->uncompressed_size > 0)
+					{
+						ImGui::Text("Compression Ratio: %.2f%%", (tileset->compressed_size / static_cast<float>(tileset->uncompressed_size)) * 100.0f);
+					}
+					else
+					{
+						ImGui::TextUnformatted("Compression Ratio: unavailable");
+					}
 						ImGui::TreePop();
 					}
 					ImGui::TreePop();
