@@ -8,7 +8,8 @@ namespace spintool::rom
 {
 	std::shared_ptr<spintool::rom::Palette> Palette::LoadFromROM(const SpinballROM& src_rom, Uint32 offset)
 	{
-		if (offset >= src_rom.m_buffer.size() || offset + s_palette_size_on_rom >= src_rom.m_buffer.size())
+		if (offset > src_rom.m_buffer.size() ||
+			s_palette_size_on_rom > src_rom.m_buffer.size() - static_cast<size_t>(offset))
 		{
 			return nullptr;
 		}
@@ -54,7 +55,8 @@ namespace spintool::rom
 	{
 		constexpr size_t root_palette = 0xDFC;
 
-		if (offset + 2 * 4 >= src_rom.m_buffer.size())
+		if (offset > src_rom.m_buffer.size() ||
+			8 > src_rom.m_buffer.size() - static_cast<size_t>(offset))
 		{
 			return nullptr;
 		}
@@ -68,6 +70,14 @@ namespace spintool::rom
 			rom::Palette::LoadFromROM(src_rom, root_palette + (src_rom.ReadUint16(offset + 4) * 0x20)),
 			rom::Palette::LoadFromROM(src_rom, root_palette + (src_rom.ReadUint16(offset + 6) * 0x20))
 		};
+
+		for (const auto& palette : palette_set->palette_lines)
+		{
+			if (!palette)
+			{
+				return nullptr;
+			}
+		}
 
 		return palette_set;
 	}
