@@ -33,7 +33,7 @@ namespace spintool
 
     bool Serialiser::FileExists(const std::filesystem::path &path)
     {
-       return std::filesystem::exists(path) == false;
+       return std::filesystem::exists(path);
     }
 
     bool Serialiser::FileExists(const std::filesystem::path &path, std::string_view filename)
@@ -79,7 +79,7 @@ namespace spintool
 
     bool Deserialiser::FileExists(const std::filesystem::path &path)
     {
-        return std::filesystem::exists(path) == false;
+        return std::filesystem::exists(path);
     }
 
     bool Deserialiser::FileExists(const std::filesystem::path &path, std::string_view filename)
@@ -92,11 +92,6 @@ namespace spintool
 
     const nlohmann::json& Deserialiser::Reader()
     {
-        if (m_json_reader.empty())
-        {
-            return m_json_reader;
-        }
-
-        return m_json_reader.front();
+        return m_json_reader;
     }
 }
