@@ -23,14 +23,31 @@ namespace spintool
 
 	void TilePicker::RenderTileset()
 	{
-		if (m_tile_layer == nullptr)
+		tiles.clear();
+		currently_selected_tile = nullptr;
+		m_surface.reset();
+		m_texture.reset();
+
+		if (m_tile_layer == nullptr || !m_tile_layer->tileset ||
+			m_tile_layer->tileset->tiles.empty() ||
+			m_tile_layer->palette_set.palette_lines.empty())
 		{
 			return;
 		}
 
+		if (current_palette_line < 0 ||
+			static_cast<size_t>(current_palette_line) >= m_tile_layer->palette_set.palette_lines.size() ||
+			!m_tile_layer->palette_set.palette_lines[static_cast<size_t>(current_palette_line)])
+		{
+			current_palette_line = 0;
+			if (m_tile_layer->palette_set.palette_lines.empty() ||
+				!m_tile_layer->palette_set.palette_lines[0])
+			{
+				return;
+			}
+		}
+
 		auto palette_line = current_palette_line;
-		m_surface.reset();
-		m_texture.reset();
 		current_palette_line = palette_line;
 
 		int max_x_size = 0;
@@ -57,11 +74,25 @@ namespace spintool
 			sprite_tile->blit_settings.flip_horizontal = false;
 			sprite_tile->blit_settings.flip_vertical = false;
 
-			sprite_tile->blit_settings.palette = m_tile_layer->palette_set.palette_lines.at(current_palette_line);
+			const auto& selected_palette = m_tile_layer->palette_set.palette_lines[static_cast<size_t>(current_palette_line)];
+			if (!selected_palette)
+			{
+				break;
+			}
+			sprite_tile->blit_settings.palette = selected_palette;
 			tiles.emplace_back(std::move(sprite_tile));
 		}
 
+		if (tiles.empty() || max_x_size <= 0 || max_y_size <= 0)
+		{
+			return;
+		}
+
 		m_surface = SDLSurfaceHandle{ SDL_CreateSurface(max_x_size, max_y_size, SDL_PIXELFORMAT_RGBA32) };
+		if (!m_surface)
+		{
+			return;
+		}
 		SDL_SetSurfaceColorKey(m_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(m_surface->format), nullptr, 0, 0, 0, 0));
 		SDL_ClearSurface(m_surface.get(), 0.0f, 0, 0, 0);
 
@@ -79,6 +110,14 @@ namespace spintool
 
 	void TilePicker::Draw()
 	{
+		if (m_tile_layer == nullptr || !m_tile_layer->tileset ||
+			m_tile_layer->tileset->tiles.empty() ||
+			m_tile_layer->palette_set.palette_lines.empty())
+		{
+			ImGui::TextUnformatted("<No valid tileset loaded>");
+			return;
+		}
+
 		if (spintool::DrawPaletteLineSelector(current_palette_line, m_tile_layer->palette_set))
 		{
 			RenderTileset();
@@ -147,8 +186,14 @@ namespace spintool
 						static char path_buffer[2048];
 						sprintf(path_buffer, "spinball_tileset_%X02.png", static_cast<unsigned int>(m_tile_layer->tileset->rom_data.rom_offset));
 						std::filesystem::path export_path = m_owning_ui.GetSpriteExportPath().append(path_buffer);
-						SDLSurfaceHandle out_surface = m_tile_layer->tileset->RenderToSurface(*m_tile_layer->palette_set.palette_lines.at(current_palette_line));
-						assert(IMG_SavePNG(out_surface.get(), export_path.c_str()));
+						if (current_palette_line >= 0 &&
+							static_cast<size_t>(current_palette_line) < m_tile_layer->palette_set.palette_lines.size() &&
+							m_tile_layer->palette_set.palette_lines[static_cast<size_t>(current_palette_line)])
+						{
+							SDLSurfaceHandle out_surface = m_tile_layer->tileset->RenderToSurface(*m_tile_layer->palette_set.palette_lines[static_cast<size_t>(current_palette_line)]);
+							if (out_surface)
+								IMG_SavePNG(out_surface.get(), export_path.c_str());
+						}
 					}
 					ImGui::EndPopup();
 				}
@@ -163,7 +208,8 @@ namespace spintool
 
 	void TilePicker::SetPaletteLine(int palette_line)
 	{
-		if (palette_line < 4)
+		if (palette_line >= 0 && m_tile_layer != nullptr &&
+			static_cast<size_t>(palette_line) < m_tile_layer->palette_set.palette_lines.size())
 		{
 			current_palette_line = palette_line;
 			RenderTileset();
@@ -194,9 +240,17 @@ namespace spintool
 					return currently_selected_tile == tile.get();
 				}));
 
+		if (tiles.empty())
+		{
+			return 0;
+		}
+
 		if (tile_index_offset)
 		{
-			return (out_index + *tile_index_offset) % tiles.size();
+			const auto count = static_cast<long long>(tiles.size());
+			auto adjusted = (static_cast<long long>(out_index) + *tile_index_offset) % count;
+			if (adjusted < 0) adjusted += count;
+			return static_cast<size_t>(adjusted);
 		}
 
 		return out_index;
@@ -204,17 +258,23 @@ namespace spintool
 
 	const rom::Tile* TilePicker::GetSelectedTile() const
 	{
-		if (currently_selected_tile == nullptr)
+		if (currently_selected_tile == nullptr || m_tile_layer == nullptr ||
+			!m_tile_layer->tileset || m_tile_layer->tileset->tiles.empty())
 		{
 			return nullptr;
 		}
 
-		return &m_tile_layer->tileset->tiles.at(GetSelectedTileIndex());
+		const size_t selected_index = GetSelectedTileIndex();
+		if (selected_index >= m_tile_layer->tileset->tiles.size())
+		{
+			return nullptr;
+		}
+		return &m_tile_layer->tileset->tiles[selected_index];
 	}
 
 	void TilePicker::DrawPickedTile(bool flip_x, bool flip_y, float zoom, std::optional<int> tile_index_offset) const
 	{
-		if (currently_selected_tile == nullptr)
+		if (currently_selected_tile == nullptr || tiles.empty() || !m_texture)
 		{
 			return;
 		}
@@ -224,7 +284,8 @@ namespace spintool
 		if (tile_index_offset)
 		{
 			const size_t tile_index = GetSelectedTileIndex(tile_index_offset);
-			tile = tiles.at(tile_index).get();
+			if (tile_index >= tiles.size()) return;
+			tile = tiles[tile_index].get();
 		}
 
 
