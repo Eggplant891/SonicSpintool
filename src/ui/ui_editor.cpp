@@ -51,7 +51,7 @@ namespace spintool
 	void EditorUI::SaveROMConfig() const
 	{
 		std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(s_config_path, "roms.json");
-		nlohmann::json config_json_writer = serialiser->Writer();
+		nlohmann::json& config_json_writer = serialiser->Writer();
 
 		for (const rom::ROMMetadata& metadata : m_metadata.rom_metadatas)
 		{
@@ -61,22 +61,50 @@ namespace spintool
 
 	void EditorUI::LoadROMConfig()
 	{
-		std::filesystem::path config_path = s_config_path;
-		config_path.append("roms.json");
+		const std::filesystem::path config_path = s_config_path / "roms.json";
 
-		if (Deserialiser::FileExists(config_path, "roms.json") == false)
+		if (!Deserialiser::FileExists(config_path))
 		{
 			SaveROMConfig();
 		}
 
-		std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(s_config_path, "roms.json");
-		std::ifstream config_in{ config_path };
-		nlohmann::json config_json_reader = deserialiser->Reader();
+		std::unique_ptr<Deserialiser> deserialiser;
+		try
+		{
+			deserialiser = Deserialiser::OpenFile(config_path);
+		}
+		catch (const std::exception& error)
+		{
+			std::cerr << "Could not parse " << config_path << ": " << error.what() << '\n';
+			std::error_code ec;
+			std::filesystem::rename(config_path, config_path.string() + ".invalid", ec);
+			SaveROMConfig();
+			return;
+		}
+
+		if (!deserialiser)
+		{
+			std::cerr << "Could not open ROM configuration: " << config_path << '\n';
+			return;
+		}
+
+		const nlohmann::json& config_json_reader = deserialiser->Reader();
+		if (!config_json_reader.is_object())
+		{
+			std::cerr << "ROM configuration is not a JSON object: " << config_path << '\n';
+			return;
+		}
 
 		for (auto& rom_metadata : m_metadata.rom_metadatas)
 		{
-			const std::string& rom_path = config_json_reader[rom_metadata.version_id];
-			if (rom_path.empty() == false)
+			auto entry = config_json_reader.find(rom_metadata.version_id);
+			if (entry == config_json_reader.end() || !entry->is_string())
+			{
+				continue;
+			}
+
+			const std::string rom_path = entry->get<std::string>();
+			if (!rom_path.empty())
 			{
 				AttemptLoadROM(rom_path);
 			}
@@ -99,9 +127,10 @@ namespace spintool
 
 	void EditorUI::Initialise()
 	{
-		if (auto* rom = m_metadata.GetROMMetadataFor("usa"))
+		m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
+		if (m_current_rom_metadata && !m_current_rom_metadata->location_on_disk.empty())
 		{
-			AttemptLoadROM(rom->location_on_disk);
+			AttemptLoadROM(m_current_rom_metadata->location_on_disk);
 		}
 	}
 
@@ -154,7 +183,14 @@ namespace spintool
 				ImGui::SameLine();
 			}
 			ImGui::BeginDisabled();
-			ImGui::Text("%s", m_current_rom_metadata->location_on_disk.filename().c_str());
+			if (m_current_rom_metadata && !m_current_rom_metadata->location_on_disk.empty())
+			{
+				ImGui::Text("%s", m_current_rom_metadata->location_on_disk.filename().string().c_str());
+			}
+			else
+			{
+				ImGui::TextUnformatted("No ROM selected");
+			}
 			ImGui::EndDisabled();
 			ImGui::SameLine();
 			if (ImGui::Button("Change ROM Filename"))
@@ -195,7 +231,10 @@ namespace spintool
 		settings.target_directory = GetROMLoadPath();
 		settings.file_extension_filter = { ".bin", ".md" };
 
-		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, m_metadata.GetROMMetadataFor("usa")->location_on_disk);
+		const std::filesystem::path current_rom_path = m_current_rom_metadata
+			? m_current_rom_metadata->location_on_disk
+			: std::filesystem::path{};
+		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, current_rom_path);
 
 		settings.close_popup = false;
 		if (selected_path && AttemptLoadROM(selected_path.value()))
@@ -222,12 +261,28 @@ namespace spintool
 			ImGui::PopStyleVar(2);
 		}
 		
-		m_sprite_importer.Update();
-		m_sprite_navigator.Update();
-		m_tileset_navigator.Update();
-		m_tile_layout_viewer.Update();
-		m_animation_navigator.Update();
-		m_palette_viewer.Update();
+		auto safe_update = [](const char* tool_name, auto&& update_function)
+		{
+			try
+			{
+				update_function();
+			}
+			catch (const std::exception& error)
+			{
+				std::cerr << tool_name << " error: " << error.what() << '\n';
+			}
+			catch (...)
+			{
+				std::cerr << tool_name << " failed with an unknown error\n";
+			}
+		};
+
+		safe_update("Sprite Importer", [this] { m_sprite_importer.Update(); });
+		safe_update("Sprite Navigator", [this] { m_sprite_navigator.Update(); });
+		safe_update("Tileset Navigator", [this] { m_tileset_navigator.Update(); });
+		safe_update("Tile Layout Viewer", [this] { m_tile_layout_viewer.Update(); });
+		safe_update("Animation Navigator", [this] { m_animation_navigator.Update(); });
+		safe_update("Palette Viewer", [this] { m_palette_viewer.Update(); });
 
 		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)
 		{
