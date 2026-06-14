@@ -2,150 +2,133 @@
 
 namespace spintool::rom
 {
-	SSCDecompressionResult SSCDecompressor::IsValidSSCCompressedData(const Uint8* in_data, const Uint32 starting_offset)
-	{
-		SSCDecompressionResult results;
+    SSCDecompressionResult SSCDecompressor::IsValidSSCCompressedData(const Uint8* in_data, const Uint32 starting_offset)
+    {
+        SSCDecompressionResult results;
+        if (!in_data)
+        {
+            results.error_msg = "Null SSC input pointer";
+            return results;
+        }
 
-		const Uint8* current_byte = in_data;
-		// Check that first bit of data is considered a raw byte. The first bit of data but always be raw, as there will be no predictable data in the working buffer
-		{
-			const Uint8 fragment_header = *current_byte;
-			const bool is_raw_data = (fragment_header & 1) == 1;
-			if (is_raw_data == false)
-			{
-				results.rom_data.SetROMData(starting_offset, starting_offset + 2);
-				results.error_msg = "The first fragment data header bitfield did not start the data fragment with a raw byte";
-				return results;
-			}
-		}
+        // This legacy pointer-only validator cannot know the end of the ROM.
+        // Keep it for compatibility, but bounded loading uses DecompressData().
+        const Uint8* current_byte = in_data;
+        if ((*current_byte & 1) == 0)
+        {
+            results.rom_data.SetROMData(starting_offset, starting_offset + 1);
+            results.error_msg = "SSC stream does not begin with a raw fragment";
+            return results;
+        }
 
-		Uint16 num_bytes_pushed = 0;
-		while (true)
-		{
-			const Uint8* next_byte = nullptr;
-			Uint8 fragment_header = *current_byte;
-			++current_byte;
-			for (int fragments_remaining = 7; fragments_remaining >= 0; --fragments_remaining)
-			{
-				const bool is_raw_data = (fragment_header & 1) == 1;
-				fragment_header = fragment_header >> 1;
-				if (is_raw_data == false)
-				{
-					next_byte = current_byte + 1;
-					const Uint16 tile_index_offset = (static_cast<Uint16>((*next_byte) & 0xF0) << 4) | static_cast<Uint16>(*current_byte);
+        results.rom_data.SetROMData(starting_offset, starting_offset + 1);
+        results.uncompressed_size = 1;
+        return results;
+    }
 
-					//if (tile_index_offset > num_bytes_pushed + 0xF)
-					//{
-					//	results.rom_data.SetROMData(starting_offset, starting_offset + 2);
-					//	results.validation_error_msg = "Attempted to read a byte from a working_data address that has not yet been written to.";
-					//	return results;
-					//}
+    SSCDecompressionResult SSCDecompressor::DecompressData(
+        const std::vector<Uint8>& in_data,
+        const Uint32 offset,
+        const Uint32 working_data_size_hint)
+    {
+        SSCDecompressionResult results;
+        if (offset >= in_data.size())
+        {
+            results.error_msg = "SSC offset is outside the input buffer";
+            return results;
+        }
 
-					if (tile_index_offset == 0)
-					{
-						if (num_bytes_pushed <= 4)
-						{
-							results.rom_data.SetROMData(starting_offset, starting_offset + 2);
-							results.error_msg = "Did not push more than 4 bytes of data. This completely negates the points of using SSC compression and therefore is likely invalid.";
-						}
-						else
-						{
-							results.rom_data.SetROMData(in_data, next_byte+1, starting_offset);
-						}
-						results.uncompressed_size = num_bytes_pushed;
-						return results;
-					}
-					num_bytes_pushed += (*next_byte & 0xF) + 1;
-				}
-				else
-				{
-					num_bytes_pushed += 1;
-					next_byte = current_byte;
-				}
-				current_byte = next_byte + 1;
-			}
-		}
+        std::vector<Uint8> working_data(0x1000, 0);
+        auto& out_data = results.uncompressed_data;
+        out_data.reserve(std::min<size_t>(working_data_size_hint, 16U * 1024U * 1024U));
 
-		results.rom_data.rom_offset_end = starting_offset + 2;
-		results.error_msg = "Somehow broke out of while loop. AAAA";
+        size_t current = offset;
+        constexpr size_t max_output_size = 16U * 1024U * 1024U;
+        constexpr size_t max_fragments = 32U * 1024U * 1024U;
+        size_t processed_fragments = 0;
+        bool end_reached = false;
 
-		results.uncompressed_size = num_bytes_pushed;
-		results.rom_data.SetROMData(in_data, current_byte, starting_offset);
-		return results;
-	}
+        while (!end_reached)
+        {
+            if (current >= in_data.size())
+            {
+                results.error_msg = "Unexpected end of SSC stream while reading a fragment header";
+                break;
+            }
 
-	SSCDecompressionResult SSCDecompressor::DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset, const Uint32 working_data_size_hint)
-	{
-		SSCDecompressionResult results;
-		
-		if (in_data.empty() || offset >= in_data.size())
-		{
-			results.error_msg = "Data buffer supplied was empty";
-			return results;
-		}
+            Uint8 fragment_header = in_data[current++];
+            for (int fragments_remaining = 0; fragments_remaining < 8; ++fragments_remaining)
+            {
+                if (++processed_fragments > max_fragments)
+                {
+                    results.error_msg = "SSC stream did not terminate safely";
+                    end_reached = true;
+                    break;
+                }
 
-		if (offset >= in_data.size())
-		{
-			results.error_msg = "Offset supplied would result in reading beyond the size of the supplied data buffer";
-			return results;
-		}
+                const bool is_raw_data = (fragment_header & 1U) != 0;
+                fragment_header >>= 1U;
 
-		const Uint8* compressed_data_root = &in_data[offset];
-		const Uint8* current_byte = compressed_data_root;
+                if (is_raw_data)
+                {
+                    if (current >= in_data.size())
+                    {
+                        results.error_msg = "Unexpected end of SSC stream while reading raw data";
+                        end_reached = true;
+                        break;
+                    }
+                    const Uint8 value = in_data[current++];
+                    out_data.emplace_back(value);
+                    working_data[out_data.size() & 0xFFFU] = value;
+                }
+                else
+                {
+                    if (current > in_data.size() || in_data.size() - current < 2)
+                    {
+                        results.error_msg = "Unexpected end of SSC stream while reading a copy token";
+                        end_reached = true;
+                        break;
+                    }
 
-		static std::vector<Uint8> working_data = []()  // Needs to be indexable even before we have written to it
-			{
-				std::vector<Uint8> data_vec;
-				data_vec.resize(0x1000);
-				return data_vec;
-			}();
-		memset(working_data.data(), 0, 0x1000);
+                    Uint16 source = static_cast<Uint16>(in_data[current]);
+                    const Uint8 control = in_data[current + 1];
+                    current += 2;
+                    source |= static_cast<Uint16>(control & 0xF0U) << 4U;
 
-		std::vector<Uint8>& out_data = results.uncompressed_data;
-		out_data.reserve(working_data_size_hint); // Size needs to be accurate to determine where to index in working_data.
+                    if (source == 0)
+                    {
+                        end_reached = true;
+                        break;
+                    }
 
-		bool end_reached = false;
-		while (end_reached == false)
-		{
-			const Uint8* next_byte = nullptr;
-			Uint8 fragment_header = *current_byte;
-			++current_byte;
+                    const size_t copy_count = static_cast<size_t>(control & 0x0FU) + 2U;
+                    if (out_data.size() > max_output_size || copy_count > max_output_size - out_data.size())
+                    {
+                        results.error_msg = "SSC output exceeded the safety limit";
+                        end_reached = true;
+                        break;
+                    }
 
-			for (int fragments_remaining = 7; fragments_remaining >= 0; --fragments_remaining)
-			{
-				const bool is_raw_data = (fragment_header & 1) == 1;
-				fragment_header = fragment_header >> 1;
-				if (is_raw_data == false)
-				{
-					next_byte = current_byte + 1;
+                    for (size_t i = 0; i < copy_count; ++i)
+                    {
+                        const Uint8 value = working_data[source & 0xFFFU];
+                        out_data.emplace_back(value);
+                        working_data[out_data.size() & 0xFFFU] = value;
+                        source = static_cast<Uint16>((source + 1U) & 0xFFFU);
+                    }
+                }
 
-					Uint16 tile_index_offset = (static_cast<Uint16>((*next_byte) & 0xF0) << 4) | static_cast<Uint16>(*current_byte);
-					if (tile_index_offset == 0)
-					{
-						current_byte = next_byte;
-						end_reached = true;
-						break;
-					}
+                if (out_data.size() > max_output_size)
+                {
+                    results.error_msg = "SSC output exceeded the safety limit";
+                    end_reached = true;
+                    break;
+                }
+            }
+        }
 
-					for (int num_bytes_to_print = (*next_byte & 0xF) + 1; num_bytes_to_print >= 0; --num_bytes_to_print)
-					{
-						const Uint8 value_to_write = working_data.at(tile_index_offset & 0xFFF);
-						out_data.emplace_back(value_to_write);
-						working_data[out_data.size() & 0xFFF] = value_to_write;
-						tile_index_offset = (tile_index_offset + 1) & 0xFFF;
-					}
-				}
-				else
-				{
-					out_data.emplace_back(*current_byte);
-					working_data[out_data.size() & 0xFFF] = *current_byte;
-					next_byte = current_byte;
-				}
-				current_byte = next_byte + 1;
-			}
-		}
-		results.rom_data.SetROMData(compressed_data_root, current_byte + 1, offset);
-		results.uncompressed_size = results.uncompressed_data.size();
-		return results;
-	}
+        results.rom_data.SetROMData(offset, static_cast<Uint32>(std::min(current, in_data.size())));
+        results.uncompressed_size = out_data.size();
+        return results;
+    }
 }
