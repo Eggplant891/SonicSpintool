@@ -259,84 +259,91 @@ namespace spintool
 				}
 			}
 
-			static std::atomic<bool> render_process_running = false;
-			static std::atomic<float> render_process_progress = 0.0f;
-
-			if (ImGui::Button("Find all sprites"))
+			// SDL texture creation must happen on the main/render thread.  The old
+			// implementation created textures from a detached worker thread; on Linux
+			// this commonly returned null textures.  Changing the palette appeared to
+			// "fix" the sprites because that forced them to be regenerated later on the
+			// main thread.
 			{
-				m_sprites_found.clear();
+				std::vector<std::shared_ptr<UISpriteTexture>> ready_sprites;
+				{
+					std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
+					ready_sprites.swap(m_pending_sprites);
+				}
 
-				auto render_textures_thread = [&]()
+				if (!ready_sprites.empty())
+				{
+					const auto& palettes = m_owning_ui.GetPalettes();
+					if (!palettes.empty())
 					{
-						std::vector<std::shared_ptr<UISpriteTexture>> results;
-
-						render_process_running = true;
-						render_process_progress = 0.0f;
-
-						results.clear();
-
-						Uint32 working_offset = 0;
-						while (working_offset < m_owning_ui.GetROM().m_buffer.size())
+						m_chosen_palette = std::clamp(m_chosen_palette, 0, static_cast<int>(palettes.size()) - 1);
+						const rom::Palette& palette = *palettes[static_cast<size_t>(m_chosen_palette)];
+						for (auto& sprite : ready_sprites)
 						{
-							render_process_progress = working_offset / static_cast<float>(m_owning_ui.GetROM().m_buffer.size());
-
-							std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), working_offset);
-							if (new_sprite == nullptr)
-							{
-								working_offset+=2;
+							if (!sprite)
 								continue;
-							}
-							results.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							working_offset += new_sprite->GetSizeOf();
-							new_sprite.reset();
-
+							sprite->texture = sprite->RenderTextureForPalette(palette);
+							m_sprites_found.emplace_back(std::move(sprite));
 						}
-
-						render_process_progress = 0.0f;
-
-						Uint32 progress = 0;
-						for (Uint32 i = 0; i < results.size(); ++i)
-						{
-							constexpr Uint32 num_cycles_until_wait = 32;
-							for (Uint32 cycles = 0; cycles < num_cycles_until_wait && i < results.size(); ++cycles, ++i)
-							{
-								std::shared_ptr<UISpriteTexture>& sprite = results[i];
-
-								auto current_sprite_it = std::find_if(std::begin(results), std::end(results),
-									[&sprite](const std::shared_ptr<UISpriteTexture>& spr)
-									{
-										return spr->sprite->rom_data.rom_offset == sprite->sprite->rom_data.rom_offset;
-									});
-								if (current_sprite_it != std::end(results))
-								{
-									m_owning_ui.m_render_to_texture_mutex.lock();
-									std::shared_ptr<UISpriteTexture>& new_sprite = m_sprites_found.emplace_back(*current_sprite_it);
-									new_sprite->texture = new_sprite->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-									++progress;
-									m_owning_ui.m_render_to_texture_mutex.unlock();
-
-								}
-								render_process_progress = progress / static_cast<float>(results.size());
-							}
-							SDL_Delay(0);
-						}
-						render_process_running = false;
-						results.clear();
-
-						return 0;
-					};
-				std::thread new_thread{ render_textures_thread };
-				new_thread.detach();
+					}
+				}
 			}
 
-			if (render_process_running)
+			if (ImGui::Button("Find all sprites") && !m_find_all_running.exchange(true))
 			{
-				ImGui::ProgressBar(render_process_progress);
+				m_sprites_found.clear();
+				{
+					std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
+					m_pending_sprites.clear();
+				}
+				m_find_all_progress = 0.0f;
+
+				std::thread([this]()
+				{
+					const size_t rom_size = m_owning_ui.GetROM().m_buffer.size();
+					Uint32 working_offset = 0;
+
+					while (working_offset < rom_size)
+					{
+						m_find_all_progress = rom_size == 0 ? 1.0f : working_offset / static_cast<float>(rom_size);
+						auto sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), working_offset);
+						if (!sprite)
+						{
+							working_offset += 2;
+							continue;
+						}
+
+						const Uint32 next_offset = sprite->rom_data.rom_offset_end;
+						if (next_offset <= working_offset || next_offset > rom_size)
+						{
+							working_offset += 2;
+							continue;
+						}
+
+						{
+							std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
+							m_pending_sprites.emplace_back(std::make_shared<UISpriteTexture>(sprite));
+						}
+						working_offset = next_offset;
+					}
+
+					m_find_all_progress = 1.0f;
+					m_find_all_running = false;
+				}).detach();
+			}
+
+			if (m_find_all_running)
+			{
+				ImGui::ProgressBar(m_find_all_progress.load());
 			}
 
 			if (ImGui::Button("Clear Textures"))
 			{
 				m_sprites_found.clear();
+				{
+					std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
+					m_pending_sprites.clear();
+				}
 				m_selected_sprite_rom_offset = 0;
 			}
 
