@@ -20,7 +20,7 @@ namespace spintool
 	class Renderer
 	{
 	public:
-		static void Initialise();
+		static bool Initialise();
 		static void Shutdown();
 		static void NewFrame();
 		static void Render();
