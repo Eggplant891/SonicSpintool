@@ -10,7 +10,7 @@ namespace spintool::rom
 {
 	void TileLayout::BlitTileInstancesFromBrushInstances()
 	{
-		if (tile_brushes.empty() == false)
+		if (tile_brushes.empty() == false && layout_width > 0 && tile_brushes.front() != nullptr)
 		{
 			tile_instances.resize(tile_brush_instances.size() * tile_brushes.front()->TotalTiles());
 			const size_t brush_width = tile_brushes.front()->BrushWidth();
@@ -28,7 +28,7 @@ namespace spintool::rom
 					continue;
 				}
 				const size_t brush_x_index = (i % layout_width) * brush_width;
-				const size_t brush_y_index = static_cast<int>(((i - (i % layout_width)) / static_cast<float>(layout_width))) * brush_width;
+				const size_t brush_y_index = (i / static_cast<size_t>(layout_width)) * brush_height;
 				BlitTileBrushToLayout(*brush_def, brush_x_index, brush_y_index, brush_instance.is_flipped_horizontally, brush_instance.is_flipped_vertically);
 			}
 		}
@@ -58,114 +58,122 @@ namespace spintool::rom
 
 	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, Uint32 layout_width, Uint32 brushes_offset, Uint32 brushes_end, Uint32 layout_offset, std::optional<Uint32> layout_end)
 	{
-		const Uint8* start_byte = &src_rom.m_buffer[brushes_offset];
-		const Uint8* current_byte = start_byte;
+		const size_t rom_size = src_rom.m_buffer.size();
+		if (!layout_end.has_value() || layout_width == 0 ||
+			brushes_offset > brushes_end || brushes_end > rom_size ||
+			layout_offset > *layout_end || *layout_end > rom_size)
+		{
+			return nullptr;
+		}
 
-		if (layout_end.has_value() == false)
+		constexpr size_t brush_bytes = TileBrush::s_default_total_tiles * 2;
+		const size_t brush_range = static_cast<size_t>(brushes_end - brushes_offset);
+		const size_t layout_range = static_cast<size_t>(*layout_end - layout_offset);
+		if (brush_range < brush_bytes || (brush_range % brush_bytes) != 0 || (layout_range % 2) != 0)
 		{
 			return nullptr;
 		}
 
 		auto new_layout = std::make_shared<TileLayout>();
-
-		const size_t total_brushes = static_cast<size_t>(brushes_end - brushes_offset) / (TileBrush::s_default_total_tiles * 2);
+		const size_t total_brushes = brush_range / brush_bytes;
+		if (total_brushes > 0x400)
+		{
+			return nullptr;
+		}
 		new_layout->tile_brushes.resize(total_brushes);
+		size_t current_offset = brushes_offset;
 
 		for (std::unique_ptr<TileBrush>& current_brush : new_layout->tile_brushes)
 		{
 			current_brush = std::make_unique<TileBrush>(TileBrush::s_default_brush_width, TileBrush::s_default_brush_height);
 			for (size_t i = 0; i < current_brush->TotalTiles(); ++i)
 			{
-				const Uint8 first_byte = *current_byte;
-				++current_byte;
-				const Uint8 second_byte = *current_byte;
-				++current_byte;
-
-				TileInstance& new_tile_instance = current_brush->tiles.emplace_back();
-				new_tile_instance.is_high_priority = (0x80 & first_byte) != 0;
-				new_tile_instance.palette_line = ((0x40 | 0x20) & first_byte) >> 5;
-				new_tile_instance.is_flipped_vertically = (0x10 & first_byte) != 0;
-				new_tile_instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
-				new_tile_instance.tile_index = (static_cast<Uint16>((0x01 | 0x02 | 0x04) & first_byte) << 8) | second_byte;
+				if (current_offset + 2 > brushes_end) return nullptr;
+				const Uint8 first_byte = src_rom.m_buffer[current_offset++];
+				const Uint8 second_byte = src_rom.m_buffer[current_offset++];
+				TileInstance& t = current_brush->tiles.emplace_back();
+				t.is_high_priority = (0x80 & first_byte) != 0;
+				t.palette_line = ((0x40 | 0x20) & first_byte) >> 5;
+				t.is_flipped_vertically = (0x10 & first_byte) != 0;
+				t.is_flipped_horizontally = (0x08 & first_byte) != 0;
+				t.tile_index = (static_cast<Uint16>(first_byte & 0x07) << 8) | second_byte;
 			}
 		}
 
-		current_byte = &src_rom.m_buffer[layout_offset];
-
-		for (size_t i = 0; i < (*layout_end - layout_offset) / 2; ++i)
+		for (size_t off = layout_offset; off + 1 < *layout_end; off += 2)
 		{
-			const Uint8 first_byte = *current_byte;
-			++current_byte;
-			const Uint8 second_byte = *current_byte;
-			++current_byte;
-
-			TileBrushInstance brush_instance;
-			brush_instance.is_flipped_vertically = (0x10 & first_byte) != 0;
-			brush_instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
-			static Uint8 first_byte_mask = 0x03;
-			static Uint8 second_byte_mask = 0xFF;
-			brush_instance.tile_brush_index = (static_cast<Uint16>(first_byte & 0x03) << 8) | static_cast<Uint16>(second_byte & 0xFF);
-			new_layout->tile_brush_instances.emplace_back(brush_instance);
+			const Uint8 first_byte = src_rom.m_buffer[off];
+			const Uint8 second_byte = src_rom.m_buffer[off + 1];
+			TileBrushInstance instance;
+			instance.is_flipped_vertically = (0x10 & first_byte) != 0;
+			instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
+			instance.tile_brush_index = (static_cast<Uint16>(first_byte & 0x03) << 8) | second_byte;
+			new_layout->tile_brush_instances.emplace_back(instance);
 		}
 
-		new_layout->layout_width = layout_width;
-		new_layout->layout_height = static_cast<Uint32>(new_layout->tile_brush_instances.size()) / layout_width;
-
+		new_layout->layout_width = static_cast<int>(layout_width);
+		new_layout->layout_height = static_cast<int>(new_layout->tile_brush_instances.size() / layout_width);
 		new_layout->BlitTileInstancesFromBrushInstances();
-
 		new_layout->rom_data.SetROMData(layout_offset, *layout_end);
 		return new_layout;
 	}
 
 	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end)
 	{
-		auto new_layout = std::make_shared<TileLayout>();
-
-		const Uint32 total_brushes = tileset.num_tiles;
-		new_layout->tile_brushes.resize(total_brushes);
-
-		for (Uint32 tile = 0; tile < new_layout->tile_brushes.size(); ++tile)
+		const size_t rom_size = src_rom.m_buffer.size();
+		if (layout_offset > rom_size || rom_size - layout_offset < 4)
 		{
-			new_layout->tile_brushes[tile] = std::make_unique<TileBrush>(1, 1);
-			TileInstance& new_tile_instance = new_layout->tile_brushes[tile]->tiles.emplace_back();
-			new_tile_instance.tile_index = static_cast<int>(tile);
+			return nullptr;
 		}
 
-		const Uint8* current_byte = &src_rom.m_buffer[layout_offset];
 		const Uint16 width = src_rom.ReadUint16(layout_offset);
 		const Uint16 height = src_rom.ReadUint16(layout_offset + 2);
-		current_byte += 4;
+		if (width == 0 || height == 0 || width > 2048 || height > 2048)
+		{
+			return nullptr;
+		}
+
+		const uint64_t expected_end64 = static_cast<uint64_t>(layout_offset) + 4ULL + (static_cast<uint64_t>(width) * height * 2ULL);
+		const size_t end_address = layout_end.has_value() ? *layout_end : static_cast<size_t>(expected_end64);
+		if (end_address > rom_size || end_address < layout_offset + 4 || ((end_address - (layout_offset + 4)) % 2) != 0)
+		{
+			return nullptr;
+		}
+
+		auto new_layout = std::make_shared<TileLayout>();
+		const Uint32 total_brushes = std::min<Uint32>(tileset.num_tiles, static_cast<Uint32>(tileset.tiles.size()));
+		new_layout->tile_brushes.resize(total_brushes);
+		for (Uint32 tile = 0; tile < total_brushes; ++tile)
+		{
+			new_layout->tile_brushes[tile] = std::make_unique<TileBrush>(1, 1);
+			new_layout->tile_brushes[tile]->tiles.emplace_back().tile_index = static_cast<int>(tile);
+		}
 
 		new_layout->layout_width = width;
 		new_layout->layout_height = height;
-
-		const auto end_address = layout_end.value_or(layout_offset + 4 + (width * 2 * height));
-
-		for (Uint32 i = 0; i < (end_address - layout_offset) / 2; ++i)
+		for (size_t off = layout_offset + 4; off + 1 < end_address; off += 2)
 		{
-			const Uint8 first_byte = *current_byte;
-			++current_byte;
-			const Uint8 second_byte = *current_byte;
-			++current_byte;
-
-			TileBrushInstance brush_instance;
-			//brush_instance.is_high_priority = (0x80 & first_byte) != 0;
-			brush_instance.palette_line = ((0x40 | 0x20) & first_byte) >> 5;
-			brush_instance.is_flipped_vertically = (0x10 & first_byte) != 0;
-			brush_instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
-			brush_instance.tile_brush_index = (static_cast<Uint16>((0x01 | 0x02 | 0x04) & first_byte) << 8) | second_byte;
-			new_layout->tile_brush_instances.emplace_back(brush_instance);
+			const Uint8 first_byte = src_rom.m_buffer[off];
+			const Uint8 second_byte = src_rom.m_buffer[off + 1];
+			TileBrushInstance instance;
+			instance.palette_line = ((0x40 | 0x20) & first_byte) >> 5;
+			instance.is_flipped_vertically = (0x10 & first_byte) != 0;
+			instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
+			instance.tile_brush_index = (static_cast<Uint16>(first_byte & 0x07) << 8) | second_byte;
+			new_layout->tile_brush_instances.emplace_back(instance);
 		}
 
+		const size_t max_instances = static_cast<size_t>(width) * height;
+		if (new_layout->tile_brush_instances.size() > max_instances)
+			new_layout->tile_brush_instances.resize(max_instances);
 		new_layout->BlitTileInstancesFromBrushInstances();
-
-		new_layout->rom_data.SetROMData(layout_offset, end_address);
-
+		new_layout->rom_data.SetROMData(layout_offset, static_cast<Uint32>(end_address));
 		return new_layout;
 	}
 
 	void TileLayout::CollapseTilesIntoBrushes(const rom::TileSet& tile_set)
 	{
+		if (layout_width <= 0 || tile_instances.empty()) return;
 		const size_t num_brush_instances = tile_instances.size() / TileBrush::s_default_total_tiles;
 		const size_t previous_num_brushes = tile_brushes.size();
 
@@ -184,7 +192,10 @@ namespace spintool::rom
 					const Point brush_coords = LinearIndexToGridCoordinates(i) * static_cast<float>(brush_width);
 					const size_t destination_index = ((brush_coords.y * layout_width * brush_width) + (y * layout_width * brush_height)) + (brush_coords.x + x);
 					const size_t brush_destination_index = next_brush->GridCoordinatesToLinearIndex(Point{ static_cast<int>(x), static_cast<int>(y) });
-					next_brush->tiles[brush_destination_index] = tile_instances[destination_index];
+					if (brush_destination_index < next_brush->tiles.size() && destination_index < tile_instances.size())
+					{
+						next_brush->tiles[brush_destination_index] = tile_instances[destination_index];
+					}
 				}
 			}
 			candidate_brushes.emplace_back(std::move(next_brush));
