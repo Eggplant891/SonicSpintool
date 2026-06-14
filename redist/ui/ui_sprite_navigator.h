@@ -5,6 +5,8 @@
 #include "ui/ui_palette_viewer.h"
 
 #include <vector>
+#include <mutex>
+#include <atomic>
 
 
 namespace spintool
@@ -23,6 +25,10 @@ namespace spintool
 
 	private:
 		std::vector<std::shared_ptr<UISpriteTexture>> m_sprites_found;
+		std::vector<std::shared_ptr<UISpriteTexture>> m_pending_sprites;
+		std::mutex m_pending_sprites_mutex;
+		std::atomic<bool> m_find_all_running{ false };
+		std::atomic<float> m_find_all_progress{ 0.0f };
 		SDLTextureHandle m_random_texture;
 		int m_arbitrary_num_tiles_width = 16;
 		int m_arbitrary_num_tiles_height = 16;
