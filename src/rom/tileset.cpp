@@ -43,10 +43,33 @@ namespace spintool::rom
 		constexpr Uint32 uncompressed_tile_size = TileSet::s_tile_total_bytes;
 		auto new_tileset = std::make_unique<rom::TileSet>();
 
-		new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
-		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(src_rom.m_buffer, rom_offset + 2, new_tileset->num_tiles * 64);
+		if (rom_offset > src_rom.m_buffer.size() || src_rom.m_buffer.size() - rom_offset < 2)
+		{
+			SSCDecompressionResult results;
+			results.error_msg = "SSC tileset header is outside the ROM";
+			return { std::move(new_tileset), results };
+		}
+
+		new_tileset->num_tiles = static_cast<Uint16>(
+			(static_cast<Uint16>(src_rom.m_buffer[rom_offset]) << 8) |
+			static_cast<Uint16>(src_rom.m_buffer[rom_offset + 1]));
+
+		if (new_tileset->num_tiles == 0 || new_tileset->num_tiles > 0x1000)
+		{
+			SSCDecompressionResult results;
+			results.error_msg = "Invalid SSC tile count";
+			return { std::move(new_tileset), results };
+		}
+
+		SSCDecompressionResult results = rom::SSCDecompressor::DecompressData(
+			src_rom.m_buffer, rom_offset + 2,
+			static_cast<Uint32>(new_tileset->num_tiles) * s_tile_total_bytes);
+		if (results.error_msg.has_value())
+		{
+			return { std::move(new_tileset), results };
+		}
 
 		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
@@ -118,19 +141,35 @@ namespace spintool::rom
 		//new_tileset->num_tiles = (static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset])) << 8) | static_cast<Sint16>(*(&src_rom.m_buffer[rom_offset + 1]));
 		new_tileset->uncompressed_data.clear();
 
-		LZSSDecompressionResult results = rom::LZSSDecompressor::DecompressData(src_rom.m_buffer, rom_offset);
-		LZSSDecompressionResult results2 = rom::LZSSDecompressor::DecompressDataRefactored(src_rom.m_buffer, rom_offset);
-
-		if (results != results2)
+		if (rom_offset >= src_rom.m_buffer.size())
 		{
-			results.error_msg = "Decompression Results Mismatch";
+			LZSSDecompressionResult results;
+			results.error_msg = "LZSS offset is outside the ROM";
+			return { std::move(new_tileset), results };
+		}
+
+		// Use the portable implementation. The legacy implementation treats
+		// original Mega Drive RAM/ROM addresses as std::vector indices.
+		LZSSDecompressionResult results =
+			rom::LZSSDecompressor::DecompressDataRefactored(src_rom.m_buffer, rom_offset);
+
+		if (results.error_msg.has_value())
+		{
+			return { std::move(new_tileset), results };
 		}
 
 		new_tileset->uncompressed_size = static_cast<Uint32>(results.uncompressed_data.size());
 		new_tileset->compressed_size = results.rom_data.real_size;
 		new_tileset->uncompressed_data = std::move(results.uncompressed_data);
-		// Seems to be necessary to remove the first 2 bytes to make it renderable. Possible these specify dimensions or other data.
-		new_tileset->uncompressed_data.erase(std::begin(new_tileset->uncompressed_data), std::begin(new_tileset->uncompressed_data) + 2);
+		// The format contains a two-byte prefix. Never erase beyond the buffer.
+		if (new_tileset->uncompressed_data.size() < 2)
+		{
+			results.error_msg = "LZSS output is too small (missing two-byte prefix)";
+			return { std::move(new_tileset), results };
+		}
+		new_tileset->uncompressed_data.erase(
+			new_tileset->uncompressed_data.begin(),
+			new_tileset->uncompressed_data.begin() + 2);
 		new_tileset->num_tiles = static_cast<Uint16>(new_tileset->uncompressed_data.size()) / TileSet::s_tile_total_bytes;
 
 		for (size_t tile_index = 0; tile_index < new_tileset->num_tiles; ++tile_index)
@@ -166,7 +205,9 @@ namespace spintool::rom
 	{
 		const Uint32 relative_offset = tile_index * s_tile_total_bytes;
 
-		if (uncompressed_data.empty() || relative_offset >= uncompressed_data.size())
+		if (uncompressed_data.empty() ||
+			relative_offset > uncompressed_data.size() ||
+			uncompressed_data.size() - relative_offset < s_tile_total_bytes)
 		{
 			return nullptr;
 		}
@@ -205,7 +246,7 @@ namespace spintool::rom
 		const Uint8* tile_start_byte = &uncompressed_data[relative_offset];
 		const Uint8* current_byte = tile_start_byte;
 
-		for (size_t i = 0; i < total_pixels && sprite_tile->tile_rom_data.rom_offset + i < uncompressed_data.size(); i += 2)
+		for (size_t i = 0; i < s_tile_total_bytes; ++i)
 		{
 			const Uint32 left_byte = (0xF0 & *current_byte) >> 4;
 			const Uint32 right_byte = 0x0F & *current_byte;
@@ -223,7 +264,8 @@ namespace spintool::rom
 
 	std::shared_ptr<const Sprite> TileSet::CreateSpriteFromTile(const Uint32 relative_offset) const
 	{
-		if (relative_offset >= uncompressed_data.size() || relative_offset + s_tile_total_bytes >= uncompressed_data.size())
+		if (relative_offset > uncompressed_data.size() ||
+			uncompressed_data.size() - relative_offset < s_tile_total_bytes)
 		{
 			return nullptr;
 		}
@@ -232,15 +274,21 @@ namespace spintool::rom
 
 		const Uint8* tileset_start_byte = &uncompressed_data[relative_offset];
 		const Uint8* current_byte = tileset_start_byte;
-		const Uint32 num_tiles_to_wrangle = num_tiles <= (static_cast<Uint32>(uncompressed_data.size()) / s_tile_total_pixels) ? num_tiles : (static_cast<Uint32>(uncompressed_data.size()) / s_tile_total_pixels);
+		const Uint32 available_tiles = static_cast<Uint32>(uncompressed_data.size() / s_tile_total_bytes);
+		const Uint32 num_tiles_to_wrangle = std::min<Uint32>(num_tiles, available_tiles);
 
 		new_sprite->rom_data.rom_offset = rom_data.rom_offset;
 		new_sprite->num_tiles = static_cast<Uint16>(num_tiles_to_wrangle);
 
 		for (Uint32 i = 0; i < num_tiles_to_wrangle; ++i)
 		{
-			new_sprite->sprite_tiles.emplace_back(TileSet::CreateSpriteTileFromTile(i));
-			current_byte += new_sprite->sprite_tiles.back()->tile_rom_data.real_size;
+			auto tile = TileSet::CreateSpriteTileFromTile(i);
+			if (!tile)
+			{
+				break;
+			}
+			current_byte += tile->tile_rom_data.real_size;
+			new_sprite->sprite_tiles.emplace_back(std::move(tile));
 		}
 		new_sprite->rom_data.SetROMData(rom_data.rom_offset + relative_offset, rom_data.rom_offset + static_cast<Uint32>(current_byte - &uncompressed_data[relative_offset]));
 
@@ -274,7 +322,7 @@ namespace spintool::rom
 			sprite_tile->y_offset = static_cast<Sint16>((current_brush_offset - (current_brush_offset % picker_width)) / picker_width) * rom::TileSet::s_tile_height;
 
 			max_x_size = std::max(max_x_size, sprite_tile->x_offset + rom::TileSet::s_tile_width);
-			max_y_size = std::max(max_x_size, sprite_tile->y_offset + rom::TileSet::s_tile_height);
+			max_y_size = std::max(max_y_size, sprite_tile->y_offset + rom::TileSet::s_tile_height);
 
 			sprite_tile->blit_settings.flip_horizontal = false;
 			sprite_tile->blit_settings.flip_vertical = false;
@@ -283,9 +331,23 @@ namespace spintool::rom
 			tiles.emplace_back(std::move(sprite_tile));
 		}
 
+		if (tiles.empty() || max_x_size <= 0 || max_y_size <= 0)
+		{
+			return {};
+		}
+
 		out_surface = SDLSurfaceHandle{ SDL_CreateSurface(max_x_size, max_y_size, SDL_PIXELFORMAT_RGBA32) };
-		SDL_SetSurfaceColorKey(out_surface.get(), true, SDL_MapRGBA(SDL_GetPixelFormatDetails(out_surface->format), nullptr, 0, 0, 0, 0));
-		SDL_ClearSurface(out_surface.get(), 0.0f, 0, 0, 0);
+		if (!out_surface)
+		{
+			return {};
+		}
+		const SDL_PixelFormatDetails* format_details = SDL_GetPixelFormatDetails(out_surface->format);
+		if (!format_details ||
+			!SDL_SetSurfaceColorKey(out_surface.get(), true, SDL_MapRGBA(format_details, nullptr, 0, 0, 0, 0)) ||
+			!SDL_ClearSurface(out_surface.get(), 0.0f, 0, 0, 0))
+		{
+			return {};
+		}
 
 		BoundingBox picker_bbox{ 0, 0, out_surface->w, out_surface->h };
 
