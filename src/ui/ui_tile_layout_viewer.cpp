@@ -2751,23 +2751,56 @@ namespace spintool
 
 				auto queue_layer = [&](const char* layer_name, const std::size_t layer_index,
 					const Uint32 tileset_table, const Uint32 layout_table,
-					const Uint32 brushes_table, const Uint32 brushes_end_table,
-					const bool chroma_keyed) -> bool
+					const Uint32 brushes_table, const bool chroma_keyed) -> bool
 				{
-					Uint32 tileset = 0, layout = 0, brushes = 0, brushes_end = 0;
-					const bool valid =
+					Uint32 tileset = 0, layout = 0, brushes = 0;
+					const bool pointers_valid =
 						ROMPointerIsValid(rom_data, tileset_table, tileset, 1) &&
 						ROMPointerIsValid(rom_data, layout_table, layout, 1) &&
 						ROMPointerIsValid(rom_data, brushes_table, brushes, 1) &&
-						ROMPointerIsValid(rom_data, brushes_end_table, brushes_end, 1) &&
-						brushes < brushes_end && palette_valid;
+						palette_valid;
 
-					if (!valid)
+					if (!pointers_valid)
 					{
 						std::cerr << "Skipping " << layer_name << ": incompatible or missing ROM data\\n";
 						make_placeholder(layer_index);
 						return false;
 					}
+
+					const std::size_t layout_bytes = static_cast<std::size_t>(layout_width) * layout_height * sizeof(Uint16);
+					if (!ROMRangeIsValid(rom_data, layout, layout_bytes))
+					{
+						std::cerr << "Skipping " << layer_name << ": layout exceeds ROM bounds\\n";
+						make_placeholder(layer_index);
+						return false;
+					}
+
+					// Derive the exact brush range from the brush indices used by this layout.
+					// The previous code used another asset pointer as the end address, which is
+					// not reliable because level assets are not guaranteed to be contiguous.
+					Uint16 highest_brush_index = 0;
+					for (std::size_t off = 0; off < layout_bytes; off += sizeof(Uint16))
+					{
+						const Uint8 first_byte = rom_data.m_buffer[layout + off];
+						const Uint8 second_byte = rom_data.m_buffer[layout + off + 1];
+						const Uint16 brush_index =
+							(static_cast<Uint16>(first_byte & 0x03) << 8) | second_byte;
+						highest_brush_index = std::max(highest_brush_index, brush_index);
+					}
+
+					constexpr std::size_t brush_bytes = rom::TileBrush::s_default_total_tiles * sizeof(Uint16);
+					const std::size_t required_brush_bytes =
+						(static_cast<std::size_t>(highest_brush_index) + 1) * brush_bytes;
+					if (!ROMRangeIsValid(rom_data, brushes, required_brush_bytes))
+					{
+						std::cerr << "Skipping " << layer_name
+							<< ": brush data exceeds ROM bounds (highest index "
+							<< highest_brush_index << ")\\n";
+						make_placeholder(layer_index);
+						return false;
+					}
+
+					const Uint32 brushes_end = brushes + static_cast<Uint32>(required_brush_bytes);
 
 					RenderTileLayoutRequest request;
 					request.tileset_address = tileset;
@@ -2778,13 +2811,6 @@ namespace spintool
 					request.tile_layout_width = layout_width;
 					request.tile_layout_height = layout_height;
 					request.tile_layout_address = layout;
-					const std::size_t layout_bytes = static_cast<std::size_t>(layout_width) * layout_height * sizeof(Uint16);
-					if (!ROMRangeIsValid(rom_data, layout, layout_bytes))
-					{
-						std::cerr << "Skipping " << layer_name << ": layout exceeds ROM bounds\\n";
-						make_placeholder(layer_index);
-						return false;
-					}
 					request.tile_layout_address_end = layout + static_cast<Uint32>(layout_bytes);
 					request.is_chroma_keyed = chroma_keyed;
 					request.compression_algorithm = CompressionAlgorithm::SSC;
@@ -2798,11 +2824,9 @@ namespace spintool
 				};
 
 				const bool bg_queued = queue_layer("bg", 0, offsets.background_tileset,
-					offsets.background_tile_layout, offsets.background_tile_brushes,
-					offsets.foreground_tile_layout, false);
+					offsets.background_tile_layout, offsets.background_tile_brushes, false);
 				const bool fg_queued = queue_layer("fg", 1, offsets.foreground_tileset,
-					offsets.foreground_tile_layout, offsets.foreground_tile_brushes,
-					offsets.background_tile_brushes, true);
+					offsets.foreground_tile_layout, offsets.foreground_tile_brushes, true);
 
 				if (!bg_queued && !fg_queued)
 					std::cerr << "No compatible tile layer could be displayed for this level\\n";
