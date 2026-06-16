@@ -34,6 +34,7 @@ namespace spintool::rom
 
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, Uint32 layout_width, Uint32 brushes_offset, Uint32 brushes_end, Uint32 layout_offset, std::optional<Uint32> layout_end);
 		static std::shared_ptr<TileLayout> LoadFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_offset, std::optional<Uint32> layout_end);
+		static std::shared_ptr<TileLayout> LoadRawTilesFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_width, Uint32 layout_height, Uint32 layout_offset, Uint32 layout_end);
 		void SaveToROM(SpinballROM& src_rom, const rom::TileSet& tile_set, Uint32 brushes_offset, Uint32 layout_offset);
 		void CollapseTilesIntoBrushes(const rom::TileSet& tile_set);
 		void BlitTileInstancesFromBrushInstances();
