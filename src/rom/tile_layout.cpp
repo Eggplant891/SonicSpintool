@@ -171,6 +171,49 @@ namespace spintool::rom
 		return new_layout;
 	}
 
+	std::shared_ptr<spintool::rom::TileLayout> TileLayout::LoadRawTilesFromROM(const SpinballROM& src_rom, const rom::TileSet& tileset, Uint32 layout_width, Uint32 layout_height, Uint32 layout_offset, Uint32 layout_end)
+	{
+		const size_t rom_size = src_rom.m_buffer.size();
+		if (layout_width == 0 || layout_height == 0 || layout_width > 2048 || layout_height > 2048 ||
+			layout_offset > layout_end || layout_end > rom_size)
+		{
+			return nullptr;
+		}
+
+		const uint64_t expected_bytes = static_cast<uint64_t>(layout_width) * layout_height * 2ULL;
+		if (expected_bytes != static_cast<uint64_t>(layout_end - layout_offset))
+		{
+			return nullptr;
+		}
+
+		auto new_layout = std::make_shared<TileLayout>();
+		const Uint32 total_brushes = std::min<Uint32>(tileset.num_tiles, static_cast<Uint32>(tileset.tiles.size()));
+		new_layout->tile_brushes.resize(total_brushes);
+		for (Uint32 tile = 0; tile < total_brushes; ++tile)
+		{
+			new_layout->tile_brushes[tile] = std::make_unique<TileBrush>(1, 1);
+			new_layout->tile_brushes[tile]->tiles.emplace_back().tile_index = static_cast<int>(tile);
+		}
+
+		new_layout->layout_width = static_cast<int>(layout_width);
+		new_layout->layout_height = static_cast<int>(layout_height);
+		for (size_t off = layout_offset; off + 1 < layout_end; off += 2)
+		{
+			const Uint8 first_byte = src_rom.m_buffer[off];
+			const Uint8 second_byte = src_rom.m_buffer[off + 1];
+			TileBrushInstance instance;
+			instance.palette_line = ((0x40 | 0x20) & first_byte) >> 5;
+			instance.is_flipped_vertically = (0x10 & first_byte) != 0;
+			instance.is_flipped_horizontally = (0x08 & first_byte) != 0;
+			instance.tile_brush_index = (static_cast<Uint16>(first_byte & 0x07) << 8) | second_byte;
+			new_layout->tile_brush_instances.emplace_back(instance);
+		}
+
+		new_layout->BlitTileInstancesFromBrushInstances();
+		new_layout->rom_data.SetROMData(layout_offset, layout_end);
+		return new_layout;
+	}
+
 	void TileLayout::CollapseTilesIntoBrushes(const rom::TileSet& tile_set)
 	{
 		if (layout_width <= 0 || tile_instances.empty()) return;
