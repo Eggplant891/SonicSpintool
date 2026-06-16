@@ -169,9 +169,13 @@ namespace spintool
 				{
 					if (ImGui::Selectable("Background"))
 					{
-						out_render_request = RenderRequestType::INTRO;
+						out_render_request = RenderRequestType::INTRO_BACKGROUND;
 					}
 					if (ImGui::Selectable("Foreground"))
+					{
+						out_render_request = RenderRequestType::INTRO_FOREGROUND;
+					}
+					if (ImGui::Selectable("Combined"))
 					{
 						out_render_request = RenderRequestType::INTRO;
 					}
@@ -190,11 +194,11 @@ namespace spintool
 				{
 					if (ImGui::Selectable("Background"))
 					{
-						//preview_menu_bg = true;
+						out_render_request = RenderRequestType::MENU_BACKGROUND;
 					}
 					if (ImGui::Selectable("Foreground"))
 					{
-						//preview_menu_fg = true;
+						out_render_request = RenderRequestType::MENU_FOREGROUND;
 					}
 					if (ImGui::Selectable("Combined"))
 					{
@@ -207,11 +211,11 @@ namespace spintool
 				{
 					if (ImGui::Selectable("Background"))
 					{
-						//preview_bonus_bg = true;
+						out_render_request = RenderRequestType::BONUS_BACKGROUND;
 					}
 					if (ImGui::Selectable("Foreground"))
 					{
-						//preview_bonus_fg = true;
+						out_render_request = RenderRequestType::BONUS_FOREGROUND;
 					}
 					if (ImGui::Selectable("Combined"))
 					{
@@ -654,9 +658,19 @@ namespace spintool
 				{
 					m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), request.tile_layout_width, request.tile_brushes_address, request.tile_brushes_address_end, request.tile_layout_address, request.tile_layout_address_end);
 				}
-				else if (request.compression_algorithm == CompressionAlgorithm::LZSS) // Cases using LZSS don't require specifying start/end of tile layout address range.
+				else if (request.compression_algorithm == CompressionAlgorithm::LZSS)
 				{
-					m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_working_tileset, request.tile_layout_address, request.tile_layout_address_end);
+					if (!request.tile_layout_has_header && request.tile_layout_address_end.has_value())
+					{
+						m_working_tile_layout = rom::TileLayout::LoadRawTilesFromROM(
+							m_owning_ui.GetROM(), *m_working_tileset,
+							request.tile_layout_width, request.tile_layout_height,
+							request.tile_layout_address, *request.tile_layout_address_end);
+					}
+					else
+					{
+						m_working_tile_layout = rom::TileLayout::LoadFromROM(m_owning_ui.GetROM(), *m_working_tileset, request.tile_layout_address, request.tile_layout_address_end);
+					}
 				}
 
 				if (request.store_layout != nullptr)
@@ -2861,67 +2875,61 @@ namespace spintool
 			break;
 
 			case RenderRequestType::INTRO:
+			case RenderRequestType::INTRO_BACKGROUND:
+			case RenderRequestType::INTRO_FOREGROUND:
 			{
-				{
-					Reset();
-					{
-						RenderTileLayoutRequest request;
+				Reset();
 
+				auto queue_intro_layer = [&](bool background)
+				{
+					RenderTileLayoutRequest request;
+
+					if (background)
+					{
 						request.tileset_address = rom::IntroCutscenesTileset;
-						request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky);
-						request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::IntroCutsceneTileLayoutSky + sizeof(Uint16));
 						request.tile_layout_address = rom::IntroCutsceneTileLayoutSky;
 						request.palette_line = 1;
-
-						request.tile_brush_width = 1;
-						request.tile_brush_height = 1;
-
 						request.is_chroma_keyed = false;
-						request.show_brush_previews = false;
-						request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-						request.layout_type_name = "intro";
 						request.layout_layout_name = "bg";
-
-						m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-						m_tile_layout_render_requests.emplace_back(std::move(request));
 					}
-				}
-
-				{
+					else
 					{
-						RenderTileLayoutRequest request;
-
 						request.tileset_address = 0x000A3124 + 2;
-
-						// Veg-o Fortress
-						request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A1B8C);
-						request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A1B8E);
 						request.tile_layout_address = 0x000A1B8C;
 						request.palette_line = 1;
-
-						// Veg-o Fortress empty topsection
-						//request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A2168);
-						//request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A216A);
-						//request.tile_layout_address = 0x000A2168;
-						//request.palette_line = 1;
-
-
-						request.tile_brush_width = 1;
-						request.tile_brush_height = 1;
-
-						request.is_chroma_keyed = false;
-						request.show_brush_previews = false;
-						request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-						request.layout_type_name = "intro";
-						request.layout_layout_name = "veg_o_fortress";
-
-						m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
-
-						m_tile_layout_render_requests.emplace_back(std::move(request));
+						request.is_chroma_keyed = true;
+						request.layout_layout_name = "fg";
 					}
-				}
+
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(request.tile_layout_address);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(request.tile_layout_address + sizeof(Uint16));
+					request.tile_layout_has_header = true;
+
+					const uint64_t layout_end =
+						static_cast<uint64_t>(request.tile_layout_address) + 4ULL +
+						(static_cast<uint64_t>(request.tile_layout_width) * request.tile_layout_height * 2ULL);
+					if (layout_end > m_owning_ui.GetROM().m_buffer.size())
+					{
+						std::cerr << "Skipping invalid Intro " << (background ? "background" : "foreground")
+							<< " layout range\n";
+						return;
+					}
+					request.tile_layout_address_end = static_cast<Uint32>(layout_end);
+
+					request.tile_brush_width = 1;
+					request.tile_brush_height = 1;
+					request.show_brush_previews = false;
+					request.compression_algorithm = CompressionAlgorithm::LZSS;
+					request.layout_type_name = "intro";
+
+					m_working_palette_set = *m_owning_ui.GetROM().GetIntroCutscenePaletteSet();
+					m_tile_layout_render_requests.emplace_back(std::move(request));
+				};
+
+				if (render_request != RenderRequestType::INTRO_FOREGROUND)
+					queue_intro_layer(true);
+				if (render_request != RenderRequestType::INTRO_BACKGROUND)
+					queue_intro_layer(false);
 			}
 			break;
 
@@ -2987,78 +2995,91 @@ namespace spintool
 			break;
 
 			case RenderRequestType::MENU:
+			case RenderRequestType::MENU_BACKGROUND:
+			case RenderRequestType::MENU_FOREGROUND:
 			{
 				Reset();
+
+				auto queue_frontend_layer = [&](bool background)
 				{
 					RenderTileLayoutRequest request;
+					request.tileset_address = rom::MainMenuTileset;
+					request.tile_layout_address = background
+						? rom::MainMenuTileLayoutBG
+						: rom::MainMenuTileLayoutGiantBumper;
 
-					request.tileset_address = 0x0009D102 + 2;
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C82E);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C830);
-					request.palette_line = 1;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(request.tile_layout_address);
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(request.tile_layout_address + sizeof(Uint16));
+					request.tile_layout_has_header = true;
 
-					request.tile_layout_address = 0x0009C82E;
+					const uint64_t layout_end =
+						static_cast<uint64_t>(request.tile_layout_address) + 4ULL +
+						(static_cast<uint64_t>(request.tile_layout_width) * request.tile_layout_height * 2ULL);
+					if (layout_end > m_owning_ui.GetROM().m_buffer.size())
+					{
+						std::cerr << "Skipping invalid Frontend " << (background ? "background" : "foreground")
+							<< " layout range\n";
+						return;
+					}
+					request.tile_layout_address_end = static_cast<Uint32>(layout_end);
 
+					request.palette_line = background ? 1 : 0;
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.is_chroma_keyed = false;
+					request.is_chroma_keyed = !background;
 					request.show_brush_previews = false;
 					request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-					request.layout_type_name = "intro";
-					request.layout_layout_name = "bg";
+					request.layout_type_name = "frontend";
+					request.layout_layout_name = background ? "bg" : "fg";
 
 					m_working_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
 					m_tile_layout_render_requests.emplace_back(std::move(request));
-				}
+				};
 
-				{
-					RenderTileLayoutRequest request;
-
-					request.tileset_address = 0x0009D102 + 2;
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x0009C05A);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x0009C05C);
-					request.tile_layout_address = 0x0009C05A;
-					request.palette_line = 0;
-
-					request.tile_brush_width = 1;
-					request.tile_brush_height = 1;
-
-					request.is_chroma_keyed = true;
-					request.show_brush_previews = false;
-					request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-					request.layout_type_name = "intro";
-					request.layout_layout_name = "fg";
-
-					m_working_palette_set = *m_owning_ui.GetROM().GetMainMenuPaletteSet();
-					m_tile_layout_render_requests.emplace_back(std::move(request));
-				}
+				if (render_request != RenderRequestType::MENU_FOREGROUND)
+					queue_frontend_layer(true);
+				if (render_request != RenderRequestType::MENU_BACKGROUND)
+					queue_frontend_layer(false);
 			}
 			break;
 
 			case RenderRequestType::BONUS:
+			case RenderRequestType::BONUS_BACKGROUND:
+			case RenderRequestType::BONUS_FOREGROUND:
 			{
 				Reset();
+
+				auto queue_bonus_layer = [&](bool background)
 				{
 					RenderTileLayoutRequest request;
-
 					request.tileset_address = 0x000C77B0;
-					request.tile_layout_address = 0x000C7350 - 4;
-					request.tile_layout_address_end = 0x000c77b0 - 4;
-					request.palette_line = m_preview_bonus_alt_palette ? 1 : 0;
+					request.tile_layout_width = 0x14;
+					request.tile_layout_height = 0x1C;
+					request.tile_layout_has_header = false;
+
+					if (background)
+					{
+						request.tile_layout_address = 0x000C7350;
+						request.tile_layout_address_end = 0x000C77B0;
+						request.palette_line = m_preview_bonus_alt_palette ? 1 : 0;
+						request.is_chroma_keyed = false;
+						request.layout_layout_name = "bg";
+					}
+					else
+					{
+						request.tile_layout_address = 0x000C6EEE;
+						request.tile_layout_address_end = 0x000C734E;
+						request.palette_line = m_preview_bonus_alt_palette ? 0 : 1;
+						request.is_chroma_keyed = true;
+						request.layout_layout_name = "fg";
+					}
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0x14;
-					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
-
-					request.is_chroma_keyed = false;
 					request.show_brush_previews = false;
 					request.draw_mirrored_layout = true;
 					request.compression_algorithm = CompressionAlgorithm::LZSS;
+					request.layout_type_name = "bonus";
 
 					m_working_palette_set = rom::PaletteSet{};
 					m_working_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
@@ -3066,42 +3087,13 @@ namespace spintool
 					m_working_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
 					m_working_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
 
-					request.layout_type_name = "bonus";
-					request.layout_layout_name = "bg";
-
 					m_tile_layout_render_requests.emplace_back(std::move(request));
-				}
+				};
 
-				{
-					RenderTileLayoutRequest request;
-
-					request.tileset_address = 0x000C77B0;
-					request.tile_layout_address = 0x000C6EF0 - 4;
-					request.tile_layout_address_end = 0x000C734D;
-					request.palette_line = m_preview_bonus_alt_palette ? 0 : 1;
-
-					request.tile_brush_width = 1;
-					request.tile_brush_height = 1;
-
-					request.tile_layout_width = 0x14;
-					request.tile_layout_height = static_cast<unsigned int>(((*request.tile_layout_address_end - request.tile_layout_address) / 2) / request.tile_layout_width);
-
-					request.is_chroma_keyed = true;
-					request.show_brush_previews = false;
-					request.draw_mirrored_layout = true;
-					request.compression_algorithm = CompressionAlgorithm::LZSS;
-
-					m_working_palette_set = rom::PaletteSet{};
-					m_working_palette_set.palette_lines[0] = m_owning_ui.GetPalettes()[0x1f];
-					m_working_palette_set.palette_lines[1] = m_owning_ui.GetPalettes()[0x20];
-					m_working_palette_set.palette_lines[2] = m_owning_ui.GetPalettes()[0x21];
-					m_working_palette_set.palette_lines[3] = m_owning_ui.GetPalettes()[0x22];
-
-					request.layout_type_name = "bonus";
-					request.layout_layout_name = "fg";
-
-					m_tile_layout_render_requests.emplace_back(std::move(request));
-				}
+				if (render_request != RenderRequestType::BONUS_FOREGROUND)
+					queue_bonus_layer(true);
+				if (render_request != RenderRequestType::BONUS_BACKGROUND)
+					queue_bonus_layer(false);
 			}
 			break;
 
