@@ -60,6 +60,7 @@ namespace spintool
 		bool is_chroma_keyed = false;
 		bool show_brush_previews = true;
 		bool draw_mirrored_layout = false;
+		bool tile_layout_has_header = true;
 
 		std::shared_ptr<const rom::TileSet>* store_tileset = nullptr;
 		std::shared_ptr<rom::TileLayout>* store_layout = nullptr;
@@ -248,10 +249,16 @@ namespace spintool
 		NONE,
 		LEVEL,
 		MENU,
+		MENU_BACKGROUND,
+		MENU_FOREGROUND,
 		OPTIONS,
 		BONUS,
+		BONUS_BACKGROUND,
+		BONUS_FOREGROUND,
 		SEGA_LOGO,
 		INTRO,
+		INTRO_BACKGROUND,
+		INTRO_FOREGROUND,
 		INTRO_SHIP,
 		INTRO_WATER,
 		COUNT
