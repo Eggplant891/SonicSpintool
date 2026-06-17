@@ -12,8 +12,29 @@
 #include "ui/ui_editor.h"
 #include "SDL3/SDL_image.h"
 
+#include <filesystem>
+#include <string>
+
 namespace spintool
 {
+
+	namespace
+	{
+		std::string PathToUtf8(const std::filesystem::path& path)
+		{
+#if defined(__cpp_lib_char8_t)
+			const std::u8string utf8_path = path.generic_u8string();
+
+			return std::string(
+				reinterpret_cast<const char*>(utf8_path.data()),
+				utf8_path.size()
+			);
+#else
+			return path.generic_u8string();
+#endif
+		}
+	}
+
 
 	TilePicker::TilePicker(EditorUI& owning_ui)
 		: m_owning_ui(owning_ui)
@@ -192,7 +213,15 @@ namespace spintool
 						{
 							SDLSurfaceHandle out_surface = m_tile_layer->tileset->RenderToSurface(*m_tile_layer->palette_set.palette_lines[static_cast<size_t>(current_palette_line)]);
 							if (out_surface)
-								IMG_SavePNG(out_surface.get(), export_path.c_str());
+							{
+								const std::string export_path_utf8 =
+									PathToUtf8(export_path);
+
+								IMG_SavePNG(
+									out_surface.get(),
+									export_path_utf8.c_str()
+								);
+							}
 						}
 					}
 					ImGui::EndPopup();
