@@ -52,145 +52,147 @@ jobs:
           name: SonicSpintool-Linux-x64
           path: build
           if-no-files-found: error
-          retention-days: 30
+          retention-days:  30
 
-linux:
-    name: Windows x64
-    runs-on: ubuntu-26.04
+  windows-cross:
+    name: Windows x64 from Linux
+    runs-on: ubuntu-24.04
 
-env:
-    VCPKG_ROOT: ${{ github.workspace }}/vcpkg
-    VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg_installed
-    VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
+    env:
+      VCPKG_ROOT: ${{ github.workspace }}/vcpkg
+      VCPKG_INSTALLED_DIR: ${{ github.workspace }}/vcpkg_installed
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/vcpkg-cache
 
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Install build tools
-      run: |
-        sudo apt-get install -y \
-          build-essential \
-          ca-certificates \
-          cmake \
-          curl \
-          g++-mingw-w64-x86-64 \
-          gcc-mingw-w64-x86-64 \
-          git \
-          ninja-build \
-          pkg-config \
-          zip
+      - name: Install build tools
+        run: |
+          sudo apt-get update
 
-    - name: Display MinGW version
-      run: |
-        x86_64-w64-mingw32-gcc --version
-        x86_64-w64-mingw32-g++ --version
-        cmake --version
-        ninja --version
+          sudo apt-get install -y \
+            build-essential \
+            ca-certificates \
+            cmake \
+            curl \
+            g++-mingw-w64-x86-64 \
+            gcc-mingw-w64-x86-64 \
+            git \
+            ninja-build \
+            pkg-config \
+            zip
 
-    - name: Clone vcpkg
-      run: |
-        git clone --depth 1 \
-          https://github.com/microsoft/vcpkg.git \
-          "$VCPKG_ROOT"
+      - name: Display MinGW version
+        run: |
+          x86_64-w64-mingw32-gcc --version
+          x86_64-w64-mingw32-g++ --version
+          cmake --version
+          ninja --version
 
-        "$VCPKG_ROOT/bootstrap-vcpkg.sh" \
-          -disableMetrics
+      - name: Clone vcpkg
+        run: |
+          git clone --depth 1 \
+            https://github.com/microsoft/vcpkg.git \
+            "$VCPKG_ROOT"
 
-    - name: Prepare vcpkg cache
-      run: |
-        mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
-        mkdir -p "$VCPKG_INSTALLED_DIR"
+          "$VCPKG_ROOT/bootstrap-vcpkg.sh" \
+            -disableMetrics
 
-    - name: Install SDL3 for Windows
-      run: |
-        "$VCPKG_ROOT/vcpkg" install \
-          sdl3:x64-mingw-dynamic \
-          sdl3-image:x64-mingw-dynamic \
-          --x-install-root="$VCPKG_INSTALLED_DIR"
+      - name: Prepare vcpkg cache
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          mkdir -p "$VCPKG_INSTALLED_DIR"
 
-    - name: Configure Windows build
-      run: |
-        cmake -S . -B build-windows \
-          -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-          -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/toolchains/mingw64-linux.cmake" \
-          -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic \
-          -DVCPKG_HOST_TRIPLET=x64-linux \
-          -DVCPKG_INSTALLED_DIR="$VCPKG_INSTALLED_DIR"
+      - name: Install SDL3 for Windows
+        run: |
+          "$VCPKG_ROOT/vcpkg" install \
+            sdl3:x64-mingw-dynamic \
+            sdl3-image:x64-mingw-dynamic \
+            --x-install-root="$VCPKG_INSTALLED_DIR"
 
-    - name: Build Windows executable
-      run: |
-        cmake --build build-windows \
-          --config Release \
-          --parallel
+      - name: Configure Windows build
+        run: |
+          cmake -S . -B build-windows \
+            -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/toolchains/mingw64-linux.cmake" \
+            -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic \
+            -DVCPKG_HOST_TRIPLET=x64-linux \
+            -DVCPKG_INSTALLED_DIR="$VCPKG_INSTALLED_DIR"
 
-    - name: Prepare Windows package
-      shell: bash
-      run: |
-        set -e
+      - name: Build Windows executable
+        run: |
+          cmake --build build-windows \
+            --config Release \
+            --parallel
 
-        PACKAGE_DIR="${{ github.workspace }}/package-windows"
+      - name: Prepare Windows package
+        shell: bash
+        run: |
+          set -e
 
-        rm -rf "$PACKAGE_DIR"
-        mkdir -p "$PACKAGE_DIR"
+          PACKAGE_DIR="${{ github.workspace }}/package-windows"
 
-        EXE_PATH="$(find build-windows \
-          -type f \
-          \( -iname 'SonicSpintool.exe' -o -iname 'sonicspintool.exe' \) \
-          | head -n 1)"
+          rm -rf "$PACKAGE_DIR"
+          mkdir -p "$PACKAGE_DIR"
 
-        if [ -z "$EXE_PATH" ]; then
-          echo "SonicSpintool.exe not found"
-          find build-windows -maxdepth 4 -type f
-          exit 1
-        fi
+          EXE_PATH="$(find build-windows \
+            -type f \
+            \( -iname 'SonicSpintool.exe' -o -iname 'sonicspintool.exe' \) \
+            | head -n 1)"
 
-        cp "$EXE_PATH" "$PACKAGE_DIR/SonicSpintool.exe"
-
-        if [ -d metadata ]; then
-          cp -a metadata "$PACKAGE_DIR/"
-        fi
-
-        if [ -d config ]; then
-          cp -a config "$PACKAGE_DIR/"
-        fi
-
-        if [ -d redist ]; then
-          cp -a redist "$PACKAGE_DIR/"
-        fi
-
-        cp -av \
-          "$VCPKG_INSTALLED_DIR/x64-mingw-dynamic/bin/"*.dll \
-          "$PACKAGE_DIR/" || true
-
-        MINGW_LIBGCC="$(x86_64-w64-mingw32-g++ \
-          -print-file-name=libgcc_s_seh-1.dll)"
-
-        MINGW_LIBSTDCPP="$(x86_64-w64-mingw32-g++ \
-          -print-file-name=libstdc++-6.dll)"
-
-        MINGW_LIBWINPTHREAD="$(x86_64-w64-mingw32-g++ \
-          -print-file-name=libwinpthread-1.dll)"
-
-        for DLL in \
-          "$MINGW_LIBGCC" \
-          "$MINGW_LIBSTDCPP" \
-          "$MINGW_LIBWINPTHREAD"
-        do
-          if [ -f "$DLL" ]; then
-            cp -v "$DLL" "$PACKAGE_DIR/"
+          if [ -z "$EXE_PATH" ]; then
+            echo "SonicSpintool.exe not found"
+            find build-windows -maxdepth 4 -type f
+            exit 1
           fi
-        done
 
-        echo "Windows package contents:"
-        find "$PACKAGE_DIR" -maxdepth 2 -type f -printf '%P\n' | sort
+          cp "$EXE_PATH" "$PACKAGE_DIR/SonicSpintool.exe"
 
-    - name: Upload Windows artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: SonicSpintool-Windows-x64
-        path: package-windows/
-        if-no-files-found: error
-        retention-days: 30
+          if [ -d metadata ]; then
+            cp -a metadata "$PACKAGE_DIR/"
+          fi
+
+          if [ -d config ]; then
+            cp -a config "$PACKAGE_DIR/"
+          fi
+
+          if [ -d redist ]; then
+            cp -a redist "$PACKAGE_DIR/"
+          fi
+
+          cp -av \
+            "$VCPKG_INSTALLED_DIR/x64-mingw-dynamic/bin/"*.dll \
+            "$PACKAGE_DIR/" || true
+
+          MINGW_LIBGCC="$(x86_64-w64-mingw32-g++ \
+            -print-file-name=libgcc_s_seh-1.dll)"
+
+          MINGW_LIBSTDCPP="$(x86_64-w64-mingw32-g++ \
+            -print-file-name=libstdc++-6.dll)"
+
+          MINGW_LIBWINPTHREAD="$(x86_64-w64-mingw32-g++ \
+            -print-file-name=libwinpthread-1.dll)"
+
+          for DLL in \
+            "$MINGW_LIBGCC" \
+            "$MINGW_LIBSTDCPP" \
+            "$MINGW_LIBWINPTHREAD"
+          do
+            if [ -f "$DLL" ]; then
+              cp -v "$DLL" "$PACKAGE_DIR/"
+            fi
+          done
+
+          echo "Windows package contents:"
+          find "$PACKAGE_DIR" -maxdepth 2 -type f -printf '%P\n' | sort
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SonicSpintool-Windows-x64
+          path: package-windows/
+          if-no-files-found: error
+          retention-days: 30
