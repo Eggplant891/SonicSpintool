@@ -153,6 +153,7 @@ jobs:
       - name: Configure Windows build
         shell: bash
         run: |
+          rm -rf build-windows
           cmake -S . -B build-windows \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -161,6 +162,8 @@ jobs:
             -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic \
             -DVCPKG_HOST_TRIPLET=x64-linux \
             -DVCPKG_INSTALLED_DIR="$VCPKG_INSTALLED_DIR" \
+            -DVCPKG_APPLOCAL_DEPS=OFF \
+            -DX_VCPKG_APPLOCAL_DEPS_INSTALL=OFF \
             -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
 
       - name: Build Windows executable
