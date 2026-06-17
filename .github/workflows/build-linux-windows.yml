@@ -56,7 +56,7 @@ jobs:
 
   windows-cross:
     name: Windows x64 from Linux
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
 
     env:
       VCPKG_ROOT: ${{ github.workspace }}/vcpkg
@@ -68,14 +68,16 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install build tools
+        shell: bash
         run: |
           sudo apt-get update
 
-          sudo apt-get install -y \
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
             build-essential \
             ca-certificates \
             cmake \
             curl \
+            file \
             g++-mingw-w64-x86-64 \
             gcc-mingw-w64-x86-64 \
             git \
@@ -84,6 +86,7 @@ jobs:
             zip
 
       - name: Display MinGW version
+        shell: bash
         run: |
           x86_64-w64-mingw32-gcc --version
           x86_64-w64-mingw32-g++ --version
@@ -91,7 +94,10 @@ jobs:
           ninja --version
 
       - name: Clone vcpkg
+        shell: bash
         run: |
+          rm -rf "$VCPKG_ROOT"
+
           git clone --depth 1 \
             https://github.com/microsoft/vcpkg.git \
             "$VCPKG_ROOT"
@@ -99,41 +105,78 @@ jobs:
           "$VCPKG_ROOT/bootstrap-vcpkg.sh" \
             -disableMetrics
 
-      - name: Prepare vcpkg cache
+      - name: Clean Windows build and vcpkg installation
+        shell: bash
         run: |
-          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          rm -rf build-windows
+          rm -rf "$VCPKG_INSTALLED_DIR"
+          rm -rf "$VCPKG_DEFAULT_BINARY_CACHE"
+
           mkdir -p "$VCPKG_INSTALLED_DIR"
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
 
       - name: Install SDL3 for Windows
+        shell: bash
+        env:
+          VCPKG_FEATURE_FLAGS: binarycaching
         run: |
           "$VCPKG_ROOT/vcpkg" install \
             sdl3:x64-mingw-dynamic \
             sdl3-image:x64-mingw-dynamic \
-            --x-install-root="$VCPKG_INSTALLED_DIR"
+            --x-install-root="$VCPKG_INSTALLED_DIR" \
+            --clean-after-build
+
+      - name: Verify Windows SDL files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SDL_BIN="$VCPKG_INSTALLED_DIR/x64-mingw-dynamic/bin"
+          SDL_LIB="$VCPKG_INSTALLED_DIR/x64-mingw-dynamic/lib"
+
+          echo "SDL DLL files:"
+          find "$SDL_BIN" -maxdepth 1 -type f -printf '%f : %s bytes\n' | sort
+
+          echo "SDL import libraries:"
+          find "$SDL_LIB" -maxdepth 1 -type f -printf '%f : %s bytes\n' | sort
+
+          test -s "$SDL_BIN/SDL3.dll"
+          test -s "$SDL_BIN/SDL3_image.dll"
+          test -s "$SDL_LIB/libSDL3.dll.a"
+          test -s "$SDL_LIB/libSDL3_image.dll.a"
+
+          file "$SDL_BIN/SDL3.dll"
+          file "$SDL_BIN/SDL3_image.dll"
+          file "$SDL_LIB/libSDL3.dll.a"
+          file "$SDL_LIB/libSDL3_image.dll.a"
 
       - name: Configure Windows build
+        shell: bash
         run: |
           cmake -S . -B build-windows \
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="${{ github.workspace }}/cmake/toolchains/mingw64-linux.cmake" \
+            -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="${GITHUB_WORKSPACE}/cmake/toolchains/mingw64-linux.cmake" \
             -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic \
             -DVCPKG_HOST_TRIPLET=x64-linux \
-            -DVCPKG_INSTALLED_DIR="$VCPKG_INSTALLED_DIR"
+            -DVCPKG_INSTALLED_DIR="$VCPKG_INSTALLED_DIR" \
+            -DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON
 
       - name: Build Windows executable
+        shell: bash
         run: |
           cmake --build build-windows \
-            --config Release \
-            --parallel
+            --parallel \
+            --verbose
 
       - name: Prepare Windows package
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
 
-          PACKAGE_DIR="${{ github.workspace }}/package-windows"
+          PACKAGE_DIR="${GITHUB_WORKSPACE}/package-windows"
+          SDL_BIN="$VCPKG_INSTALLED_DIR/x64-mingw-dynamic/bin"
 
           rm -rf "$PACKAGE_DIR"
           mkdir -p "$PACKAGE_DIR"
@@ -145,7 +188,7 @@ jobs:
 
           if [ -z "$EXE_PATH" ]; then
             echo "SonicSpintool.exe not found"
-            find build-windows -maxdepth 4 -type f
+            find build-windows -maxdepth 4 -type f -print
             exit 1
           fi
 
@@ -163,31 +206,30 @@ jobs:
             cp -a redist "$PACKAGE_DIR/"
           fi
 
-          cp -av \
-            "$VCPKG_INSTALLED_DIR/x64-mingw-dynamic/bin/"*.dll \
-            "$PACKAGE_DIR/" || true
+          cp -av "$SDL_BIN/"*.dll "$PACKAGE_DIR/"
 
-          MINGW_LIBGCC="$(x86_64-w64-mingw32-g++ \
-            -print-file-name=libgcc_s_seh-1.dll)"
-
-          MINGW_LIBSTDCPP="$(x86_64-w64-mingw32-g++ \
-            -print-file-name=libstdc++-6.dll)"
-
-          MINGW_LIBWINPTHREAD="$(x86_64-w64-mingw32-g++ \
-            -print-file-name=libwinpthread-1.dll)"
-
-          for DLL in \
-            "$MINGW_LIBGCC" \
-            "$MINGW_LIBSTDCPP" \
-            "$MINGW_LIBWINPTHREAD"
+          for DLL_NAME in \
+            libgcc_s_seh-1.dll \
+            libstdc++-6.dll \
+            libwinpthread-1.dll
           do
-            if [ -f "$DLL" ]; then
-              cp -v "$DLL" "$PACKAGE_DIR/"
+            DLL_PATH="$(x86_64-w64-mingw32-g++ \
+              -print-file-name="$DLL_NAME")"
+
+            if [ ! -f "$DLL_PATH" ]; then
+              echo "Missing MinGW runtime DLL: $DLL_NAME"
+              exit 1
             fi
+
+            cp -v "$DLL_PATH" "$PACKAGE_DIR/"
           done
 
+          test -s "$PACKAGE_DIR/SonicSpintool.exe"
+          test -s "$PACKAGE_DIR/SDL3.dll"
+          test -s "$PACKAGE_DIR/SDL3_image.dll"
+
           echo "Windows package contents:"
-          find "$PACKAGE_DIR" -maxdepth 2 -type f -printf '%P\n' | sort
+          find "$PACKAGE_DIR" -maxdepth 2 -type f -printf '%P : %s bytes\n' | sort
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
