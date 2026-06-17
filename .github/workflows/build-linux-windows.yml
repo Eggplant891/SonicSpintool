@@ -100,19 +100,23 @@ jobs:
           python -m pip install "cmake>=4.1,<4.2"
           cmake --version
 
-      - name: Install SDL3 and SDL3_image
-        id: sdl
-        uses: libsdl-org/setup-sdl@main
-        with:
-          version: 3-latest
-          version-sdl-image: 3-latest
+      - name: Install SDL3 and SDL3_image with vcpkg
+        shell: pwsh
+        run: |
+          $installRoot = "${{ github.workspace }}\vcpkg_installed"
+          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
+            sdl3:x64-windows `
+            sdl3-image:x64-windows `
+            --x-install-root="$installRoot"
 
       - name: Configure
         shell: pwsh
         run: |
           cmake -S . -B build `
             -A x64 `
-            -DCMAKE_PREFIX_PATH="${{ steps.sdl.outputs.prefix }}" `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows `
+            -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/vcpkg_installed" `
             -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/package/SonicSpintool-Windows-x64"
 
       - name: Build
@@ -125,11 +129,11 @@ jobs:
         shell: pwsh
         run: |
           $package = "${{ github.workspace }}/package/SonicSpintool-Windows-x64"
-          $prefix = "${{ steps.sdl.outputs.prefix }}"
-          $dlls = Get-ChildItem -Path $prefix -Recurse -File -Filter '*.dll'
+          $runtime = "${{ github.workspace }}/vcpkg_installed/x64-windows/bin"
+          $dlls = Get-ChildItem -Path $runtime -File -Filter '*.dll'
 
           if (-not $dlls) {
-            throw "Runtime DLLs were not found under $prefix"
+            throw "Runtime DLLs were not found under $runtime"
           }
 
           $dlls | ForEach-Object {
