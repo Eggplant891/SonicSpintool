@@ -36,91 +36,19 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Configure
+      - name: Build
         shell: bash
         run: |
-          cmake -S . -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="${GITHUB_WORKSPACE}/package/SonicSpintool-Linux-x64"
-
-      - name: Build
-        run: cmake --build build --parallel
-
-      - name: Install application files
-        run: cmake --install build
+          mkdir build
+          cd build
+          cmake ..
+          make
+          cd ..
 
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
         with:
           name: SonicSpintool-Linux-x64
-          path: package/SonicSpintool-Linux-x64
-          if-no-files-found: error
-          retention-days: 30
-
-  windows:
-    name: Windows x64
-    runs-on: windows-2022
-
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
-
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install CMake 4.1
-        shell: pwsh
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install "cmake>=4.1,<4.2"
-          cmake --version
-
-      - name: Install SDL3 and SDL3_image with vcpkg
-        shell: pwsh
-        run: |
-          $installRoot = "${{ github.workspace }}\vcpkg_installed"
-          & "$env:VCPKG_INSTALLATION_ROOT\vcpkg.exe" install `
-            sdl3:x64-windows `
-            sdl3-image:x64-windows `
-            --x-install-root="$installRoot"
-
-      - name: Configure
-        shell: pwsh
-        run: |
-          cmake -S . -B build `
-            -A x64 `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
-            -DVCPKG_TARGET_TRIPLET=x64-windows `
-            -DVCPKG_INSTALLED_DIR="${{ github.workspace }}/vcpkg_installed" `
-            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/package/SonicSpintool-Windows-x64"
-
-      - name: Build
-        run: cmake --build build --config Release --parallel
-
-      - name: Install application files
-        run: cmake --install build --config Release
-
-      - name: Bundle SDL DLLs
-        shell: pwsh
-        run: |
-          $package = "${{ github.workspace }}/package/SonicSpintool-Windows-x64"
-          $runtime = "${{ github.workspace }}/vcpkg_installed/x64-windows/bin"
-          $dlls = Get-ChildItem -Path $runtime -File -Filter '*.dll'
-
-          if (-not $dlls) {
-            throw "Runtime DLLs were not found under $runtime"
-          }
-
-          $dlls | ForEach-Object {
-            Copy-Item $_.FullName -Destination $package -Force
-          }
-
-      - name: Upload Windows build
-        uses: actions/upload-artifact@v4
-        with:
-          name: SonicSpintool-Windows-x64
-          path: package/SonicSpintool-Windows-x64
+          path: build
           if-no-files-found: error
           retention-days: 30
