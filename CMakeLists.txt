@@ -1,23 +1,15 @@
 cmake_minimum_required(VERSION 4.1)
-project(sonicspintool)
+
+project(sonicspintool LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-include_directories(external)
-include_directories(external/imgui)
-include_directories(external/imgui/backends)
-include_directories(external/imgui/misc/cpp)
-include_directories(external/imgui/misc/freetype)
-include_directories(external/imgui/misc/single_file)
-include_directories(external/nlohmann)
-include_directories(external/SDL3)
-include_directories(redist)
-include_directories(redist/editor)
-include_directories(redist/rom)
-include_directories(redist/rom/culling_tables)
-include_directories(redist/rom/game_objects)
-include_directories(redist/types)
-include_directories(redist/ui)
+# SDL is supplied by the native Linux packages or by vcpkg when
+# cross-compiling from Linux to Windows with MinGW-w64.
+find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3_image CONFIG REQUIRED)
 
 add_executable(sonicspintool
         external/imgui/backends/imgui_impl_sdl3.cpp
@@ -80,4 +72,44 @@ add_executable(sonicspintool
         src/rom/metadata/rom_metadata.cpp
         src/serialisation/editor_serialiser.cpp)
 
-target_link_libraries(sonicspintool SDL3 SDL3_image)
+target_include_directories(sonicspintool PRIVATE
+    external
+    external/imgui
+    external/imgui/backends
+    external/imgui/misc/cpp
+    external/imgui/misc/freetype
+    external/imgui/misc/single_file
+    external/nlohmann
+    redist
+    redist/editor
+    redist/rom
+    redist/rom/culling_tables
+    redist/rom/game_objects
+    redist/types
+    redist/ui
+)
+
+target_link_libraries(sonicspintool PRIVATE
+    SDL3::SDL3
+    SDL3_image::SDL3_image
+)
+
+if(WIN32)
+    target_compile_definitions(sonicspintool PRIVATE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+    )
+    set_target_properties(sonicspintool PROPERTIES
+        OUTPUT_NAME "SonicSpintool"
+        SUFFIX ".exe"
+    )
+else()
+    set_target_properties(sonicspintool PROPERTIES
+        OUTPUT_NAME "sonicspintool"
+    )
+endif()
+
+include(GNUInstallDirs)
+install(TARGETS sonicspintool
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
