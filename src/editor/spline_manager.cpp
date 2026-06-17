@@ -1,6 +1,7 @@
 #include "editor/spline_manager.h"
 #include <iostream>
 #include <cassert>
+#include <cmath>
 
 namespace spintool
 {
@@ -76,7 +77,9 @@ namespace spintool
 				const auto y = spline.spline_vector.min.y;
 				const auto vector_x = spline.spline_vector.max.x - spline.spline_vector.min.x;
 				const auto vector_y = spline.spline_vector.max.y - spline.spline_vector.min.y;
-				const int num_tests = std::max(1, static_cast<int>(std::sqrtf(std::powf(static_cast<float>(vector_x), 2) + std::powf(static_cast<float>(vector_y), 2))));
+				const int num_tests = std::max(1, static_cast<int>(std::hypot(
+					static_cast<float>(vector_x),
+					static_cast<float>(vector_y))));
 				for (int i = 0; num_tests != 0 && i <= num_tests; ++i)
 				{
 					const float delta = static_cast<float>(i) / static_cast<float>(num_tests);
