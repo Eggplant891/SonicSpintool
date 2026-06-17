@@ -16,51 +16,83 @@ jobs:
     runs-on: ubuntu-26.04
 
     steps:
+      - name: Install build dependencies and SDL packages
+        shell: bash
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            ca-certificates \
+            cmake \
+            g++ \
+            git \
+            make \
+            ninja-build \
+            pkg-config \
+            libsdl3-dev \
+            libsdl3-image-dev
+          rm -rf /var/lib/apt/lists/*
+          cmake --version
+          pkg-config --modversion sdl3
+          pkg-config --modversion SDL3_image
+
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
-      - name: Install CMake 4.1
+      - name: Configure
         shell: bash
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install "cmake>=4.1,<4.2"
-          cmake --version
-
-      - name: Install SDL3 and SDL3_image
-        id: sdl
-        uses: libsdl-org/setup-sdl@main
-        with:
-          install-linux-dependencies: true
-          version: 3-latest
-          version-sdl-image: 3-latest
-
-      - name: Configure
-        run: >-
-          cmake -S . -B build
-          -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="${{ steps.sdl.outputs.prefix }}"
-          -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/package/SonicSpintool-Linux-x64"
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${GITHUB_WORKSPACE}/package/SonicSpintool-Linux-x64"
 
       - name: Build
-        run: cmake --build build --config Release --parallel
+        run: cmake --build build --parallel
 
       - name: Install application files
-        run: cmake --install build --config Release
+        run: cmake --install build
 
-      - name: Bundle SDL shared libraries
+      - name: Bundle Linux shared libraries
         shell: bash
         run: |
           set -euo pipefail
           package="${GITHUB_WORKSPACE}/package/SonicSpintool-Linux-x64"
+          executable="$package/sonicspintool"
           mkdir -p "$package/lib"
 
-          find "${{ steps.sdl.outputs.prefix }}" -type f -name '*.so*' \
-            -exec cp -L '{}' "$package/lib/" \;
+          if [[ ! -x "$executable" ]]; then
+            echo "Executable not found at $executable"
+            find "$package" -maxdepth 2 -type f -print
+            exit 1
+          fi
+
+          # Copy the packaged SDL libraries and their non-glibc runtime
+          # dependencies from Ubuntu 26.04 instead of rebuilding SDL from source.
+          ldd "$executable" | awk '/=> \// { print $3 }' | sort -u | while read -r library; do
+            case "$(basename "$library")" in
+              libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|ld-linux-*.so.*)
+                ;;
+              *)
+                cp -L "$library" "$package/lib/"
+                ;;
+            esac
+          done
+
+          # SDL3_image loads some codec libraries dynamically. Include all
+          # direct dependencies of SDL3 and SDL3_image as well.
+          for library in /usr/lib/x86_64-linux-gnu/libSDL3.so.* \
+                         /usr/lib/x86_64-linux-gnu/libSDL3_image.so.*; do
+            [[ -e "$library" ]] || continue
+            cp -L "$library" "$package/lib/"
+            ldd "$library" | awk '/=> \// { print $3 }' | sort -u | while read -r dependency; do
+              case "$(basename "$dependency")" in
+                libc.so.*|libm.so.*|libpthread.so.*|libdl.so.*|librt.so.*|ld-linux-*.so.*)
+                  ;;
+                *)
+                  cp -L "$dependency" "$package/lib/"
+                  ;;
+              esac
+            done
+          done
 
           cat > "$package/run-sonicspintool.sh" <<'SCRIPT'
           #!/usr/bin/env bash
@@ -71,6 +103,9 @@ jobs:
           exec ./sonicspintool "$@"
           SCRIPT
           chmod +x "$package/run-sonicspintool.sh"
+
+          echo "Bundled libraries:"
+          find "$package/lib" -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Upload Linux build
         uses: actions/upload-artifact@v4
