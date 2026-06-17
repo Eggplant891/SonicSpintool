@@ -56,7 +56,7 @@ namespace spintool
 
 		for (const rom::ROMMetadata& metadata : m_metadata.rom_metadatas)
 		{
-			config_json_writer[metadata.version_id] = metadata.location_on_disk.c_str();
+			config_json_writer[metadata.version_id] = metadata.location_on_disk.string();
 		}
 	}
 
@@ -98,16 +98,53 @@ namespace spintool
 
 		for (auto& rom_metadata : m_metadata.rom_metadatas)
 		{
-			auto entry = config_json_reader.find(rom_metadata.version_id);
-			if (entry == config_json_reader.end() || !entry->is_string())
+			if (rom_metadata.version_id.empty())
 			{
 				continue;
 			}
 
-			const std::string rom_path = entry->get<std::string>();
-			if (!rom_path.empty())
+			const auto entry =
+				config_json_reader.find(rom_metadata.version_id);
+
+			if (entry == config_json_reader.end() || entry->is_null())
 			{
-				AttemptLoadROM(rom_path);
+				continue;
+			}
+
+			if (!entry->is_string())
+			{
+				std::cerr
+					<< "Ignoring invalid ROM path for version "
+					<< rom_metadata.version_id
+					<< ": expected a string, got "
+					<< entry->type_name()
+					<< '\n';
+
+				continue;
+			}
+
+			const std::string rom_path =
+				entry->get<std::string>();
+
+			if (rom_path.empty())
+			{
+				continue;
+			}
+
+			try
+			{
+				AttemptLoadROM(
+					std::filesystem::path{rom_path}
+				);
+			}
+			catch (const std::exception& error)
+			{
+				std::cerr
+					<< "Could not load configured ROM "
+					<< rom_path
+					<< ": "
+					<< error.what()
+					<< '\n';
 			}
 		}
 	}
