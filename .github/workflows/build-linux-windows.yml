@@ -29,7 +29,6 @@ jobs:
             pkg-config \
             libsdl3-dev \
             libsdl3-image-dev
-          rm -rf /var/lib/apt/lists/*
           cmake --version
           pkg-config --modversion sdl3
           pkg-config --modversion SDL3_image
