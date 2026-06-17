@@ -1,14 +1,23 @@
-cmake_minimum_required(VERSION 3.16)
-project(sonicspintool VERSION 1.0 LANGUAGES CXX)
+cmake_minimum_required(VERSION 4.1)
+project(sonicspintool)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
 
-# SDL is supplied by the system, a package manager, or GitHub Actions.
-# Both packages expose modern imported CMake targets.
-find_package(SDL3 REQUIRED CONFIG)
-find_package(SDL3_image REQUIRED CONFIG)
+include_directories(external)
+include_directories(external/imgui)
+include_directories(external/imgui/backends)
+include_directories(external/imgui/misc/cpp)
+include_directories(external/imgui/misc/freetype)
+include_directories(external/imgui/misc/single_file)
+include_directories(external/nlohmann)
+include_directories(external/SDL3)
+include_directories(redist)
+include_directories(redist/editor)
+include_directories(redist/rom)
+include_directories(redist/rom/culling_tables)
+include_directories(redist/rom/game_objects)
+include_directories(redist/types)
+include_directories(redist/ui)
 
 add_executable(sonicspintool
         external/imgui/backends/imgui_impl_sdl3.cpp
@@ -71,41 +80,4 @@ add_executable(sonicspintool
         src/rom/metadata/rom_metadata.cpp
         src/serialisation/editor_serialiser.cpp)
 
-target_include_directories(sonicspintool PRIVATE
-        external
-        external/imgui
-        external/imgui/backends
-        external/imgui/misc/cpp
-        external/imgui/misc/freetype
-        external/imgui/misc/single_file
-        external/nlohmann
-        redist
-        redist/editor
-        redist/rom
-        redist/rom/culling_tables
-        redist/rom/game_objects
-        redist/types
-        redist/ui)
-
-target_link_libraries(sonicspintool PRIVATE
-        SDL3::SDL3
-        SDL3_image::SDL3_image)
-
-if(MSVC)
-    target_compile_options(sonicspintool PRIVATE /W4 /permissive-)
-else()
-    target_compile_options(sonicspintool PRIVATE -Wall -Wextra -Wpedantic)
-endif()
-
-# The editor resolves metadata relative to its current working directory.
-install(TARGETS sonicspintool
-        RUNTIME DESTINATION .
-        BUNDLE DESTINATION .)
-install(DIRECTORY metadata DESTINATION .)
-
-# Empty writable directories expected by the editor at runtime.
-install(DIRECTORY DESTINATION config)
-install(DIRECTORY DESTINATION roms)
-install(DIRECTORY DESTINATION rom_export)
-install(DIRECTORY DESTINATION sprite_export)
-install(DIRECTORY DESTINATION projects)
+target_link_libraries(sonicspintool SDL3 SDL3_image)
