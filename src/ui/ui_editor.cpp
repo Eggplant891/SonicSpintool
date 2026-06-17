@@ -46,6 +46,7 @@ namespace spintool
 		, m_sprite_importer(*this)
 	{
 		LoadROMConfig();
+		LoadUIConfig();
 	}
 
 	void EditorUI::SaveROMConfig() const
@@ -109,6 +110,50 @@ namespace spintool
 				AttemptLoadROM(rom_path);
 			}
 		}
+	}
+
+void EditorUI::SaveUIConfig() const
+	{
+		try
+		{
+			std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(s_config_path, "ui.json");
+			nlohmann::json& writer = serialiser->Writer();
+			writer["font_scale_percent"] = static_cast<int>(m_font_scale * 100.0f + 0.5f);
+		}
+		catch (const std::exception& error)
+		{
+			std::cerr << "Could not save UI configuration: " << error.what() << '\n';
+		}
+	}
+
+void EditorUI::LoadUIConfig()
+	{
+		const std::filesystem::path config_path = s_config_path / "ui.json";
+		m_font_scale = 1.0f;
+
+		if (Deserialiser::FileExists(config_path))
+		{
+			try
+			{
+				std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(config_path);
+				if (deserialiser)
+				{
+					const nlohmann::json& reader = deserialiser->Reader();
+					auto entry = reader.find("font_scale_percent");
+					if (entry != reader.end() && entry->is_number_integer())
+					{
+						const int percent = std::clamp(entry->get<int>(), 50, 250);
+						m_font_scale = static_cast<float>(percent) / 100.0f;
+					}
+				}
+			}
+			catch (const std::exception& error)
+			{
+				std::cerr << "Could not load UI configuration: " << error.what() << '\n';
+			}
+		}
+
+		ImGui::GetIO().FontGlobalScale = m_font_scale;
 	}
 
 	bool EditorUI::AttemptLoadROM(const std::filesystem::path& rom_path)
@@ -182,6 +227,32 @@ namespace spintool
 				}
 				ImGui::SameLine();
 			}
+
+			if (ImGui::BeginMenu("Settings"))
+			{
+				ImGui::TextUnformatted("Font size");
+				ImGui::SetNextItemWidth(180.0f);
+				int font_percent = static_cast<int>(m_font_scale * 100.0f + 0.5f);
+				if (ImGui::SliderInt("##font_scale", &font_percent, 50, 250, "%d%%", ImGuiSliderFlags_AlwaysClamp))
+				{
+					m_font_scale = static_cast<float>(font_percent) / 100.0f;
+					ImGui::GetIO().FontGlobalScale = m_font_scale;
+				}
+				if (ImGui::IsItemDeactivatedAfterEdit())
+				{
+					SaveUIConfig();
+				}
+
+				if (ImGui::MenuItem("Reset to 100%"))
+				{
+					m_font_scale = 1.0f;
+					ImGui::GetIO().FontGlobalScale = m_font_scale;
+					SaveUIConfig();
+				}
+				ImGui::EndMenu();
+			}
+			ImGui::SameLine();
+
 			ImGui::BeginDisabled();
 			if (m_current_rom_metadata && !m_current_rom_metadata->location_on_disk.empty())
 			{

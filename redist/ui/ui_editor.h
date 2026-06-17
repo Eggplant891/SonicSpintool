@@ -26,6 +26,8 @@ namespace spintool
 
 		void SaveROMConfig() const;
 		void LoadROMConfig();
+		void SaveUIConfig() const;
+		void LoadUIConfig();
 		void Initialise();
 		bool AttemptLoadROM(const std::filesystem::path& rom_path);
 		void Update();
@@ -71,5 +73,6 @@ namespace spintool
 		EditorImageImporter m_sprite_importer;
 
 		bool m_change_path_popup_open = false;
+		float m_font_scale = 1.0f;
 	};
 }
