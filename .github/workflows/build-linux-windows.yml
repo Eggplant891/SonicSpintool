@@ -43,6 +43,7 @@ jobs:
           cd build
           cmake ..
           make
+          rm -dR *ake*
           cd ..
 
       - name: Upload Linux build
