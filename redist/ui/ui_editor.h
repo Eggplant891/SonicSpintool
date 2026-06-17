@@ -73,5 +73,6 @@ namespace spintool
 		EditorImageImporter m_sprite_importer;
 
 		bool m_change_path_popup_open = false;
+		float m_font_scale = 1.0f;
 	};
 }
