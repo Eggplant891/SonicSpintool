@@ -10,12 +10,28 @@
 #include "imgui.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <iterator>
+#include <string>
 #include "rom/tileset.h"
 
 namespace
 {
 	constexpr float img_scale = 2.0f;
+
+	std::string PathToUtf8(const std::filesystem::path& path)
+	{
+#if defined(__cpp_lib_char8_t)
+		const std::u8string utf8_path = path.generic_u8string();
+
+		return std::string(
+			reinterpret_cast<const char*>(utf8_path.data()),
+			utf8_path.size()
+		);
+#else
+		return path.generic_u8string();
+#endif
+	}
 }
 
 namespace spintool
@@ -47,10 +63,12 @@ namespace spintool
 		if(selected_path)
 		{
 			settings.close_popup = true;
-			SDLSurfaceHandle loaded_surface{ IMG_Load(selected_path->c_str()) };
+
+			const std::string selected_path_utf8 = PathToUtf8(*selected_path);
+			SDLSurfaceHandle loaded_surface{ IMG_Load(selected_path_utf8.c_str()) };
 			if (loaded_surface != nullptr)
 			{
-				m_loaded_path = path_buffer;
+				m_loaded_path = selected_path_utf8;
 				m_imported_image = SDLSurfaceHandle{ SDL_ConvertSurface(loaded_surface.get(), SDL_PIXELFORMAT_RGBA32) };
 				m_rendered_imported_image = Renderer::RenderToTexture(m_imported_image.get());
 				m_detected_colours.clear();
