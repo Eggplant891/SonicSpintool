@@ -11,7 +11,7 @@ namespace spintool::rom
     void ROMMetadata::Serialise(nlohmann::json& writer)
     {
         writer["version"] = version_id;
-        writer["path"] = location_on_disk;
+        writer["path"] = location_on_disk.string();
         level_data_table_offsets.Serialise(writer["data_tables"]);
 
         {
@@ -27,9 +27,38 @@ namespace spintool::rom
 
     void ROMMetadata::Deserialise(const nlohmann::json& reader)
     {
-        version_id = reader["version"].get<std::string>();
-        location_on_disk = reader["location_on_disk"].get<std::filesystem::path>();
-        level_data_table_offsets.Deserialise(reader["data_tables"]);
+        if (const auto version_it = reader.find("version");
+            version_it != reader.end() && version_it->is_string())
+        {
+            version_id = version_it->get<std::string>();
+        }
+        else
+        {
+            version_id.clear();
+        }
+
+        location_on_disk.clear();
+
+        // Current metadata files use "path".
+        if (const auto path_it = reader.find("path");
+            path_it != reader.end() && path_it->is_string())
+        {
+            location_on_disk =
+                std::filesystem::path{path_it->get<std::string>()};
+        }
+        // Backward compatibility with older/generated metadata files.
+        else if (const auto path_it = reader.find("location_on_disk");
+                 path_it != reader.end() && path_it->is_string())
+        {
+            location_on_disk =
+                std::filesystem::path{path_it->get<std::string>()};
+        }
+
+        if (const auto tables_it = reader.find("data_tables");
+            tables_it != reader.end() && tables_it->is_object())
+        {
+            level_data_table_offsets.Deserialise(*tables_it);
+        }
     }
 
     void GameObjectMetadata::Serialise(nlohmann::json& writer)
