@@ -123,14 +123,10 @@ namespace spintool
 		ImGui::CreateContext();
 		ImGui::StyleColorsDark();
 
-		// Improve readability on modern and high-DPI displays.
-		// FontGlobalScale enlarges the text while ScaleAllSizes keeps
-		// buttons, spacing, scrollbars and other widgets proportional.
-		constexpr float interface_scale = 1.30f;
+		// The configurable font scale starts at 100%.
 		ImGuiIO& io = ImGui::GetIO();
 		io.Fonts->AddFontDefault();
-		io.FontGlobalScale = interface_scale;
-		ImGui::GetStyle().ScaleAllSizes(interface_scale);
+		io.FontGlobalScale = 1.0f;
 
 		if (!ImGui_ImplSDL3_InitForSDLRenderer(s_window, s_renderer))
 		{
