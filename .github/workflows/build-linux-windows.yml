@@ -19,7 +19,7 @@ jobs:
       - name: Install build dependencies and SDL packages
         shell: bash
         run: |
-          apt-get install -y \
+          sudo apt-get install -y \
             ca-certificates \
             cmake \
             g++ \
