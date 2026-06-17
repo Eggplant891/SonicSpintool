@@ -1,4 +1,4 @@
-Sonic Spintool
+Spintool
 =====
 
 Introduction
