@@ -19,6 +19,18 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install CMake 4.1
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "cmake>=4.1,<4.2"
+          cmake --version
+
       - name: Install SDL3 and SDL3_image
         id: sdl
         uses: libsdl-org/setup-sdl@main
@@ -75,6 +87,18 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install CMake 4.1
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "cmake>=4.1,<4.2"
+          cmake --version
 
       - name: Install SDL3 and SDL3_image
         id: sdl
