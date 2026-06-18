@@ -369,28 +369,17 @@ void EditorUI::LoadUIConfig()
 			ImGui::PopStyleVar(2);
 		}
 		
-		auto safe_update = [](const char* tool_name, auto&& update_function)
-		{
-			try
-			{
-				update_function();
-			}
-			catch (const std::exception& error)
-			{
-				std::cerr << tool_name << " error: " << error.what() << '\n';
-			}
-			catch (...)
-			{
-				std::cerr << tool_name << " failed with an unknown error\n";
-			}
-		};
-
-		safe_update("Sprite Importer", [this] { m_sprite_importer.Update(); });
-		safe_update("Sprite Navigator", [this] { m_sprite_navigator.Update(); });
-		safe_update("Tileset Navigator", [this] { m_tileset_navigator.Update(); });
-		safe_update("Tile Layout Viewer", [this] { m_tile_layout_viewer.Update(); });
-		safe_update("Animation Navigator", [this] { m_animation_navigator.Update(); });
-		safe_update("Palette Viewer", [this] { m_palette_viewer.Update(); });
+		// Do not catch exceptions around ImGui window rendering here.
+		// An exception thrown between ImGui::Begin()/BeginChild() and the
+		// matching End()/EndChild() must not be swallowed, otherwise ImGui's
+		// internal window stack remains unbalanced and EndFrame() aborts with
+		// a misleading "Mismatched Begin/End" assertion.
+		m_sprite_importer.Update();
+		m_sprite_navigator.Update();
+		m_tileset_navigator.Update();
+		m_tile_layout_viewer.Update();
+		m_animation_navigator.Update();
+		m_palette_viewer.Update();
 
 		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)
 		{
