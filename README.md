@@ -1,5 +1,4 @@
-Spintool
-=====
+![](https://raw.githubusercontent.com/AlpasNet/SpinTool/refs/heads/main/banner.png)
 
 Introduction
 -----
