@@ -291,7 +291,13 @@ namespace spintool
 	void EditorImageImporter::DrawTileSetImport()
 	{
 		rom::TileSet& target_tileset = *std::get<rom::TileSet*>(m_target_asset);
-		rom::TileSet* result_tileset = std::get<std::unique_ptr<rom::TileSet>>(m_result_asset).get();
+
+		rom::TileSet* result_tileset = nullptr;
+		if (auto* result =
+			std::get_if<std::unique_ptr<rom::TileSet>>(&m_result_asset))
+		{
+			result_tileset = result->get();
+		}
 		ImGui::SetNextItemWidth(256);
 		int target_write_location = static_cast<int>(target_tileset.rom_data.rom_offset);
 		m_num_tiles_to_insert = (m_preview_image->h / rom::TileSet::s_tile_height) * (m_preview_image->w / rom::TileSet::s_tile_width);
@@ -385,14 +391,33 @@ namespace spintool
 	void EditorImageImporter::DrawSpriteImport()
 	{
 		rom::Sprite& target_sprite = *std::get<rom::Sprite*>(m_target_asset);
-		std::shared_ptr<const rom::Sprite> result_sprite = std::get<std::shared_ptr<const rom::Sprite>>(m_result_asset);
+
+		std::shared_ptr<const rom::Sprite> result_sprite;
+		if (auto* result =
+			std::get_if<std::shared_ptr<const rom::Sprite>>(&m_result_asset))
+		{
+			result_sprite = *result;
+		}
 		ImGui::SetNextItemWidth(256);
 		int target_write_location = static_cast<int>(target_sprite.rom_data.rom_offset);
 		if (ImGui::InputInt("Target Write Offset", &target_write_location, 1, 100, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_ReadOnly) || m_force_update_write_location)
 		{
 			m_force_update_write_location = false;
-			m_result_asset = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), target_write_location);
-			result_sprite = std::get<std::shared_ptr<const rom::Sprite>>(m_result_asset);
+			m_result_asset =
+				rom::Sprite::LoadFromROM(
+					m_owning_ui.GetROM(),
+					target_write_location
+				);
+
+			if (auto* result =
+				std::get_if<std::shared_ptr<const rom::Sprite>>(&m_result_asset))
+			{
+				result_sprite = *result;
+			}
+			else
+			{
+				result_sprite.reset();
+			}
 			if(result_sprite != nullptr)
 			{
 				m_export_preview_image = SDLSurfaceHandle{ SDL_CreateSurface(result_sprite->GetBoundingBox().Width(), result_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
@@ -489,12 +514,14 @@ namespace spintool
 	void EditorImageImporter::SetTarget(rom::Sprite& target_sprite)
 	{
 		m_target_asset = &target_sprite;
+		m_result_asset = std::shared_ptr<const rom::Sprite>{};
 		m_force_update_write_location = true;
 	}
 
 	void EditorImageImporter::SetTarget(rom::TileSet& target_tileset)
 	{
 		m_target_asset = &target_tileset;
+		m_result_asset = std::unique_ptr<rom::TileSet>{};
 		m_force_update_write_location = true;
 	}
 
