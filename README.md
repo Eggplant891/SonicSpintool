@@ -4,15 +4,12 @@ Spintool
 Introduction
 -----
 
-Sonic Spintool is a utility created with the intention of research and hacking Sonic Spinball binaries. Hacks include modifications of assets such as:
-
+Spintool is a fork of Eggplant891 project with fixes and news opts. It is a utility created with the intention of research and doing modifications on your own Sonic Spinball binary :
 - Sprites
-- Level tiles
-- Levels & Level layouts
-- Music / SFX
-- Game logic and other tweakables
+- Levels
+- Palette
 
-The original motivation of any implementations is to serve the purposes of research, but the ability to also create new mods & hacks is part of this goal.
+This project was tested successfully with the game from Steam Version of "SEGA Mega Drive and Genesis Classics"
 
 Prerequisites
 -----
