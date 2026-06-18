@@ -186,16 +186,16 @@ jobs:
 
           EXE_PATH="$(find build-windows \
             -type f \
-            \( -iname 'SonicSpintool.exe' -o -iname 'sonicspintool.exe' \) \
+            \( -iname 'spintool.exe' -o -iname 'spintool.exe' \) \
             | head -n 1)"
 
           if [ -z "$EXE_PATH" ]; then
-            echo "SonicSpintool.exe not found"
+            echo "spintool.exe not found"
             find build-windows -maxdepth 4 -type f -print
             exit 1
           fi
 
-          cp "$EXE_PATH" "$PACKAGE_DIR/SonicSpintool.exe"
+          cp "$EXE_PATH" "$PACKAGE_DIR/spintool.exe"
 
           if [ -d metadata ]; then
             cp -a metadata "$PACKAGE_DIR/"
@@ -227,7 +227,7 @@ jobs:
             cp -v "$DLL_PATH" "$PACKAGE_DIR/"
           done
 
-          test -s "$PACKAGE_DIR/SonicSpintool.exe"
+          test -s "$PACKAGE_DIR/spintool.exe"
           test -s "$PACKAGE_DIR/SDL3.dll"
           test -s "$PACKAGE_DIR/SDL3_image.dll"
 
