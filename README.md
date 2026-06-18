@@ -14,7 +14,7 @@ This project was tested successfully with the game from Steam Version of "SEGA M
 Prerequisites
 -----
 
-The following libraries are required to build and run Sonic Spintool:
+The following libraries are required to build and run Spintool:
 - SDL 3 (https://github.com/libsdl-org/SDL)
 - SDL_Image (https://github.com/libsdl-org/SDL_image)
 
