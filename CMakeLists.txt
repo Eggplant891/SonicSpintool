@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 4.1)
 
-project(sonicspintool LANGUAGES CXX)
+project(spintool LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -11,7 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_package(SDL3 CONFIG REQUIRED)
 find_package(SDL3_image CONFIG REQUIRED)
 
-add_executable(sonicspintool
+add_executable(spintool
         external/imgui/backends/imgui_impl_sdl3.cpp
         external/imgui/backends/imgui_impl_sdlrenderer3.cpp
         external/imgui/misc/cpp/imgui_stdlib.cpp
@@ -72,7 +72,7 @@ add_executable(sonicspintool
         src/rom/metadata/rom_metadata.cpp
         src/serialisation/editor_serialiser.cpp)
 
-target_include_directories(sonicspintool PRIVATE
+target_include_directories(spintool PRIVATE
     external
     external/imgui
     external/imgui/backends
@@ -89,27 +89,27 @@ target_include_directories(sonicspintool PRIVATE
     redist/ui
 )
 
-target_link_libraries(sonicspintool PRIVATE
+target_link_libraries(spintool PRIVATE
     SDL3::SDL3
     SDL3_image::SDL3_image
 )
 
 if(WIN32)
-    target_compile_definitions(sonicspintool PRIVATE
+    target_compile_definitions(spintool PRIVATE
         WIN32_LEAN_AND_MEAN
         NOMINMAX
     )
-    set_target_properties(sonicspintool PROPERTIES
-        OUTPUT_NAME "SonicSpintool"
+    set_target_properties(spintool PROPERTIES
+        OUTPUT_NAME "spintool"
         SUFFIX ".exe"
     )
 else()
-    set_target_properties(sonicspintool PROPERTIES
-        OUTPUT_NAME "sonicspintool"
+    set_target_properties(spintool PROPERTIES
+        OUTPUT_NAME "spintool"
     )
 endif()
 
 include(GNUInstallDirs)
-install(TARGETS sonicspintool
+install(TARGETS spintool
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
