@@ -93,7 +93,7 @@ namespace spintool
 	bool Renderer::Initialise()
 	{
 		if (!SDL_CreateWindowAndRenderer(
-			"Sonic Spintool",
+			"Spintool",
 			s_window_width,
 			s_window_height,
 			0,
