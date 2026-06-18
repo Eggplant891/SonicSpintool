@@ -1,4 +1,4 @@
-# Spintool
+# SpinTool
 
 Introduction
 -----
