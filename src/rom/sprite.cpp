@@ -28,21 +28,33 @@ namespace spintool::rom
 		return { -bounds.min.x, -bounds.min.y };
 	}
 
-	std::shared_ptr<const Sprite> Sprite::LoadFromROM(const SpinballROM& src_rom, Uint32 offset)
+	std::shared_ptr<const Sprite> Sprite::LoadFromROM(
+		const SpinballROM& src_rom,
+		Uint32 offset
+	)
 	{
-		if (offset + 4 < offset) // overflow detection
+		const size_t rom_size = src_rom.m_buffer.size();
+		if (offset > rom_size || rom_size - offset < 4)
 		{
 			return nullptr;
 		}
 
-		size_t next_byte_offset = offset;
-
-		std::shared_ptr<rom::Sprite> new_sprite = std::make_shared<rom::Sprite>();
-
-		const Uint8* rom_data_start = &src_rom.m_buffer[offset];
+		const Uint8* const rom_data_start =
+			src_rom.m_buffer.data() + offset;
 		const Uint8* current_byte = rom_data_start;
 
-		new_sprite->num_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		auto read_be16 = [](const Uint8* bytes) -> Uint16
+		{
+			return static_cast<Uint16>(
+				(static_cast<Uint16>(bytes[0]) << 8) |
+				static_cast<Uint16>(bytes[1])
+			);
+		};
+
+		std::shared_ptr<rom::Sprite> new_sprite =
+			std::make_shared<rom::Sprite>();
+
+		new_sprite->num_tiles = read_be16(current_byte);
 		current_byte += 2;
 
 		if (new_sprite->num_tiles == 0 || new_sprite->num_tiles > 0x80)
@@ -50,52 +62,111 @@ namespace spintool::rom
 			return nullptr;
 		}
 
-		new_sprite->num_vdp_tiles = (static_cast<Sint16>(*(current_byte)) << 8) | static_cast<Sint16>(*(current_byte + 1));
+		new_sprite->num_vdp_tiles = read_be16(current_byte);
 		current_byte += 2;
+
+		constexpr Uint16 max_vdp_tiles = 1024;
+		if (
+			new_sprite->num_vdp_tiles == 0 ||
+			new_sprite->num_vdp_tiles > max_vdp_tiles
+		)
+		{
+			return nullptr;
+		}
+
+		constexpr size_t sprite_tile_header_size = 6;
+		const size_t header_bytes =
+			static_cast<size_t>(new_sprite->num_tiles) *
+			sprite_tile_header_size;
+
+		const size_t bytes_consumed = static_cast<size_t>(
+			current_byte - rom_data_start
+		);
+		if (
+			bytes_consumed > rom_size - offset ||
+			header_bytes > rom_size - offset - bytes_consumed
+		)
+		{
+			return nullptr;
+		}
 
 		new_sprite->sprite_tiles.resize(new_sprite->num_tiles);
 
-
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile :
+			new_sprite->sprite_tiles)
 		{
 			sprite_tile = std::make_shared<rom::SpriteTile>();
-
-			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(current_byte, static_cast<Uint32>(current_byte - rom_data_start) + offset);
+			current_byte = sprite_tile->SpriteTileHeader::LoadFromROM(
+				current_byte,
+				static_cast<Uint32>(current_byte - rom_data_start) + offset
+			);
 		}
 
-		if (new_sprite->num_tiles == 0)
-		{
-			return nullptr;
-		}
-
-		if (std::any_of(std::begin(new_sprite->sprite_tiles), std::end(new_sprite->sprite_tiles), [](const std::shared_ptr<rom::SpriteTile>& tile)
+		if (std::any_of(
+			std::begin(new_sprite->sprite_tiles),
+			std::end(new_sprite->sprite_tiles),
+			[](const std::shared_ptr<rom::SpriteTile>& tile)
 			{
-				return tile->x_size == 0 || tile->x_size > 32 || tile->y_size == 0 || tile->y_size > 32;
-			}))
-		{
-			return nullptr;
-		}
-
-		constexpr int max_tiles = 64;
-
-		if (new_sprite->num_vdp_tiles > max_tiles)
-		{
-			return nullptr;
-		}
-
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile : new_sprite->sprite_tiles)
-		{
-			const Uint32 total_pixels = sprite_tile->x_size * sprite_tile->y_size;
-			if (total_pixels != 0)
-			{
-				if (offset + ((sprite_tile->x_size / 2) * sprite_tile->y_size) < src_rom.m_buffer.size())
-				{
-					current_byte = sprite_tile->SpriteTileData::LoadFromROM(static_cast<const SpriteTileHeader&>(*sprite_tile), static_cast<Uint32>(current_byte - rom_data_start) + offset, src_rom);
-				}
+				return
+					tile->x_size == 0 ||
+					tile->x_size > 32 ||
+					tile->y_size == 0 ||
+					tile->y_size > 32;
 			}
+		))
+		{
+			return nullptr;
 		}
 
-		new_sprite->rom_data.SetROMData(rom_data_start, current_byte, offset);
+		Uint32 calculated_vdp_tiles = 0;
+		for (const std::shared_ptr<rom::SpriteTile>& sprite_tile :
+			new_sprite->sprite_tiles)
+		{
+			calculated_vdp_tiles +=
+				(static_cast<Uint32>(sprite_tile->x_size) / 8U) *
+				(static_cast<Uint32>(sprite_tile->y_size) / 8U);
+		}
+
+		if (
+			calculated_vdp_tiles == 0 ||
+			calculated_vdp_tiles > max_vdp_tiles
+		)
+		{
+			return nullptr;
+		}
+
+		for (std::shared_ptr<rom::SpriteTile>& sprite_tile :
+			new_sprite->sprite_tiles)
+		{
+			const size_t tile_data_size =
+				(static_cast<size_t>(sprite_tile->x_size) *
+				 static_cast<size_t>(sprite_tile->y_size)) /
+				2U;
+
+			const size_t current_offset = static_cast<size_t>(
+				current_byte - rom_data_start
+			);
+			if (
+				current_offset > rom_size - offset ||
+				tile_data_size > rom_size - offset - current_offset
+			)
+			{
+				return nullptr;
+			}
+
+			current_byte = sprite_tile->SpriteTileData::LoadFromROM(
+				static_cast<const SpriteTileHeader&>(*sprite_tile),
+				static_cast<Uint32>(current_offset) + offset,
+				src_rom
+			);
+		}
+
+		new_sprite->rom_data.SetROMData(
+			rom_data_start,
+			current_byte,
+			offset
+		);
+		new_sprite->is_valid = true;
 
 		return new_sprite;
 	}
