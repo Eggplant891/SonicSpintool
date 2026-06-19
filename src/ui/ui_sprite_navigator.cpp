@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <thread>
 #include <atomic>
+#include <limits>
 
 namespace spintool
 {
@@ -37,6 +38,50 @@ namespace spintool
 		if (ImGui::Begin("Sprite Discoverator", &m_visible))
 		{
 			static char path_buffer[4096];
+
+			const size_t rom_size = m_owning_ui.GetROM().m_buffer.size();
+			const Uint32 maximum_scan_offset = rom_size == 0
+				? 0
+				: static_cast<Uint32>(std::min<size_t>(
+					rom_size - 1,
+					static_cast<size_t>(std::numeric_limits<Uint32>::max())
+				));
+
+			if (m_scan_end_offset == 0)
+			{
+				m_scan_end_offset = std::min<Uint32>(0x03909D, maximum_scan_offset);
+			}
+			m_scan_end_offset = std::min(m_scan_end_offset, maximum_scan_offset);
+
+			ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 6.0f);
+			ImGui::BeginChild(
+				"SpriteScanLimitPanel",
+				ImVec2(0.0f, 112.0f),
+				ImGuiChildFlags_Borders
+			);
+			ImGui::TextUnformatted("SPRITE SCAN LIMIT");
+			ImGui::Separator();
+			ImGui::TextUnformatted("Last ROM offset included in the sprite scan:");
+			ImGui::SetNextItemWidth(180.0f);
+			ImGui::InputScalar(
+				"##m_scan_end_offset",
+				ImGuiDataType_U32,
+				&m_scan_end_offset,
+				nullptr,
+				nullptr,
+				"0x%06X",
+				ImGuiInputTextFlags_CharsHexadecimal
+			);
+			m_scan_end_offset = std::min(m_scan_end_offset, maximum_scan_offset);
+			ImGui::SameLine();
+			ImGui::TextDisabled("ROM maximum: 0x%06X", maximum_scan_offset);
+			ImGui::TextDisabled(
+				"Change the value, then click Apply limit and rescan below."
+			);
+			ImGui::EndChild();
+			ImGui::PopStyleVar();
+
+			const Uint32 current_scan_end = m_scan_end_offset;
 
 			int working_offset = static_cast<int>(m_offset);
 			if (ImGui::InputInt("ROM Offset", &working_offset, 1, 0x10, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
@@ -110,6 +155,7 @@ namespace spintool
 				m_attempt_render_of_arbitrary_data = false;
 			}
 
+
 			static int num_searches = 16;
 			char search_ui_text[64];
 			sprintf(search_ui_text, "Search for next (%d) sprites###search_button", num_searches);
@@ -127,7 +173,13 @@ namespace spintool
 					m_offset += next_sprite->sprite->GetSizeOf();
 				}
 
-				for (size_t a = 0; a < num_searches && m_offset < m_owning_ui.GetROM().m_buffer.size(); ++a)
+				for (
+				size_t a = 0;
+				a < static_cast<size_t>(std::max(num_searches, 0)) &&
+				m_offset <= current_scan_end &&
+				m_offset < m_owning_ui.GetROM().m_buffer.size();
+				++a
+			)
 				{
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
@@ -139,16 +191,33 @@ namespace spintool
 					{
 						std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset);
 
-						if (new_sprite != nullptr)
+						if (
+							new_sprite != nullptr &&
+							new_sprite->rom_data.rom_offset <= current_scan_end &&
+							new_sprite->rom_data.rom_offset_end <= current_scan_end + 1
+						)
 						{
 							m_offset = new_sprite->rom_data.rom_offset_end;
 							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
 						}
+						else if (new_sprite != nullptr)
+						{
+							m_offset = current_scan_end + 1;
+							break;
+						}
 						else
 						{
+							if (m_offset + 2 > current_scan_end)
+							{
+								m_offset = current_scan_end + 1;
+								break;
+							}
 							m_offset += 2;
-							--a;
+							if (a > 0)
+							{
+								--a;
+							}
 						}
 					}
 				}
@@ -205,8 +274,17 @@ namespace spintool
 						const rom::Palette& palette = *palettes[static_cast<size_t>(m_chosen_palette)];
 						for (auto& sprite : ready_sprites)
 						{
-							if (!sprite)
+							if (!sprite || !sprite->sprite)
 								continue;
+
+							if (
+								sprite->sprite->rom_data.rom_offset > current_scan_end ||
+								sprite->sprite->rom_data.rom_offset_end > current_scan_end + 1
+							)
+							{
+								continue;
+							}
+
 							sprite->texture = sprite->RenderTextureForPalette(palette);
 							m_sprites_found.emplace_back(std::move(sprite));
 						}
@@ -214,82 +292,120 @@ namespace spintool
 				}
 			}
 
-			auto start_full_sprite_scan = [this]()
+			auto start_full_sprite_scan = [this](Uint32 requested_scan_end)
 			{
-				if (m_find_all_running.exchange(true))
-				{
-					return;
-				}
+				const Uint32 scan_generation = ++m_scan_generation;
+				m_find_all_running = true;
+				m_find_all_progress = 0.0f;
+				m_find_all_result_count = 0;
 
 				m_sprites_found.clear();
 				{
 					std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
 					m_pending_sprites.clear();
 				}
-
 				m_selected_sprite_rom_offset = 0;
-				m_find_all_progress = 0.0f;
 
-				std::thread([this]()
+				std::thread([this, requested_scan_end, scan_generation]()
 				{
-					const size_t rom_size = m_owning_ui.GetROM().m_buffer.size();
-					Uint32 working_offset = 0;
+					const size_t scan_rom_size = m_owning_ui.GetROM().m_buffer.size();
+					const Uint32 scan_end = scan_rom_size == 0
+						? 0
+						: std::min(
+							requested_scan_end,
+							static_cast<Uint32>(scan_rom_size - 1)
+						);
 
-					while (working_offset < rom_size)
+					Uint32 working_offset = 0;
+					while (
+						working_offset <= scan_end &&
+						working_offset < scan_rom_size &&
+						m_scan_generation.load() == scan_generation
+					)
 					{
-						m_find_all_progress = rom_size == 0
+						m_find_all_progress = scan_end == 0
 							? 1.0f
-							: working_offset / static_cast<float>(rom_size);
+							: working_offset / static_cast<float>(scan_end);
 
 						auto sprite = rom::Sprite::LoadFromROM(
 							m_owning_ui.GetROM(),
 							working_offset
 						);
 
-						if (!sprite)
+						if (sprite)
 						{
-							working_offset += 2;
-							continue;
+							const Uint32 sprite_end = sprite->rom_data.rom_offset_end;
+							if (
+								sprite_end > working_offset &&
+								sprite_end <= scan_rom_size &&
+								sprite_end <= scan_end + 1 &&
+								m_scan_generation.load() == scan_generation
+							)
+							{
+								std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
+								if (m_scan_generation.load() == scan_generation)
+								{
+									m_pending_sprites.emplace_back(
+										std::make_shared<UISpriteTexture>(sprite)
+									);
+									++m_find_all_result_count;
+								}
+							}
 						}
-
-						const Uint32 next_offset = sprite->rom_data.rom_offset_end;
-						if (next_offset <= working_offset || next_offset > rom_size)
-						{
-							working_offset += 2;
-							continue;
-						}
-
-						{
-							std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
-							m_pending_sprites.emplace_back(
-								std::make_shared<UISpriteTexture>(sprite)
-							);
-						}
-
-						working_offset = next_offset;
+						++working_offset;
 					}
 
-					m_find_all_progress = 1.0f;
-					m_find_all_running = false;
+					if (m_scan_generation.load() == scan_generation)
+					{
+						m_find_all_progress = 1.0f;
+						m_find_all_running = false;
+					}
 				}).detach();
 			};
 
-			static bool automatic_full_scan_started = false;
-			if (!automatic_full_scan_started && !m_owning_ui.GetROM().m_buffer.empty())
+			if (ImGui::Button("Apply limit and rescan"))
 			{
-				automatic_full_scan_started = true;
-				start_full_sprite_scan();
+				m_offset = std::min(m_offset, m_scan_end_offset);
+				start_full_sprite_scan(m_scan_end_offset);
 			}
 
+			ImGui::SameLine();
 			if (ImGui::Button("Show all sprites"))
 			{
-				start_full_sprite_scan();
+				start_full_sprite_scan(m_scan_end_offset);
 			}
+
+			ImGui::TextDisabled(
+				"Applied scan range: 0x000000 - 0x%06X",
+				static_cast<unsigned int>(m_scan_end_offset)
+			);
 
 			if (m_find_all_running)
 			{
 				ImGui::ProgressBar(m_find_all_progress.load());
+				ImGui::TextDisabled(
+					"Scanning every ROM byte; large ROMs may take time."
+				);
 			}
+
+			m_sprites_found.erase(
+				std::remove_if(
+					m_sprites_found.begin(),
+					m_sprites_found.end(),
+					[current_scan_end](const std::shared_ptr<UISpriteTexture>& sprite)
+					{
+						return !sprite || !sprite->sprite ||
+							sprite->sprite->rom_data.rom_offset > current_scan_end ||
+							sprite->sprite->rom_data.rom_offset_end > current_scan_end + 1;
+					}
+				),
+				m_sprites_found.end()
+			);
+
+			ImGui::Text(
+				"Standard sprite candidates: %zu",
+				m_sprites_found.size()
+			);
 
 			if (ImGui::Button("Clear Textures"))
 			{
@@ -361,7 +477,9 @@ namespace spintool
 					{
 						if (ImGui::MenuItem("Import image to this location"))
 						{
-							m_owning_ui.OpenImageImporter(const_cast<rom::Sprite&>(*tex->sprite));
+							m_owning_ui.OpenImageImporter(
+								const_cast<rom::Sprite&>(*tex->sprite)
+							);
 						}
 
 						sprintf(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
