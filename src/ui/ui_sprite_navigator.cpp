@@ -157,53 +157,6 @@ namespace spintool
 			ImGui::SetNextItemWidth(128);
 			ImGui::InputInt("###num_sprites_to_find", &num_searches, 1, 16, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
 
-			if (ImGui::Button("Show Toxic Caves Sprites"))
-			{
-				//const static rom::Ptr32 toxic_caves_sprite_table = 0x12B0C;
-				const static rom::Ptr32 toxic_caves_sprite_table = 0xE47A;
-				//const static rom::Ptr32 toxic_caves_sprite_table = 0x318ee;
-				const static rom::Ptr32 toxic_caves_sprite_table_begin = toxic_caves_sprite_table + 4;
-				const Uint16 num_sprites = m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table);
-				std::vector<rom::Ptr32> sprite_offsets;
-				sprite_offsets.reserve(num_sprites);
-
-				for (Uint32 i = 0; i < num_sprites; ++i)
-				{
-					sprite_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table_begin + (i*2)));
-				}
-
-				for (rom::Ptr32 offset : sprite_offsets)
-				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), toxic_caves_sprite_table + offset))
-					{
-						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-					}
-				}
-			}
-
-			if (ImGui::Button("Show current sprite"))
-			{
-				const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
-					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
-					{
-						return sprite_tex != nullptr && sprite_tex->sprite->rom_data.rom_offset == m_offset;
-					});
-
-				if (found_sprite != std::end(m_sprites_found))
-				{
-					m_selected_sprite_rom_offset = (*found_sprite)->sprite->rom_data.rom_offset;
-				}
-				else
-				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset))
-					{
-						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-					}
-				}
-			}
-
 			if (ImGui::Button("Show Loaded Tilesets"))
 			{
 				for (const TilesetEntry& tileset_entry : m_owning_ui.GetTilesets())
@@ -227,34 +180,6 @@ namespace spintool
 						offset = new_sprite->rom_data.rom_offset_end;
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-					}
-				}
-			}
-
-			if (ImGui::Button("Goto next sprite"))
-			{
-				const auto current_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
-					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
-					{
-						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
-					});
-
-				if (current_sprite != std::end(m_sprites_found))
-				{
-					m_offset += (*current_sprite)->sprite->GetSizeOf();
-					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
-						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
-						{
-							return sprite_tex->sprite->rom_data.rom_offset == m_offset;
-						});
-
-					if (found_sprite == std::end(m_sprites_found))
-					{
-						if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset))
-						{
-							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().front());
-						}
 					}
 				}
 			}
@@ -289,13 +214,20 @@ namespace spintool
 				}
 			}
 
-			if (ImGui::Button("Find all sprites") && !m_find_all_running.exchange(true))
+			auto start_full_sprite_scan = [this]()
 			{
+				if (m_find_all_running.exchange(true))
+				{
+					return;
+				}
+
 				m_sprites_found.clear();
 				{
 					std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
 					m_pending_sprites.clear();
 				}
+
+				m_selected_sprite_rom_offset = 0;
 				m_find_all_progress = 0.0f;
 
 				std::thread([this]()
@@ -305,8 +237,15 @@ namespace spintool
 
 					while (working_offset < rom_size)
 					{
-						m_find_all_progress = rom_size == 0 ? 1.0f : working_offset / static_cast<float>(rom_size);
-						auto sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), working_offset);
+						m_find_all_progress = rom_size == 0
+							? 1.0f
+							: working_offset / static_cast<float>(rom_size);
+
+						auto sprite = rom::Sprite::LoadFromROM(
+							m_owning_ui.GetROM(),
+							working_offset
+						);
+
 						if (!sprite)
 						{
 							working_offset += 2;
@@ -322,14 +261,29 @@ namespace spintool
 
 						{
 							std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
-							m_pending_sprites.emplace_back(std::make_shared<UISpriteTexture>(sprite));
+							m_pending_sprites.emplace_back(
+								std::make_shared<UISpriteTexture>(sprite)
+							);
 						}
+
 						working_offset = next_offset;
 					}
 
 					m_find_all_progress = 1.0f;
 					m_find_all_running = false;
 				}).detach();
+			};
+
+			static bool automatic_full_scan_started = false;
+			if (!automatic_full_scan_started && !m_owning_ui.GetROM().m_buffer.empty())
+			{
+				automatic_full_scan_started = true;
+				start_full_sprite_scan();
+			}
+
+			if (ImGui::Button("Show all sprites"))
+			{
+				start_full_sprite_scan();
 			}
 
 			if (m_find_all_running)
