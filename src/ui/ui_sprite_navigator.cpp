@@ -246,27 +246,31 @@ namespace spintool
 							working_offset
 						);
 
-						if (!sprite)
+						if (sprite)
 						{
-							working_offset += 2;
-							continue;
+							const Uint32 sprite_end =
+								sprite->rom_data.rom_offset_end;
+
+							if (
+								sprite_end > working_offset &&
+								sprite_end <= rom_size
+							)
+							{
+								std::lock_guard<std::mutex> pending_lock(
+									m_pending_sprites_mutex
+								);
+
+								m_pending_sprites.emplace_back(
+									std::make_shared<UISpriteTexture>(sprite)
+								);
+							}
 						}
 
-						const Uint32 next_offset = sprite->rom_data.rom_offset_end;
-						if (next_offset <= working_offset || next_offset > rom_size)
-						{
-							working_offset += 2;
-							continue;
-						}
-
-						{
-							std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
-							m_pending_sprites.emplace_back(
-								std::make_shared<UISpriteTexture>(sprite)
-							);
-						}
-
-						working_offset = next_offset;
+						// Test every byte. Do not jump to the end of a candidate:
+						// a false positive could otherwise hide a valid sprite located
+						// inside the skipped range. Odd ROM offsets are also valid
+						// candidates for heuristic discovery.
+						++working_offset;
 					}
 
 					m_find_all_progress = 1.0f;
@@ -289,7 +293,15 @@ namespace spintool
 			if (m_find_all_running)
 			{
 				ImGui::ProgressBar(m_find_all_progress.load());
+				ImGui::TextDisabled(
+					"Scanning every ROM byte; large ROMs may take time."
+				);
 			}
+
+			ImGui::Text(
+				"Standard sprite candidates: %zu",
+				m_sprites_found.size()
+			);
 
 			if (ImGui::Button("Clear Textures"))
 			{
