@@ -15,8 +15,6 @@
 #include <algorithm>
 #include <thread>
 #include <atomic>
-#include <limits>
-#include <cstdio>
 
 namespace spintool
 {
@@ -39,43 +37,6 @@ namespace spintool
 		if (ImGui::Begin("Sprite Discoverator", &m_visible))
 		{
 			static char path_buffer[4096];
-			static Uint32 sprite_scan_end_offset = 0x03909D;
-
-			const size_t rom_size_bytes =
-				m_owning_ui.GetROM().m_buffer.size();
-
-			const Uint32 maximum_rom_offset =
-				rom_size_bytes == 0
-					? 0
-					: static_cast<Uint32>(
-						std::min<size_t>(
-							rom_size_bytes - 1,
-							std::numeric_limits<Uint32>::max()
-						)
-					);
-
-			sprite_scan_end_offset = std::min(
-				sprite_scan_end_offset,
-				maximum_rom_offset
-			);
-
-			ImGui::SetNextItemWidth(150.0f);
-			ImGui::InputScalar(
-				"Sprite scan end",
-				ImGuiDataType_U32,
-				&sprite_scan_end_offset,
-				nullptr,
-				nullptr,
-				"%06X",
-				ImGuiInputTextFlags_CharsHexadecimal
-			);
-
-			if (ImGui::IsItemHovered())
-			{
-				ImGui::SetTooltip(
-					"Last ROM offset included in automatic and manual sprite scans."
-				);
-			}
 
 			int working_offset = static_cast<int>(m_offset);
 			if (ImGui::InputInt("ROM Offset", &working_offset, 1, 0x10, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue))
@@ -166,13 +127,7 @@ namespace spintool
 					m_offset += next_sprite->sprite->GetSizeOf();
 				}
 
-				for (
-					size_t a = 0;
-					a < num_searches &&
-					m_offset <= sprite_scan_end_offset &&
-					m_offset < m_owning_ui.GetROM().m_buffer.size();
-					++a
-				)
+				for (size_t a = 0; a < num_searches && m_offset < m_owning_ui.GetROM().m_buffer.size(); ++a)
 				{
 					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
 						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
@@ -202,53 +157,6 @@ namespace spintool
 			ImGui::SetNextItemWidth(128);
 			ImGui::InputInt("###num_sprites_to_find", &num_searches, 1, 16, ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue);
 
-			if (ImGui::Button("Show Toxic Caves Sprites"))
-			{
-				//const static rom::Ptr32 toxic_caves_sprite_table = 0x12B0C;
-				const static rom::Ptr32 toxic_caves_sprite_table = 0xE47A;
-				//const static rom::Ptr32 toxic_caves_sprite_table = 0x318ee;
-				const static rom::Ptr32 toxic_caves_sprite_table_begin = toxic_caves_sprite_table + 4;
-				const Uint16 num_sprites = m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table);
-				std::vector<rom::Ptr32> sprite_offsets;
-				sprite_offsets.reserve(num_sprites);
-
-				for (Uint32 i = 0; i < num_sprites; ++i)
-				{
-					sprite_offsets.emplace_back(m_owning_ui.GetROM().ReadUint16(toxic_caves_sprite_table_begin + (i*2)));
-				}
-
-				for (rom::Ptr32 offset : sprite_offsets)
-				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), toxic_caves_sprite_table + offset))
-					{
-						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-					}
-				}
-			}
-
-			if (ImGui::Button("Show current sprite"))
-			{
-				const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
-					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
-					{
-						return sprite_tex != nullptr && sprite_tex->sprite->rom_data.rom_offset == m_offset;
-					});
-
-				if (found_sprite != std::end(m_sprites_found))
-				{
-					m_selected_sprite_rom_offset = (*found_sprite)->sprite->rom_data.rom_offset;
-				}
-				else
-				{
-					if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset))
-					{
-						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-					}
-				}
-			}
-
 			if (ImGui::Button("Show Loaded Tilesets"))
 			{
 				for (const TilesetEntry& tileset_entry : m_owning_ui.GetTilesets())
@@ -272,34 +180,6 @@ namespace spintool
 						offset = new_sprite->rom_data.rom_offset_end;
 						m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
 						m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().at(m_chosen_palette));
-					}
-				}
-			}
-
-			if (ImGui::Button("Goto next sprite"))
-			{
-				const auto current_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
-					[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
-					{
-						return sprite_tex->sprite->rom_data.rom_offset == m_offset;
-					});
-
-				if (current_sprite != std::end(m_sprites_found))
-				{
-					m_offset += (*current_sprite)->sprite->GetSizeOf();
-					const auto found_sprite = std::find_if(std::begin(m_sprites_found), std::end(m_sprites_found),
-						[this](const std::shared_ptr<UISpriteTexture>& sprite_tex)
-						{
-							return sprite_tex->sprite->rom_data.rom_offset == m_offset;
-						});
-
-					if (found_sprite == std::end(m_sprites_found))
-					{
-						if (std::shared_ptr<const rom::Sprite> new_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), m_offset))
-						{
-							m_sprites_found.emplace_back(std::make_shared<UISpriteTexture>(new_sprite));
-							m_sprites_found.back()->texture = m_sprites_found.back()->RenderTextureForPalette(*m_owning_ui.GetPalettes().front());
-						}
 					}
 				}
 			}
@@ -334,172 +214,81 @@ namespace spintool
 				}
 			}
 
-			const Uint32 rom_size = static_cast<Uint32>(
-				std::min<size_t>(
-					m_owning_ui.GetROM().m_buffer.size(),
-					std::numeric_limits<Uint32>::max()
-				)
-			);
-
-			if (m_scan_end_offset == 0 || m_scan_end_offset > rom_size)
+			auto start_full_sprite_scan = [this]()
 			{
-				m_scan_end_offset = rom_size;
-			}
+				if (m_find_all_running.exchange(true))
+				{
+					return;
+				}
 
-			int scan_start = static_cast<int>(m_scan_start_offset);
-			int scan_end = static_cast<int>(m_scan_end_offset);
-
-			ImGui::SetNextItemWidth(150.0f);
-			if (ImGui::InputInt(
-				"Scan start##sprite_scan",
-				&scan_start,
-				2,
-				0x100,
-				ImGuiInputTextFlags_CharsHexadecimal
-			))
-			{
-				m_scan_start_offset = static_cast<Uint32>(
-					std::max(scan_start, 0)
-				);
-			}
-
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(150.0f);
-			if (ImGui::InputInt(
-				"Scan end##sprite_scan",
-				&scan_end,
-				2,
-				0x100,
-				ImGuiInputTextFlags_CharsHexadecimal
-			))
-			{
-				m_scan_end_offset = static_cast<Uint32>(
-					std::max(scan_end, 0)
-				);
-			}
-
-			ImGui::SameLine();
-			ImGui::SetNextItemWidth(120.0f);
-			ImGui::InputInt(
-				"Maximum results##sprite_scan",
-				&m_scan_max_results,
-				100,
-				500
-			);
-			m_scan_max_results = std::clamp(m_scan_max_results, 1, 20000);
-
-			if (
-				ImGui::Button("Scan sprite candidates") &&
-				!m_find_all_running.exchange(true)
-			)
-			{
 				m_sprites_found.clear();
 				{
-					std::lock_guard<std::mutex> pending_lock(
-						m_pending_sprites_mutex
-					);
+					std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
 					m_pending_sprites.clear();
 				}
 
-				const Uint32 scan_begin = std::min(
-					m_scan_start_offset,
-					rom_size
-				) & ~Uint32{1};
-				const Uint32 scan_finish = std::clamp(
-					m_scan_end_offset,
-					scan_begin,
-					rom_size
-				);
-				const Uint32 maximum_results = static_cast<Uint32>(
-					m_scan_max_results
-				);
-
+				m_selected_sprite_rom_offset = 0;
 				m_find_all_progress = 0.0f;
-				m_find_all_result_count = 0;
-				m_find_all_cancel = false;
 
-				std::thread([
-					this,
-					scan_begin,
-					scan_finish,
-					maximum_results
-				]()
+				std::thread([this]()
 				{
-					Uint32 working_offset = scan_begin;
-					const Uint32 scan_length = scan_finish - scan_begin;
+					const size_t rom_size = m_owning_ui.GetROM().m_buffer.size();
+					Uint32 working_offset = 0;
 
-					while (
-						working_offset + 4 <= scan_finish &&
-						!m_find_all_cancel.load() &&
-						m_find_all_result_count.load() < maximum_results
-					)
+					while (working_offset < rom_size)
 					{
-						m_find_all_progress = scan_length == 0
+						m_find_all_progress = rom_size == 0
 							? 1.0f
-							: (working_offset - scan_begin) /
-								static_cast<float>(scan_length);
+							: working_offset / static_cast<float>(rom_size);
 
 						auto sprite = rom::Sprite::LoadFromROM(
 							m_owning_ui.GetROM(),
 							working_offset
 						);
 
-						if (sprite)
+						if (!sprite)
 						{
-							const BoundingBox bounds = sprite->GetBoundingBox();
-							const bool plausible_dimensions =
-								bounds.Width() > 0 &&
-								bounds.Height() > 0 &&
-								bounds.Width() <= 512 &&
-								bounds.Height() <= 512;
-
-							if (plausible_dimensions)
-							{
-								std::lock_guard<std::mutex> pending_lock(
-									m_pending_sprites_mutex
-								);
-								m_pending_sprites.emplace_back(
-									std::make_shared<UISpriteTexture>(sprite)
-								);
-								++m_find_all_result_count;
-							}
+							working_offset += 2;
+							continue;
 						}
 
-						working_offset += 2;
+						const Uint32 next_offset = sprite->rom_data.rom_offset_end;
+						if (next_offset <= working_offset || next_offset > rom_size)
+						{
+							working_offset += 2;
+							continue;
+						}
+
+						{
+							std::lock_guard<std::mutex> pending_lock(m_pending_sprites_mutex);
+							m_pending_sprites.emplace_back(
+								std::make_shared<UISpriteTexture>(sprite)
+							);
+						}
+
+						working_offset = next_offset;
 					}
 
 					m_find_all_progress = 1.0f;
 					m_find_all_running = false;
 				}).detach();
+			};
+
+			static bool automatic_full_scan_started = false;
+			if (!automatic_full_scan_started && !m_owning_ui.GetROM().m_buffer.empty())
+			{
+				automatic_full_scan_started = true;
+				start_full_sprite_scan();
+			}
+
+			if (ImGui::Button("Show all sprites"))
+			{
+				start_full_sprite_scan();
 			}
 
 			if (m_find_all_running)
 			{
-				ImGui::SameLine();
-				if (ImGui::Button("Cancel scan"))
-				{
-					m_find_all_cancel = true;
-				}
-
-				char progress_overlay[96];
-				std::snprintf(
-					progress_overlay,
-					sizeof(progress_overlay),
-					"%u candidate(s)",
-					m_find_all_result_count.load()
-				);
-				ImGui::ProgressBar(
-					m_find_all_progress.load(),
-					ImVec2{-1.0f, 0.0f},
-					progress_overlay
-				);
-			}
-			else if (m_find_all_result_count.load() > 0)
-			{
-				ImGui::Text(
-					"Scan complete: %u candidate(s)",
-					m_find_all_result_count.load()
-				);
+				ImGui::ProgressBar(m_find_all_progress.load());
 			}
 
 			if (ImGui::Button("Clear Textures"))
@@ -562,27 +351,6 @@ namespace spintool
 					}
 
 					tex->DrawForImGui(m_zoom);
-					if (ImGui::IsItemHovered())
-					{
-						ImGui::BeginTooltip();
-						ImGui::Text(
-							"ROM offset: 0x%06X",
-							static_cast<unsigned int>(
-								tex->sprite->rom_data.rom_offset
-							)
-						);
-						ImGui::Text(
-							"Tiles: %u | VDP tiles: %u",
-							tex->sprite->num_tiles,
-							tex->sprite->num_vdp_tiles
-						);
-						ImGui::Text(
-							"Size: %.0f x %.0f px",
-							tex->dimensions.x,
-							tex->dimensions.y
-						);
-						ImGui::EndTooltip();
-					}
 					current_width += static_cast<int>((tex->dimensions.x * m_zoom) + ImGui::GetStyle().ItemSpacing.x);
 
 					const bool hovered = ImGui::IsItemHovered();
