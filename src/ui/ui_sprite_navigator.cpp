@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <thread>
 #include <atomic>
+#include <unordered_set>
 
 namespace spintool
 {
@@ -290,6 +291,153 @@ namespace spintool
 				start_full_sprite_scan();
 			}
 
+			// SSC-compressed art is stored as a two-byte tile-count header
+			// followed by an SSC stream.  Standard Sprite::LoadFromROM()
+			// cannot see those graphics, so scan and render them as tilesets.
+			static std::atomic<bool> ssc_scan_running{ false };
+			static std::atomic<float> ssc_scan_progress{ 0.0f };
+			static std::atomic<size_t> ssc_tilesets_found{ 0 };
+			static std::mutex ssc_offsets_mutex;
+			static std::unordered_set<Uint32> ssc_art_offsets;
+
+			const bool any_scan_running =
+				m_find_all_running.load() || ssc_scan_running.load();
+
+			ImGui::BeginDisabled(any_scan_running);
+			if (ImGui::Button("Show SSC compressed art"))
+			{
+				m_sprites_found.clear();
+				{
+					std::lock_guard<std::mutex> pending_lock(
+						m_pending_sprites_mutex
+					);
+					m_pending_sprites.clear();
+				}
+
+				m_selected_sprite_rom_offset = 0;
+				ssc_scan_progress = 0.0f;
+				ssc_tilesets_found = 0;
+				{
+					std::lock_guard<std::mutex> offsets_lock(
+						ssc_offsets_mutex
+					);
+					ssc_art_offsets.clear();
+				}
+				ssc_scan_running = true;
+
+				std::thread([this]()
+				{
+					const rom::SpinballROM& rom = m_owning_ui.GetROM();
+					const size_t rom_size = rom.m_buffer.size();
+					size_t offset = 0;
+
+					while (offset + 3 < rom_size)
+					{
+						ssc_scan_progress =
+							rom_size == 0
+								? 1.0f
+								: static_cast<float>(offset) /
+									static_cast<float>(rom_size);
+
+						const Uint16 num_tiles = static_cast<Uint16>(
+							(static_cast<Uint16>(rom.m_buffer[offset]) << 8U) |
+							static_cast<Uint16>(rom.m_buffer[offset + 1])
+						);
+
+						// A practical upper bound reduces accidental decompression
+						// attempts while still allowing very large art sheets.
+						if (num_tiles == 0 || num_tiles > 0x1000)
+						{
+							++offset;
+							continue;
+						}
+
+						TilesetEntry entry =
+							rom::TileSet::LoadFromROM_SSCCompression(
+								rom,
+								static_cast<Uint32>(offset)
+							);
+
+						if (
+							!entry.tileset ||
+							entry.result.error_msg.has_value()
+						)
+						{
+							++offset;
+							continue;
+						}
+
+						const size_t expected_size =
+							static_cast<size_t>(num_tiles) *
+							rom::TileSet::s_tile_total_bytes;
+
+						// Genuine SSC art blocks decode to exactly the tile count
+						// announced by their two-byte header.
+						if (
+							entry.tileset->uncompressed_data.size() !=
+								expected_size ||
+							entry.tileset->tiles.size() != num_tiles
+						)
+						{
+							++offset;
+							continue;
+						}
+
+						std::shared_ptr<const rom::Sprite> sheet =
+							entry.tileset->CreateSpriteFromTile(0);
+
+						if (sheet)
+						{
+							std::lock_guard<std::mutex> pending_lock(
+								m_pending_sprites_mutex
+							);
+
+							m_pending_sprites.emplace_back(
+								std::make_shared<UISpriteTexture>(sheet)
+							);
+
+							{
+								std::lock_guard<std::mutex> offsets_lock(
+									ssc_offsets_mutex
+								);
+								ssc_art_offsets.insert(
+									static_cast<Uint32>(offset)
+								);
+							}
+
+							++ssc_tilesets_found;
+						}
+
+						const size_t next_offset =
+							entry.tileset->rom_data.rom_offset_end;
+
+						offset = next_offset > offset
+							? next_offset
+							: offset + 1;
+					}
+
+					ssc_scan_progress = 1.0f;
+					ssc_scan_running = false;
+				}).detach();
+			}
+			ImGui::EndDisabled();
+
+			if (ssc_scan_running)
+			{
+				ImGui::ProgressBar(ssc_scan_progress.load());
+				ImGui::TextDisabled(
+					"Scanning the ROM for SSC-compressed VDP art..."
+				);
+			}
+
+			if (ssc_tilesets_found.load() > 0)
+			{
+				ImGui::Text(
+					"SSC art blocks: %zu",
+					ssc_tilesets_found.load()
+				);
+			}
+
 			if (m_find_all_running)
 			{
 				ImGui::ProgressBar(m_find_all_progress.load());
@@ -371,9 +519,28 @@ namespace spintool
 					sprintf(path_buffer, "popup_%X02",static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
 					if (ImGui::BeginPopupContextItem(path_buffer, ImGuiPopupFlags_MouseButtonRight))
 					{
-						if (ImGui::MenuItem("Import image to this location"))
+						bool is_ssc_art = false;
 						{
-							m_owning_ui.OpenImageImporter(const_cast<rom::Sprite&>(*tex->sprite));
+							std::lock_guard<std::mutex> offsets_lock(
+								ssc_offsets_mutex
+							);
+							is_ssc_art =
+								ssc_art_offsets.find(
+									tex->sprite->rom_data.rom_offset
+								) != ssc_art_offsets.end();
+						}
+
+						if (is_ssc_art)
+						{
+							ImGui::TextDisabled(
+								"SSC compressed art (read-only)"
+							);
+						}
+						else if (ImGui::MenuItem("Import image to this location"))
+						{
+							m_owning_ui.OpenImageImporter(
+								const_cast<rom::Sprite&>(*tex->sprite)
+							);
 						}
 
 						sprintf(path_buffer, "Export image at 0x%X02", static_cast<unsigned int>(tex->sprite->rom_data.rom_offset));
