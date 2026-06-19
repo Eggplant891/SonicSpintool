@@ -29,6 +29,9 @@ namespace spintool
 		std::mutex m_pending_sprites_mutex;
 		std::atomic<bool> m_find_all_running{ false };
 		std::atomic<float> m_find_all_progress{ 0.0f };
+		std::atomic<bool> m_find_all_cancel{ false };
+		std::atomic<Uint32> m_find_all_result_count{ 0 };
+		std::atomic<Uint32> m_scan_generation{ 0 };
 		SDLTextureHandle m_random_texture;
 		int m_arbitrary_num_tiles_width = 16;
 		int m_arbitrary_num_tiles_height = 16;
@@ -36,6 +39,9 @@ namespace spintool
 		int m_arbitrary_texture_height = 128;
 
 		Uint32 m_starting_offset = 0;
+		Uint32 m_scan_start_offset = 0;
+		Uint32 m_scan_end_offset = 0x03909D;
+		int m_scan_max_results = 2000;
 		Uint32 m_selected_sprite_rom_offset = 0;
 		Uint32 m_offset = 0x14D2;
 		int m_chosen_palette = 0;
