@@ -81,6 +81,7 @@ namespace spintool
 						}
 
 						m_level->SaveToROM(m_owning_ui.GetROM());
+						m_owning_ui.GetROM().SaveROM();
 					}
 				}
 
@@ -117,15 +118,11 @@ namespace spintool
 						{
 							m_level->m_tile_layers[1].tileset->SaveToROM_SSCCompression(m_owning_ui.GetROM(), m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.foreground_tileset));
 						}
+					m_owning_ui.GetROM().SaveROM();
 					}
 				}
 
 				ImGui::EndDisabled();
-				ImGui::Separator();
-
-
-				ImGui::Checkbox("Export", &m_export_result);
-
 				ImGui::EndMenu();
 			}
 
