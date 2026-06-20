@@ -9,33 +9,65 @@
 #include "nlohmann/json.hpp"
 
 #include <thread>
+#include <array>
+#include <chrono>
+#include <optional>
 #include <algorithm>
 #include <numeric>
 #include <fstream>
 #include <iostream>
+#include <system_error>
 
 #include "serialisation/editor_serialiser.h"
 
-
 namespace spintool
 {
-	auto setup_directory = [](const std::string& dir_name)
+	namespace
+	{
+		std::filesystem::path SetupDirectory(const std::string& dir_name)
 		{
-			std::filesystem::path out_path{ std::filesystem::current_path().append(dir_name) };
-			if (std::filesystem::exists(out_path) == false)
+			std::error_code error;
+			std::filesystem::path base_path =
+				std::filesystem::current_path(error);
+
+			if (error)
 			{
-				std::filesystem::create_directory(out_path);
+				std::cerr << "Could not determine current working directory: "
+					<< error.message() << '\n';
+				base_path = std::filesystem::path{"."};
+			}
+
+			// Preserve SpinTool's original behaviour: all runtime folders are
+			// resolved from the directory used to launch the application.
+			// When SpinTool is launched from build/, this gives build/roms and
+			// build/rom_export, exactly like the original code.
+			const std::filesystem::path out_path = base_path / dir_name;
+
+			error.clear();
+			std::filesystem::create_directories(out_path, error);
+			if (error)
+			{
+				std::cerr << "Could not create directory "
+					<< out_path << ": " << error.message() << '\n';
 			}
 
 			return out_path;
-		};
+		}
 
-	std::filesystem::path EditorUI::s_rom_load_path = setup_directory("roms");
-	std::filesystem::path EditorUI::s_sprite_export_path = setup_directory("sprite_export");
-	std::filesystem::path EditorUI::s_rom_export_path = setup_directory("rom_export");
-	std::filesystem::path EditorUI::s_projects_path = setup_directory("projects");
-	std::filesystem::path EditorUI::s_metadata_path = setup_directory("metadata");
-	std::filesystem::path EditorUI::s_config_path = setup_directory("config");
+		bool CanOpenReferenceROM(const std::filesystem::path& path)
+		{
+			std::ifstream stream(path, std::ios::binary);
+			return stream.is_open();
+		}
+
+	}
+
+	std::filesystem::path EditorUI::s_rom_load_path = SetupDirectory("roms");
+	std::filesystem::path EditorUI::s_sprite_export_path = SetupDirectory("sprite_export");
+	std::filesystem::path EditorUI::s_rom_export_path = SetupDirectory("rom_export");
+	std::filesystem::path EditorUI::s_projects_path = SetupDirectory("projects");
+	std::filesystem::path EditorUI::s_metadata_path = SetupDirectory("metadata");
+	std::filesystem::path EditorUI::s_config_path = SetupDirectory("config");
 
 	EditorUI::EditorUI()
 		: m_sprite_navigator(*this)
@@ -51,12 +83,14 @@ namespace spintool
 
 	void EditorUI::SaveROMConfig() const
 	{
-		std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(s_config_path, "roms.json");
+		std::unique_ptr<Serialiser> serialiser =
+			Serialiser::OpenFile(s_config_path, "roms.json");
 		nlohmann::json& config_json_writer = serialiser->Writer();
 
 		for (const rom::ROMMetadata& metadata : m_metadata.rom_metadatas)
 		{
-			config_json_writer[metadata.version_id] = metadata.location_on_disk.string();
+			config_json_writer[metadata.version_id] =
+				metadata.location_on_disk.string();
 		}
 	}
 
@@ -76,23 +110,30 @@ namespace spintool
 		}
 		catch (const std::exception& error)
 		{
-			std::cerr << "Could not parse " << config_path << ": " << error.what() << '\n';
+			std::cerr << "Could not parse " << config_path
+				<< ": " << error.what() << '\n';
 			std::error_code ec;
-			std::filesystem::rename(config_path, config_path.string() + ".invalid", ec);
+			std::filesystem::rename(
+				config_path,
+				config_path.string() + ".invalid",
+				ec
+			);
 			SaveROMConfig();
 			return;
 		}
 
 		if (!deserialiser)
 		{
-			std::cerr << "Could not open ROM configuration: " << config_path << '\n';
+			std::cerr << "Could not open ROM configuration: "
+				<< config_path << '\n';
 			return;
 		}
 
 		const nlohmann::json& config_json_reader = deserialiser->Reader();
 		if (!config_json_reader.is_object())
 		{
-			std::cerr << "ROM configuration is not a JSON object: " << config_path << '\n';
+			std::cerr << "ROM configuration is not a JSON object: "
+				<< config_path << '\n';
 			return;
 		}
 
@@ -103,9 +144,7 @@ namespace spintool
 				continue;
 			}
 
-			const auto entry =
-				config_json_reader.find(rom_metadata.version_id);
-
+			const auto entry = config_json_reader.find(rom_metadata.version_id);
 			if (entry == config_json_reader.end() || entry->is_null())
 			{
 				continue;
@@ -119,13 +158,10 @@ namespace spintool
 					<< ": expected a string, got "
 					<< entry->type_name()
 					<< '\n';
-
 				continue;
 			}
 
-			const std::string rom_path =
-				entry->get<std::string>();
-
+			const std::string rom_path = entry->get<std::string>();
 			if (rom_path.empty())
 			{
 				continue;
@@ -133,9 +169,7 @@ namespace spintool
 
 			try
 			{
-				AttemptLoadROM(
-					std::filesystem::path{rom_path}
-				);
+				AttemptLoadROM(std::filesystem::path{rom_path});
 			}
 			catch (const std::exception& error)
 			{
@@ -149,21 +183,24 @@ namespace spintool
 		}
 	}
 
-void EditorUI::SaveUIConfig() const
+	void EditorUI::SaveUIConfig() const
 	{
 		try
 		{
-			std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(s_config_path, "ui.json");
+			std::unique_ptr<Serialiser> serialiser =
+				Serialiser::OpenFile(s_config_path, "ui.json");
 			nlohmann::json& writer = serialiser->Writer();
-			writer["font_scale_percent"] = static_cast<int>(m_font_scale * 100.0f + 0.5f);
+			writer["font_scale_percent"] =
+				static_cast<int>(m_font_scale * 100.0f + 0.5f);
 		}
 		catch (const std::exception& error)
 		{
-			std::cerr << "Could not save UI configuration: " << error.what() << '\n';
+			std::cerr << "Could not save UI configuration: "
+				<< error.what() << '\n';
 		}
 	}
 
-void EditorUI::LoadUIConfig()
+	void EditorUI::LoadUIConfig()
 	{
 		const std::filesystem::path config_path = s_config_path / "ui.json";
 		m_font_scale = 1.0f;
@@ -172,21 +209,24 @@ void EditorUI::LoadUIConfig()
 		{
 			try
 			{
-				std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(config_path);
+				std::unique_ptr<Deserialiser> deserialiser =
+					Deserialiser::OpenFile(config_path);
 				if (deserialiser)
 				{
 					const nlohmann::json& reader = deserialiser->Reader();
 					auto entry = reader.find("font_scale_percent");
 					if (entry != reader.end() && entry->is_number_integer())
 					{
-						const int percent = std::clamp(entry->get<int>(), 50, 250);
+						const int percent =
+							std::clamp(entry->get<int>(), 50, 250);
 						m_font_scale = static_cast<float>(percent) / 100.0f;
 					}
 				}
 			}
 			catch (const std::exception& error)
 			{
-				std::cerr << "Could not load UI configuration: " << error.what() << '\n';
+				std::cerr << "Could not load UI configuration: "
+					<< error.what() << '\n';
 			}
 		}
 
@@ -195,22 +235,120 @@ void EditorUI::LoadUIConfig()
 
 	bool EditorUI::AttemptLoadROM(const std::filesystem::path& rom_path)
 	{
-		if (m_rom.LoadROMFromPath(rom_path))
+		if (rom_path.empty())
 		{
-			m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
-			m_current_rom_metadata->location_on_disk = rom_path;
-			m_palettes = m_rom.LoadPalettes(48);
-			//m_palettes = m_rom.LoadPalettes(8);
-			return true;
+			std::cerr << "Cannot load an empty ROM path\n";
+			return false;
 		}
 
-		return false;
+		std::error_code filesystem_error;
+		std::filesystem::create_directories(
+			s_rom_load_path,
+			filesystem_error
+		);
+		if (filesystem_error)
+		{
+			std::cerr << "Could not create ROM reference directory "
+				<< s_rom_load_path << ": "
+				<< filesystem_error.message() << '\n';
+			return false;
+		}
+
+		filesystem_error.clear();
+		std::filesystem::create_directories(
+			s_rom_export_path,
+			filesystem_error
+		);
+		if (filesystem_error)
+		{
+			std::cerr << "Could not create ROM export directory "
+				<< s_rom_export_path << ": "
+				<< filesystem_error.message() << '\n';
+			return false;
+		}
+
+		// The immutable reference is always the file with the selected filename
+		// inside the runtime roms/ directory. For a normal build-tree launch,
+		// this is <project>/build/roms.
+		const std::filesystem::path reference_path =
+			s_rom_load_path / rom_path.filename();
+
+		if (!CanOpenReferenceROM(reference_path))
+		{
+			std::cerr << "Reference ROM does not exist or cannot be read in roms/: "
+				<< reference_path << '\n';
+			m_reference_rom_path.clear();
+			m_working_rom_path.clear();
+			return false;
+		}
+
+		const std::filesystem::path working_path =
+			s_rom_export_path / reference_path.filename();
+
+		// Do not pre-test working_path with exists(): on some Linux/libstdc++
+		// combinations a missing destination can leave ENOENT in error_code and
+		// was incorrectly treated as a fatal inspection error. copy_file with
+		// skip_existing handles both cases safely:
+		//   - destination missing  -> copy is created;
+		//   - destination present  -> existing working ROM is kept untouched.
+		filesystem_error.clear();
+		const bool working_rom_created = std::filesystem::copy_file(
+			reference_path,
+			working_path,
+			std::filesystem::copy_options::skip_existing,
+			filesystem_error
+		);
+
+		if (filesystem_error)
+		{
+			std::cerr << "Could not prepare working ROM "
+				<< working_path << " from "
+				<< reference_path << ": "
+				<< filesystem_error.message() << '\n';
+			return false;
+		}
+
+		if (working_rom_created)
+		{
+			std::cout << "Created working ROM: "
+				<< working_path << '\n';
+		}
+		else
+		{
+			std::cout << "Using existing working ROM: "
+				<< working_path << '\n';
+		}
+
+		if (!m_rom.LoadROMFromPath(working_path))
+		{
+			std::cerr << "Could not open working ROM: "
+				<< working_path << '\n';
+			return false;
+		}
+
+		m_reference_rom_path = reference_path;
+		m_working_rom_path = working_path;
+
+		m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
+		if (m_current_rom_metadata)
+		{
+			// Keep the immutable file in config. At the next launch,
+			// AttemptLoadROM() reopens the matching rom_export copy.
+			m_current_rom_metadata->location_on_disk = reference_path;
+		}
+
+		m_palettes = m_rom.LoadPalettes(48);
+
+		std::cout << "Reference ROM: " << m_reference_rom_path << '\n';
+		std::cout << "Working ROM:   " << m_working_rom_path << '\n';
+		return true;
 	}
 
 	void EditorUI::Initialise()
 	{
 		m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
-		if (m_current_rom_metadata && !m_current_rom_metadata->location_on_disk.empty())
+		if (m_current_rom_metadata &&
+			!m_current_rom_metadata->location_on_disk.empty())
 		{
 			AttemptLoadROM(m_current_rom_metadata->location_on_disk);
 		}
@@ -225,7 +363,7 @@ void EditorUI::LoadUIConfig()
 		{
 			if (IsROMLoaded())
 			{
-				if (ImGui::BeginMenu("File"))
+				/*if (ImGui::BeginMenu("File"))
 				{
 					if (ImGui::MenuItem("New Project..."))
 					{
@@ -245,21 +383,47 @@ void EditorUI::LoadUIConfig()
 
 					if (ImGui::MenuItem("Export Metadata"))
 					{
-						auto serialiser = Serialiser::OpenFile(s_metadata_path, "metadata.json");
+						auto serialiser =
+							Serialiser::OpenFile(s_metadata_path, "metadata.json");
 						auto& writer = serialiser->Writer();
 						m_current_rom_metadata->Serialise(writer);
 					}
 					ImGui::EndMenu();
-				}
+				}*/
+
 				if (ImGui::BeginMenu("Tools"))
 				{
-					ImGui::MenuItem("Sprite Navigator", nullptr, &m_sprite_navigator.m_visible);
-					ImGui::MenuItem("Animation Navigator", nullptr, &m_animation_navigator.m_visible);
-					ImGui::MenuItem("Tileset Navigator", nullptr, &m_tileset_navigator.m_visible);
-					ImGui::MenuItem("Tile Layout Viewer", nullptr, &m_tile_layout_viewer.m_visible);
-					ImGui::MenuItem("Palettes", nullptr, &m_palette_viewer.m_visible);
-					ImGui::Separator();
-					ImGui::MenuItem("Sprite Importer", nullptr, &m_sprite_importer.m_visible);
+					ImGui::MenuItem(
+						"Sprite Navigator",
+						nullptr,
+						&m_sprite_navigator.m_visible
+					);
+					ImGui::MenuItem(
+						"Animation Navigator",
+						nullptr,
+						&m_animation_navigator.m_visible
+					);
+					ImGui::MenuItem(
+						"Tileset Navigator",
+						nullptr,
+						&m_tileset_navigator.m_visible
+					);
+					ImGui::MenuItem(
+						"Tile Layout Viewer",
+						nullptr,
+						&m_tile_layout_viewer.m_visible
+					);
+					ImGui::MenuItem(
+						"Palettes",
+						nullptr,
+						&m_palette_viewer.m_visible
+					);
+					/*ImGui::Separator();
+					ImGui::MenuItem(
+						"Sprite Importer",
+						nullptr,
+						&m_sprite_importer.m_visible
+					);*/
 					ImGui::EndMenu();
 				}
 				ImGui::SameLine();
@@ -269,10 +433,19 @@ void EditorUI::LoadUIConfig()
 			{
 				ImGui::TextUnformatted("Font size");
 				ImGui::SetNextItemWidth(180.0f);
-				int font_percent = static_cast<int>(m_font_scale * 100.0f + 0.5f);
-				if (ImGui::SliderInt("##font_scale", &font_percent, 50, 250, "%d%%", ImGuiSliderFlags_AlwaysClamp))
+				int font_percent =
+					static_cast<int>(m_font_scale * 100.0f + 0.5f);
+				if (ImGui::SliderInt(
+					"##font_scale",
+					&font_percent,
+					50,
+					250,
+					"%d%%",
+					ImGuiSliderFlags_AlwaysClamp
+				))
 				{
-					m_font_scale = static_cast<float>(font_percent) / 100.0f;
+					m_font_scale =
+						static_cast<float>(font_percent) / 100.0f;
 					ImGui::GetIO().FontGlobalScale = m_font_scale;
 				}
 				if (ImGui::IsItemDeactivatedAfterEdit())
@@ -291,9 +464,14 @@ void EditorUI::LoadUIConfig()
 			ImGui::SameLine();
 
 			ImGui::BeginDisabled();
-			if (m_current_rom_metadata && !m_current_rom_metadata->location_on_disk.empty())
+			if (m_current_rom_metadata &&
+				!m_current_rom_metadata->location_on_disk.empty())
 			{
-				ImGui::Text("%s", m_current_rom_metadata->location_on_disk.filename().string().c_str());
+				ImGui::Text(
+					"%s",
+					m_current_rom_metadata->location_on_disk
+						.filename().string().c_str()
+				);
 			}
 			else
 			{
@@ -306,28 +484,45 @@ void EditorUI::LoadUIConfig()
 				open_rom_popup = true;
 			}
 
-			static std::array<double, 32> rolling_frame_times;
+			static std::array<double, 32> rolling_frame_times{};
 			static size_t current_frame = 0;
+			static std::chrono::time_point previous_poll_time =
+				std::chrono::steady_clock::now();
+			const std::chrono::time_point current_poll_time =
+				std::chrono::steady_clock::now();
+			const std::chrono::duration frame_time =
+				current_poll_time - previous_poll_time;
 
-			static std::chrono::time_point previous_poll_time = std::chrono::steady_clock::now();
-			const std::chrono::time_point current_poll_time = std::chrono::steady_clock::now();
-			const std::chrono::duration frame_time = current_poll_time - previous_poll_time;
+			rolling_frame_times[current_frame] = static_cast<double>(
+				std::chrono::duration_cast<std::chrono::nanoseconds>(frame_time)
+					.count()
+			);
 
-			rolling_frame_times[current_frame] = static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(frame_time).count());
-			
-			const double rolling_average = std::accumulate(std::begin(rolling_frame_times), std::end(rolling_frame_times), 0.0,
-				[](double frame_time, double rolling_average_in)
+			const double rolling_average = std::accumulate(
+				std::begin(rolling_frame_times),
+				std::end(rolling_frame_times),
+				0.0,
+				[](double frame_time_value, double rolling_average_in)
 				{
-					return frame_time + rolling_average_in;
-				}) / static_cast<double>(std::size(rolling_frame_times));
-			current_frame = (current_frame + 1) % std::size(rolling_frame_times);
+					return frame_time_value + rolling_average_in;
+				}
+			) / static_cast<double>(std::size(rolling_frame_times));
 
+			current_frame =
+				(current_frame + 1) % std::size(rolling_frame_times);
 			previous_poll_time = current_poll_time;
 
-			const float content_region_remaining = ImGui::GetContentRegionAvail().x;
-			const float offset = content_region_remaining - ImGui::CalcTextSize("FPS 9999").x;
+			const float content_region_remaining =
+				ImGui::GetContentRegionAvail().x;
+			const float offset =
+				content_region_remaining - ImGui::CalcTextSize("FPS 9999").x;
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
-			ImGui::Text("FPS %.0f", static_cast<double>(std::chrono::nanoseconds(std::chrono::seconds(1)).count()) / static_cast<double>(rolling_average));
+			ImGui::Text(
+				"FPS %.0f",
+				static_cast<double>(
+					std::chrono::nanoseconds(std::chrono::seconds(1)).count()
+				) / rolling_average
+			);
 
 			menu_bar_height = ImGui::GetWindowHeight();
 			ImGui::EndMainMenuBar();
@@ -339,10 +534,13 @@ void EditorUI::LoadUIConfig()
 		settings.target_directory = GetROMLoadPath();
 		settings.file_extension_filter = { ".bin", ".md" };
 
-		const std::filesystem::path current_rom_path = m_current_rom_metadata
-			? m_current_rom_metadata->location_on_disk
-			: std::filesystem::path{};
-		std::optional<std::filesystem::path> selected_path = DrawFileSelector(settings, *this, current_rom_path);
+		const std::filesystem::path current_rom_path =
+			m_current_rom_metadata
+				? m_current_rom_metadata->location_on_disk
+				: std::filesystem::path{};
+
+		std::optional<std::filesystem::path> selected_path =
+			DrawFileSelector(settings, *this, current_rom_path);
 
 		settings.close_popup = false;
 		if (selected_path && AttemptLoadROM(selected_path.value()))
@@ -351,29 +549,38 @@ void EditorUI::LoadUIConfig()
 			settings.close_popup = true;
 		}
 
-		//if (SDL_Texture* viewport = Renderer::GetViewportTexture())
 		{
-			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0,0 });
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0,0 });
+			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, { 0, 0 });
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, { 0, 0 });
 
-			ImVec2 dim{ static_cast<float>(Renderer::s_window_width), static_cast<float>(Renderer::s_window_height) - menu_bar_height };
+			ImVec2 dim{
+				static_cast<float>(Renderer::s_window_width),
+				static_cast<float>(Renderer::s_window_height) - menu_bar_height
+			};
 
 			ImGui::SetNextWindowSize(dim, ImGuiCond_Always);
 			ImGui::SetNextWindowPos({ 0, menu_bar_height }, ImGuiCond_Always);
 
-			if (ImGui::Begin("main_viewport", nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoNavInputs))
+			if (ImGui::Begin(
+				"main_viewport",
+				nullptr,
+				ImGuiWindowFlags_NoSavedSettings |
+					ImGuiWindowFlags_NoDecoration |
+					ImGuiWindowFlags_NoBackground |
+					ImGuiWindowFlags_NoInputs |
+					ImGuiWindowFlags_NoFocusOnAppearing |
+					ImGuiWindowFlags_NoBringToFrontOnFocus |
+					ImGuiWindowFlags_NoNavFocus |
+					ImGuiWindowFlags_NoNavInputs
+			))
 			{
 				ImGui::Dummy(dim);
 			}
 			ImGui::End();
 			ImGui::PopStyleVar(2);
 		}
-		
+
 		// Do not catch exceptions around ImGui window rendering here.
-		// An exception thrown between ImGui::Begin()/BeginChild() and the
-		// matching End()/EndChild() must not be swallowed, otherwise ImGui's
-		// internal window stack remains unbalanced and EndFrame() aborts with
-		// a misleading "Mismatched Begin/End" assertion.
 		m_sprite_importer.Update();
 		m_sprite_navigator.Update();
 		m_tileset_navigator.Update();
@@ -381,18 +588,25 @@ void EditorUI::LoadUIConfig()
 		m_animation_navigator.Update();
 		m_palette_viewer.Update();
 
-		for (std::unique_ptr<EditorSpriteViewer>& sprite_window : m_sprite_viewer_windows)
+		for (std::unique_ptr<EditorSpriteViewer>& sprite_window :
+			m_sprite_viewer_windows)
 		{
 			sprite_window->Update();
 		}
 
-		auto new_end_it = std::remove_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
+		auto new_end_it = std::remove_if(
+			std::begin(m_sprite_viewer_windows),
+			std::end(m_sprite_viewer_windows),
 			[](const std::unique_ptr<EditorSpriteViewer>& sprite_window)
 			{
-				return sprite_window->IsOpen() == false;
-			});
+				return !sprite_window->IsOpen();
+			}
+		);
 
-		m_sprite_viewer_windows.erase(new_end_it, std::end(m_sprite_viewer_windows));
+		m_sprite_viewer_windows.erase(
+			new_end_it,
+			std::end(m_sprite_viewer_windows)
+		);
 	}
 
 	void EditorUI::Shutdown()
@@ -407,7 +621,7 @@ void EditorUI::LoadUIConfig()
 
 	bool EditorUI::IsROMLoaded() const
 	{
-		return m_rom.m_buffer.empty() == false;
+		return !m_rom.m_buffer.empty();
 	}
 
 	rom::SpinballROM& EditorUI::GetROM()
@@ -419,7 +633,7 @@ void EditorUI::LoadUIConfig()
 	{
 		return s_rom_load_path;
 	}
-	
+
 	std::filesystem::path EditorUI::GetROMExportPath()
 	{
 		return s_rom_export_path;
@@ -445,27 +659,46 @@ void EditorUI::LoadUIConfig()
 		return s_config_path;
 	}
 
+	std::filesystem::path EditorUI::GetReferenceROMPath() const
+	{
+		return m_reference_rom_path;
+	}
+
+	std::filesystem::path EditorUI::GetWorkingROMPath() const
+	{
+		return m_working_rom_path;
+	}
+
 	const std::vector<TilesetEntry>& EditorUI::GetTilesets() const
 	{
 		return m_tileset_navigator.m_tilesets;
 	}
 
-	const std::vector<std::shared_ptr<rom::Palette>>& EditorUI::GetPalettes() const
+	const std::vector<std::shared_ptr<rom::Palette>>&
+	EditorUI::GetPalettes() const
 	{
 		return m_palettes;
 	}
 
-	void EditorUI::OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite)
+	void EditorUI::OpenSpriteViewer(
+		std::shared_ptr<const rom::Sprite>& sprite
+	)
 	{
-		const auto selected_sprite_window_it = std::find_if(std::begin(m_sprite_viewer_windows), std::end(m_sprite_viewer_windows),
+		const auto selected_sprite_window_it = std::find_if(
+			std::begin(m_sprite_viewer_windows),
+			std::end(m_sprite_viewer_windows),
 			[&sprite](const std::unique_ptr<EditorSpriteViewer>& sprite_viewer)
 			{
-				return sprite_viewer->GetOffset() == sprite->rom_data.rom_offset;
-			});
+				return sprite_viewer->GetOffset() ==
+					sprite->rom_data.rom_offset;
+			}
+		);
 
 		if (selected_sprite_window_it == std::end(m_sprite_viewer_windows))
 		{
-			auto& new_viewer = m_sprite_viewer_windows.emplace_back(std::make_unique<EditorSpriteViewer>(*this, sprite));
+			auto& new_viewer = m_sprite_viewer_windows.emplace_back(
+				std::make_unique<EditorSpriteViewer>(*this, sprite)
+			);
 			new_viewer->m_visible = true;
 		}
 	}
@@ -477,11 +710,15 @@ void EditorUI::LoadUIConfig()
 		m_sprite_importer.SetAvailablePalettes(m_palettes);
 	}
 
-	void EditorUI::OpenImageImporter(rom::TileSet& tileset, const rom::PaletteSet& available_palettes)
+	void EditorUI::OpenImageImporter(
+		rom::TileSet& tileset,
+		const rom::PaletteSet& available_palettes
+	)
 	{
 		m_sprite_importer.m_visible = true;
 		m_sprite_importer.SetTarget(tileset);
-		m_sprite_importer.SetAvailablePalettes(available_palettes.palette_lines);
+		m_sprite_importer.SetAvailablePalettes(
+			available_palettes.palette_lines
+		);
 	}
-
 }
