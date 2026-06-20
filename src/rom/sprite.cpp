@@ -10,7 +10,7 @@ namespace spintool::rom
 	{
 		BoundingBox bounds{ std::numeric_limits<int>::max(), std::numeric_limits<int>::max(), std::numeric_limits<int>::min(), std::numeric_limits<int>::min() };
 
-		for (const std::shared_ptr<const rom::SpriteTile>& sprite_tile : sprite_tiles)
+		for (const auto& sprite_tile : sprite_tiles)
 		{
 			bounds.min.x = std::min<int>(sprite_tile->x_offset, bounds.min.x);
 			bounds.max.x = std::max<int>(sprite_tile->x_offset + sprite_tile->x_size, bounds.max.x);
@@ -92,7 +92,7 @@ namespace spintool::rom
 
 		new_sprite->sprite_tiles.resize(new_sprite->num_tiles);
 
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile :
+		for (auto& sprite_tile :
 			new_sprite->sprite_tiles)
 		{
 			sprite_tile = std::make_shared<rom::SpriteTile>();
@@ -105,7 +105,7 @@ namespace spintool::rom
 		if (std::any_of(
 			std::begin(new_sprite->sprite_tiles),
 			std::end(new_sprite->sprite_tiles),
-			[](const std::shared_ptr<rom::SpriteTile>& tile)
+			[](const auto& tile)
 			{
 				return
 					tile->x_size == 0 ||
@@ -119,7 +119,7 @@ namespace spintool::rom
 		}
 
 		Uint32 calculated_vdp_tiles = 0;
-		for (const std::shared_ptr<rom::SpriteTile>& sprite_tile :
+		for (const auto& sprite_tile :
 			new_sprite->sprite_tiles)
 		{
 			calculated_vdp_tiles +=
@@ -135,7 +135,7 @@ namespace spintool::rom
 			return nullptr;
 		}
 
-		for (std::shared_ptr<rom::SpriteTile>& sprite_tile :
+		for (auto& sprite_tile :
 			new_sprite->sprite_tiles)
 		{
 			const size_t tile_data_size =
@@ -179,9 +179,18 @@ namespace spintool::rom
 		SDL_ClearSurface(surface, 0, 0, 0, 0);
 		if (bounds.Width() > 0 && bounds.Height() > 0)
 		{
-			for (const std::shared_ptr<rom::SpriteTile>& sprite_tile : sprite_tiles)
+			// The first mapping piece has the highest sprite-to-sprite priority on
+			// Mega Drive. Draw in reverse so earlier pieces remain in front.
+			for (auto iterator = sprite_tiles.rbegin();
+				 iterator != sprite_tiles.rend();
+				 ++iterator)
 			{
-				sprite_tile->BlitPixelDataToSurface(surface, bounds, sprite_tile->pixel_data);
+				const auto& sprite_tile = *iterator;
+				sprite_tile->BlitPixelDataToSurface(
+					surface,
+					bounds,
+					sprite_tile->pixel_data
+				);
 			}
 		}
 		Renderer::s_sdl_update_mutex.unlock();
