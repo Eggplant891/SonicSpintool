@@ -39,6 +39,7 @@ add_executable(spintool
         src/rom/colour.cpp
         src/rom/level.cpp
         src/rom/lzss_decompressor.cpp
+        src/rom/bonus_stage_decoder.cpp
         src/rom/palette.cpp
         src/rom/rom_asset_definitions.cpp
         src/rom/rom_data.cpp
