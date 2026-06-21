@@ -1,5 +1,7 @@
 #include "rom/bonus_stage_decoder.h"
 
+#include "rom/compressed2_optimizer.h"
+
 #include "rom/tile.h"
 #include "rom/spinball_rom.h"
 #include "rom/sprite.h"
@@ -379,6 +381,7 @@ namespace spintool::rom
 			std::size_t original_capacity = 0;
 			std::size_t current_compressed_size = 0;
 			std::vector<Uint8> data;
+			std::vector<Uint8> original_compressed;
 			bool touched = false;
 		};
 
@@ -387,279 +390,6 @@ namespace spintool::rom
 			std::array<Uint32, 6> operand_offsets{};
 			std::array<Uint32, 6> art_offsets{};
 		};
-
-		class LsbBitWriter
-		{
-		public:
-			void Write(Uint16 value, unsigned int bit_count)
-			{
-				m_bit_buffer |= static_cast<std::uint64_t>(value) << m_buffered_bits;
-				m_buffered_bits += bit_count;
-				while (m_buffered_bits >= 8U)
-				{
-					m_bytes.emplace_back(static_cast<Uint8>(m_bit_buffer & 0xFFU));
-					m_bit_buffer >>= 8U;
-					m_buffered_bits -= 8U;
-				}
-			}
-
-			std::vector<Uint8> Finish()
-			{
-				if (m_buffered_bits != 0U)
-				{
-					m_bytes.emplace_back(static_cast<Uint8>(m_bit_buffer & 0xFFU));
-				}
-				return std::move(m_bytes);
-			}
-
-		private:
-			std::vector<Uint8> m_bytes;
-			std::uint64_t m_bit_buffer = 0;
-			unsigned int m_buffered_bits = 0;
-		};
-
-		// Exact LZW encoder for the Compressed2 stream consumed by
-		// DoLoadCompressed2Tiles. The decoder uses a "late change" code-width
-		// transition: the code which fills the current table is still read using
-		// the old width, then the following code uses the new width. Keep a
-		// separate decoder-side state so the emitted 9/10/11-bit widths match the
-		// 68000 routine exactly.
-		std::vector<Uint8> EncodeCompressed2LzwStream(
-			const std::vector<Uint8>& source
-		)
-		{
-			constexpr Uint16 clear_code = 0x0100;
-			constexpr Uint16 end_code = 0x0101;
-			constexpr Uint16 first_dictionary_code = 0x0102;
-			constexpr Uint16 maximum_dictionary_code = 0x07FF;
-
-			const Uint8 fallback_zero = 0;
-			const Uint8* input = source.empty() ? &fallback_zero : source.data();
-			const std::size_t input_size = source.empty() ? 1U : source.size();
-
-			LsbBitWriter bit_writer;
-			std::unordered_map<Uint32, Uint16> transitions;
-			transitions.reserve(2048U);
-
-			Uint16 next_dictionary_code = first_dictionary_code;
-			unsigned int stream_width = 9U;
-			Uint16 decoder_next_code = first_dictionary_code;
-			Uint16 decoder_width_threshold = 0x0200;
-			bool first_data_code_after_clear = true;
-
-			auto reset_encoder_dictionary = [&]()
-			{
-				transitions.clear();
-				next_dictionary_code = first_dictionary_code;
-			};
-			auto reset_stream_state = [&]()
-			{
-				stream_width = 9U;
-				decoder_next_code = first_dictionary_code;
-				decoder_width_threshold = 0x0200;
-				first_data_code_after_clear = true;
-			};
-			auto write_clear = [&]()
-			{
-				// CLEAR itself is encoded using the width active before the reset.
-				bit_writer.Write(clear_code, stream_width);
-				reset_encoder_dictionary();
-				reset_stream_state();
-			};
-			auto write_data_code = [&](Uint16 code)
-			{
-				bit_writer.Write(code, stream_width);
-				if (first_data_code_after_clear)
-				{
-					// DoLoadCompressed2Tiles reads the first code after CLEAR through
-					// a special literal path and does not add a dictionary entry.
-					first_data_code_after_clear = false;
-					return;
-				}
-
-				++decoder_next_code;
-				if (decoder_next_code >= decoder_width_threshold && stream_width < 11U)
-				{
-					++stream_width;
-					decoder_width_threshold = static_cast<Uint16>(
-						decoder_width_threshold << 1U
-					);
-				}
-			};
-
-			write_clear();
-			Uint16 current_code = input[0];
-			for (std::size_t position = 1; position < input_size; ++position)
-			{
-				const Uint8 next_byte = input[position];
-				const Uint32 transition_key =
-					(static_cast<Uint32>(current_code) << 8U) |
-					static_cast<Uint32>(next_byte);
-				const auto found = transitions.find(transition_key);
-				if (found != transitions.end())
-				{
-					current_code = found->second;
-					continue;
-				}
-
-				write_data_code(current_code);
-				if (next_dictionary_code <= maximum_dictionary_code)
-				{
-					transitions.emplace(transition_key, next_dictionary_code);
-					++next_dictionary_code;
-				}
-				else
-				{
-					// The 11-bit table is full. Reset before any code greater than
-					// $7FF could be required by the decoder.
-					write_clear();
-				}
-				current_code = next_byte;
-			}
-
-			write_data_code(current_code);
-			bit_writer.Write(end_code, stream_width);
-			return bit_writer.Finish();
-		}
-
-		bool ReadCompressed2Code(
-			const std::vector<Uint8>& input,
-			std::size_t& bit_position,
-			unsigned int width,
-			Uint16& code
-		)
-		{
-			const std::size_t byte_position = bit_position / 8U;
-			if (byte_position > input.size() || input.size() - byte_position < 3U)
-			{
-				return false;
-			}
-			const Uint32 window =
-				static_cast<Uint32>(input[byte_position]) |
-				(static_cast<Uint32>(input[byte_position + 1U]) << 8U) |
-				(static_cast<Uint32>(input[byte_position + 2U]) << 16U);
-			const Uint32 mask = (1U << width) - 1U;
-			code = static_cast<Uint16>(
-				(window >> (bit_position & 7U)) & mask
-			);
-			bit_position += width;
-			return true;
-		}
-
-		// Independent validator for the exact token rules used by
-		// DoLoadCompressed2Tiles. It does not call SpinTool's normal LZSS
-		// decoder, so a matching result is not a circular self-test.
-		bool DecodeCompressed2Reference(
-			const std::vector<Uint8>& compressed,
-			std::vector<Uint8>& output,
-			std::string& error
-		)
-		{
-			constexpr Uint16 clear_code = 0x0100;
-			constexpr Uint16 end_code = 0x0101;
-			constexpr Uint16 first_dictionary_code = 0x0102;
-			constexpr Uint16 maximum_code = 0x07FF;
-
-			std::array<std::vector<Uint8>, maximum_code + 1U> dictionary;
-			auto reset_dictionary = [&dictionary]()
-			{
-				for (std::vector<Uint8>& entry : dictionary)
-				{
-					entry.clear();
-				}
-				for (Uint16 value = 0; value < 0x100; ++value)
-				{
-					dictionary[value].push_back(static_cast<Uint8>(value));
-				}
-			};
-
-			output.clear();
-			reset_dictionary();
-			std::size_t bit_position = 0;
-			unsigned int width = 9;
-			Uint16 next_code = first_dictionary_code;
-			Uint16 next_width_threshold = 0x0200;
-			std::vector<Uint8> previous;
-			bool have_previous = false;
-			std::size_t token_count = 0;
-
-			while (++token_count <= 1000000U)
-			{
-				Uint16 code = 0;
-				if (!ReadCompressed2Code(compressed, bit_position, width, code))
-				{
-					error = "Unexpected end of Compressed2 stream";
-					return false;
-				}
-				if (code == end_code)
-				{
-					return true;
-				}
-				if (code == clear_code)
-				{
-					reset_dictionary();
-					width = 9;
-					next_code = first_dictionary_code;
-					next_width_threshold = 0x0200;
-					have_previous = false;
-
-					if (!ReadCompressed2Code(compressed, bit_position, width, code))
-					{
-						error = "Compressed2 CLEAR token has no following literal";
-						return false;
-					}
-					if (code == end_code)
-					{
-						return true;
-					}
-					if (code > 0xFFU)
-					{
-						error = "Compressed2 CLEAR token is not followed by a literal";
-						return false;
-					}
-					previous.assign(1U, static_cast<Uint8>(code));
-					output.emplace_back(static_cast<Uint8>(code));
-					have_previous = true;
-					continue;
-				}
-
-				std::vector<Uint8> current;
-				if (code <= maximum_code && !dictionary[code].empty())
-				{
-					current = dictionary[code];
-				}
-				else if (have_previous && code == next_code)
-				{
-					current = previous;
-					current.emplace_back(previous.front());
-				}
-				else
-				{
-					error = "Invalid Compressed2 dictionary code";
-					return false;
-				}
-
-				output.insert(output.end(), current.begin(), current.end());
-				if (have_previous && next_code <= maximum_code)
-				{
-					dictionary[next_code] = previous;
-					dictionary[next_code].emplace_back(current.front());
-				}
-				++next_code;
-				if (next_code >= next_width_threshold && width < 11U)
-				{
-					++width;
-					next_width_threshold = static_cast<Uint16>(
-						next_width_threshold << 1U
-					);
-				}
-				previous = std::move(current);
-				have_previous = true;
-			}
-
-			error = "Compressed2 validation exceeded the token limit";
-			return false;
-		}
 
 		bool CanRead(const std::vector<Uint8>& data, Uint32 offset, std::size_t count)
 		{
@@ -830,12 +560,53 @@ namespace spintool::rom
 				return false;
 			}
 
+			std::vector<Uint8> measured_output;
+			std::size_t reference_stream_size = 0U;
+			if (!Compressed2Optimizer::Decode(
+				reference_rom.m_buffer,
+				reference_rom_offset,
+				measured_output,
+				error,
+				&reference_stream_size,
+				nullptr
+			) || measured_output != reference_entry.tileset->uncompressed_data)
+			{
+				error = "Could not measure the exact original Compressed2 stream at " +
+					HexOffset(reference_rom_offset) + ": " + error;
+				return false;
+			}
+
+			std::size_t current_stream_size = 0U;
+			if (!Compressed2Optimizer::Decode(
+				rom.m_buffer,
+				rom_offset,
+				measured_output,
+				error,
+				&current_stream_size,
+				nullptr
+			) || measured_output != entry.tileset->uncompressed_data)
+			{
+				error = "Could not measure the exact working Compressed2 stream at " +
+					HexOffset(rom_offset) + ": " + error;
+				return false;
+			}
+			if (reference_rom_offset > reference_rom.m_buffer.size() ||
+				reference_stream_size > reference_rom.m_buffer.size() - reference_rom_offset)
+			{
+				error = "Original Compressed2 stream is outside the reference ROM";
+				return false;
+			}
+
 			block.rom_offset = rom_offset;
 			block.pointer_operand_offset = pointer_operand_offset;
 			block.vram_offset = vram_offset;
-			block.original_capacity = reference_entry.tileset->compressed_size;
-			block.current_compressed_size = entry.tileset->compressed_size;
+			block.original_capacity = reference_stream_size;
+			block.current_compressed_size = current_stream_size;
 			block.data = std::move(entry.tileset->uncompressed_data);
+			block.original_compressed.assign(
+				reference_rom.m_buffer.begin() + reference_rom_offset,
+				reference_rom.m_buffer.begin() + reference_rom_offset + reference_stream_size
+			);
 			block.touched = false;
 			return true;
 		}
@@ -859,55 +630,48 @@ namespace spintool::rom
 			return nullptr;
 		}
 
-		bool WriteCompressedArtBlockInPlace(
-			SpinballROM& rom,
-			EditableArtBlock& block,
-			std::size_t& compressed_size,
-			std::size_t& bytes_beyond_original_span,
+		bool PrepareCompressedArtBlock(
+			const EditableArtBlock& block,
+			Compressed2CompressionResult& compression,
 			std::string& error
 		)
 		{
-			const std::vector<Uint8> compressed =
-				EncodeCompressed2LzwStream(block.data);
-
-			// The reference reader fetches a 24-bit window for every code. Add
-			// temporary guard bytes for validation only; they are not part of the
-			// stream written into the ROM.
-			std::vector<Uint8> validation_stream = compressed;
-			validation_stream.emplace_back(0);
-			validation_stream.emplace_back(0);
-			std::vector<Uint8> verified_output;
-			if (!DecodeCompressed2Reference(validation_stream, verified_output, error))
-			{
-				error = "Reference Compressed2 validation failed: " + error;
-				return false;
-			}
-			if (verified_output != block.data)
-			{
-				error = "Reference Compressed2 validation produced different art data";
-				return false;
-			}
-
-			compressed_size = compressed.size();
-			bytes_beyond_original_span = compressed_size > block.original_capacity
-				? compressed_size - block.original_capacity
-				: 0U;
-
-			if (block.rom_offset > rom.m_buffer.size() ||
-				compressed_size > rom.m_buffer.size() - block.rom_offset)
-			{
-				error = "The recompressed block would extend past the physical end of the ROM";
-				return false;
-			}
-
-			// Strict in-place replacement: keep the original address and loader
-			// pointer. If the stream is larger than its former span, this deliberately
-			// overwrites the following bytes, as requested by the unrestricted mode.
-			std::copy(
-				compressed.begin(),
-				compressed.end(),
-				rom.m_buffer.begin() + block.rom_offset
+			compression = Compressed2Optimizer::Compress(
+				block.data,
+				block.original_compressed
 			);
+			std::vector<Uint8> verified_output;
+			std::size_t consumed_size = 0U;
+			if (!Compressed2Optimizer::Decode(
+				compression.data,
+				0U,
+				verified_output,
+				error,
+				&consumed_size,
+				nullptr
+			))
+			{
+				error = "Optimized Compressed2 validation failed: " + error;
+				return false;
+			}
+			if (verified_output != block.data || consumed_size != compression.data.size())
+			{
+				error = "Optimized Compressed2 validation produced different art data";
+				return false;
+			}
+			if (compression.data.size() > block.original_capacity)
+			{
+				std::ostringstream message;
+				message << "Import refused before writing the ROM: block "
+					<< HexOffset(block.rom_offset) << " needs "
+					<< compression.data.size() << " bytes after optimized compression, but "
+					<< "its original capacity is " << block.original_capacity << " bytes ("
+					<< compression.data.size() - block.original_capacity
+					<< " bytes too large; basic compression was "
+					<< compression.baseline_size << " bytes).";
+				error = message.str();
+				return false;
+			}
 			return true;
 		}
 
@@ -1538,82 +1302,126 @@ namespace spintool::rom
 			return result;
 		}
 
+		struct ImportPiece
+		{
+			int first_tile = 0;
+			bool flip_horizontal = false;
+			bool flip_vertical = false;
+			int width = 0;
+			int height = 0;
+			int x = 0;
+			int y = 0;
+		};
+
 		int minimum_x = std::numeric_limits<int>::max();
 		int minimum_y = std::numeric_limits<int>::max();
-		for (const MappingPiece& piece : mapping.pieces)
-		{
-			minimum_x = std::min(
-				minimum_x,
-				GetDisplayedPieceX(piece, mapping, visual_tile_attributes)
-			);
-			minimum_y = std::min(
-				minimum_y,
-				GetDisplayedPieceY(piece, mapping, visual_tile_attributes)
-			);
-		}
-		if (minimum_x == std::numeric_limits<int>::max() ||
-			minimum_y == std::numeric_limits<int>::max())
-		{
-			result.message = "Mapping has no pieces";
-			return result;
-		}
-
-		std::size_t written_pixels = 0;
-		std::size_t unmapped_pixels = 0;
+		int maximum_x = std::numeric_limits<int>::min();
+		int maximum_y = std::numeric_limits<int>::min();
+		std::vector<ImportPiece> import_pieces;
+		import_pieces.reserve(mapping.pieces.size());
 		for (const MappingPiece& piece : mapping.pieces)
 		{
 			const Uint16 final_attributes = CombineTileAttributes(
 				visual_tile_attributes,
 				piece.tile_attributes
 			);
-			const int first_tile = static_cast<int>(final_attributes & kTileIndexMask);
-			const bool flip_horizontal = (final_attributes & kHorizontalFlip) != 0;
-			const bool flip_vertical = (final_attributes & kVerticalFlip) != 0;
-			const int piece_width = static_cast<int>(piece.width_in_tiles) * 8;
-			const int piece_height = static_cast<int>(piece.height_in_tiles) * 8;
-			const int piece_x = GetDisplayedPieceX(
+			ImportPiece import_piece;
+			import_piece.first_tile = static_cast<int>(
+				final_attributes & kTileIndexMask
+			);
+			import_piece.flip_horizontal =
+				(final_attributes & kHorizontalFlip) != 0;
+			import_piece.flip_vertical =
+				(final_attributes & kVerticalFlip) != 0;
+			import_piece.width = static_cast<int>(piece.width_in_tiles) * 8;
+			import_piece.height = static_cast<int>(piece.height_in_tiles) * 8;
+			import_piece.x = GetDisplayedPieceX(
 				piece,
 				mapping,
 				visual_tile_attributes
-			) - minimum_x;
-			const int piece_y = GetDisplayedPieceY(
+			);
+			import_piece.y = GetDisplayedPieceY(
 				piece,
 				mapping,
 				visual_tile_attributes
-			) - minimum_y;
+			);
+			minimum_x = std::min(minimum_x, import_piece.x);
+			minimum_y = std::min(minimum_y, import_piece.y);
+			maximum_x = std::max(maximum_x, import_piece.x + import_piece.width);
+			maximum_y = std::max(maximum_y, import_piece.y + import_piece.height);
+			import_pieces.emplace_back(import_piece);
+		}
+		if (import_pieces.empty())
+		{
+			result.message = "Mapping has no pieces";
+			return result;
+		}
 
-			for (int unflipped_y = 0; unflipped_y < piece_height; ++unflipped_y)
+		const int expected_width = maximum_x - minimum_x;
+		const int expected_height = maximum_y - minimum_y;
+		if (image_width != expected_width || image_height != expected_height)
+		{
+			std::ostringstream message;
+			message << "PNG must be exactly " << expected_width << 'x'
+				<< expected_height << " pixels for this Bonus Stage frame (received "
+				<< image_width << 'x' << image_height << ')';
+			result.message = message.str();
+			return result;
+		}
+		if (indexed_pixels.size() <
+			static_cast<std::size_t>(image_width) * image_height)
+		{
+			result.message = "PNG indexed-pixel buffer is smaller than its dimensions";
+			return result;
+		}
+
+		struct Candidate
+		{
+			std::size_t block_index = 0U;
+			std::size_t relative_byte = 0U;
+			bool high_nibble = false;
+			Uint8 current_colour = 0U;
+		};
+
+		std::array<std::unordered_map<std::size_t, Uint8>, 3> pending_changes;
+		std::size_t written_pixels = 0U;
+		std::size_t unmapped_pixels = 0U;
+		std::size_t conflicting_shared_pixels = 0U;
+
+		// The first mapping piece has the highest visual priority. Resolve each
+		// flattened PNG pixel to the source nibble that is actually visible. This
+		// prevents hidden/overlapped pieces from being rewritten during a round trip.
+		for (int image_y = 0; image_y < image_height; ++image_y)
+		{
+			for (int image_x = 0; image_x < image_width; ++image_x)
 			{
-				for (int unflipped_x = 0; unflipped_x < piece_width; ++unflipped_x)
-				{
-					const int displayed_x = piece_x + (
-						flip_horizontal ? piece_width - 1 - unflipped_x : unflipped_x
-					);
-					const int displayed_y = piece_y + (
-						flip_vertical ? piece_height - 1 - unflipped_y : unflipped_y
-					);
+				std::optional<Candidate> transparent_fallback;
+				std::optional<Candidate> owner;
 
-					Uint8 palette_index = 0;
-					if (displayed_x >= 0 && displayed_y >= 0 &&
-						displayed_x < image_width && displayed_y < image_height)
+				for (const ImportPiece& piece : import_pieces)
+				{
+					const int displayed_local_x =
+						image_x + minimum_x - piece.x;
+					const int displayed_local_y =
+						image_y + minimum_y - piece.y;
+					if (displayed_local_x < 0 || displayed_local_y < 0 ||
+						displayed_local_x >= piece.width ||
+						displayed_local_y >= piece.height)
 					{
-						const std::size_t source_index =
-							static_cast<std::size_t>(displayed_y) *
-							static_cast<std::size_t>(image_width) +
-							static_cast<std::size_t>(displayed_x);
-						if (source_index < indexed_pixels.size())
-						{
-							palette_index = static_cast<Uint8>(
-								indexed_pixels[source_index] & 0x0FU
-							);
-						}
+						continue;
 					}
 
+					const int unflipped_x = piece.flip_horizontal
+						? piece.width - 1 - displayed_local_x
+						: displayed_local_x;
+					const int unflipped_y = piece.flip_vertical
+						? piece.height - 1 - displayed_local_y
+						: displayed_local_y;
 					const int tile_x = unflipped_x / 8;
 					const int tile_y = unflipped_y / 8;
-					const int tile_in_piece =
-						tile_x * static_cast<int>(piece.height_in_tiles) + tile_y;
-					const int absolute_tile = first_tile + tile_in_piece;
+					const int height_in_tiles = piece.height / 8;
+					const int tile_in_piece = tile_x * height_in_tiles + tile_y;
+					const int absolute_tile = piece.first_tile + tile_in_piece;
 					const std::size_t vram_byte_offset =
 						static_cast<std::size_t>(absolute_tile) * TileSet::s_tile_total_bytes +
 						static_cast<std::size_t>(unflipped_y % 8) * 4U +
@@ -1631,23 +1439,99 @@ namespace spintool::rom
 
 					const std::size_t relative_byte =
 						vram_byte_offset - block->vram_offset;
-					Uint8& packed = block->data[relative_byte];
-					if ((unflipped_x & 1) == 0)
+					const bool high_nibble = (unflipped_x & 1) == 0;
+					const Uint8 packed = block->data[relative_byte];
+					const Uint8 current_colour = high_nibble
+						? static_cast<Uint8>((packed >> 4U) & 0x0FU)
+						: static_cast<Uint8>(packed & 0x0FU);
+					const Candidate candidate{
+						static_cast<std::size_t>(block - art_blocks.data()),
+						relative_byte,
+						high_nibble,
+						current_colour
+					};
+					if (!transparent_fallback.has_value())
 					{
-						packed = static_cast<Uint8>(
-							(packed & 0x0FU) | (palette_index << 4U)
-						);
+						transparent_fallback = candidate;
 					}
-					else
+					if (current_colour != 0U)
 					{
-						packed = static_cast<Uint8>((packed & 0xF0U) | palette_index);
+						owner = candidate;
+						break;
 					}
-					block->touched = true;
-					++written_pixels;
+				}
+
+				const std::optional<Candidate>& selected = owner.has_value()
+					? owner
+					: transparent_fallback;
+				if (!selected.has_value())
+				{
+					continue;
+				}
+
+				const Uint8 palette_index = static_cast<Uint8>(
+					indexed_pixels[
+						static_cast<std::size_t>(image_y) * image_width + image_x
+					] & 0x0FU
+				);
+				if (palette_index == selected->current_colour)
+				{
+					continue;
+				}
+
+				const std::size_t source_key = selected->relative_byte * 2U +
+					(selected->high_nibble ? 0U : 1U);
+				auto [change, inserted] = pending_changes[selected->block_index].emplace(
+					source_key,
+					palette_index
+				);
+				if (!inserted && change->second != palette_index)
+				{
+					// One source nibble may be displayed more than once. It cannot hold two
+					// imported colours, so preserve the first real edit deterministically.
+					++conflicting_shared_pixels;
 				}
 			}
 		}
 
+		for (std::size_t block_index = 0U; block_index < art_blocks.size(); ++block_index)
+		{
+			EditableArtBlock& block = art_blocks[block_index];
+			for (const auto& [source_key, palette_index] : pending_changes[block_index])
+			{
+				const std::size_t relative_byte = source_key / 2U;
+				const bool high_nibble = (source_key & 1U) == 0U;
+				Uint8& packed = block.data[relative_byte];
+				if (high_nibble)
+				{
+					packed = static_cast<Uint8>(
+						(packed & 0x0FU) | (palette_index << 4U)
+					);
+				}
+				else
+				{
+					packed = static_cast<Uint8>((packed & 0xF0U) | palette_index);
+				}
+			}
+			block.touched = !pending_changes[block_index].empty();
+			written_pixels += pending_changes[block_index].size();
+		}
+
+		if (written_pixels == 0U)
+		{
+			result.success = true;
+			result.changed = false;
+			result.message =
+				"The PNG is identical to the current Bonus Stage frame; the ROM was not modified.";
+			return result;
+		}
+
+		struct PreparedRewrite
+		{
+			EditableArtBlock* block = nullptr;
+			Compressed2CompressionResult compression;
+		};
+		std::vector<PreparedRewrite> prepared_rewrites;
 		std::vector<std::string> rewrite_messages;
 		for (EditableArtBlock& block : art_blocks)
 		{
@@ -1656,45 +1540,61 @@ namespace spintool::rom
 				continue;
 			}
 
-			std::size_t compressed_size = 0;
-			std::size_t bytes_beyond_original_span = 0;
-			if (!WriteCompressedArtBlockInPlace(
-				rom,
-				block,
-				compressed_size,
-				bytes_beyond_original_span,
-				error
-			))
+			PreparedRewrite prepared;
+			prepared.block = &block;
+			if (!PrepareCompressedArtBlock(block, prepared.compression, error))
 			{
 				result.message = error;
 				return result;
 			}
+			if (block.rom_offset > rom.m_buffer.size() ||
+				block.original_capacity > rom.m_buffer.size() - block.rom_offset)
+			{
+				result.message = "Compressed2 block extends outside the working ROM";
+				return result;
+			}
+			prepared_rewrites.emplace_back(std::move(prepared));
+		}
+
+		// Nothing above modifies rom.m_buffer. Only commit after every touched block
+		// has compressed successfully and fits its original capacity.
+		for (PreparedRewrite& prepared : prepared_rewrites)
+		{
+			EditableArtBlock& block = *prepared.block;
+			const std::vector<Uint8>& compressed = prepared.compression.data;
+			std::copy(
+				compressed.begin(),
+				compressed.end(),
+				rom.m_buffer.begin() + block.rom_offset
+			);
+			std::fill(
+				rom.m_buffer.begin() + block.rom_offset + compressed.size(),
+				rom.m_buffer.begin() + block.rom_offset + block.original_capacity,
+				0U
+			);
 
 			result.rewritten_art_offsets.emplace_back(block.rom_offset);
 			std::ostringstream rewrite;
-			const std::size_t remaining = compressed_size <= block.original_capacity
-				? block.original_capacity - compressed_size
-				: 0U;
 			rewrite << HexOffset(block.rom_offset)
-				<< " in place (original capacity " << block.original_capacity
-				<< " bytes, current " << block.current_compressed_size
-				<< " bytes, new " << compressed_size << " bytes";
-			if (bytes_beyond_original_span == 0U)
+				<< " in place (capacity " << block.original_capacity
+				<< " bytes, previous " << block.current_compressed_size
+				<< " bytes, optimized " << compressed.size()
+				<< " bytes, remaining "
+				<< block.original_capacity - compressed.size();
+			if (prepared.compression.baseline_size > compressed.size())
 			{
-				rewrite << ", remaining " << remaining << " bytes";
+				rewrite << ", saved "
+					<< prepared.compression.baseline_size - compressed.size()
+					<< " bytes versus basic compression";
 			}
-			else
-			{
-				rewrite << ", exceeds original capacity by "
-					<< bytes_beyond_original_span << " bytes";
-			}
-			rewrite << ")";
+			rewrite << ", strategy " << prepared.compression.strategy << ")";
 			rewrite_messages.emplace_back(rewrite.str());
 		}
 
 		UpdateMegaDriveChecksum(rom);
 
 		result.success = written_pixels != 0 && !result.rewritten_art_offsets.empty();
+		result.changed = result.success;
 		if (result.success)
 		{
 			std::ostringstream message;
@@ -1708,6 +1608,11 @@ namespace spintool::rom
 			if (unmapped_pixels != 0)
 			{
 				message << "; " << unmapped_pixels << " pixels referenced unloaded VRAM";
+			}
+			if (conflicting_shared_pixels != 0)
+			{
+				message << "; " << conflicting_shared_pixels
+					<< " conflicting shared-pixel appearances kept their first edited colour";
 			}
 			result.message = message.str();
 		}
