@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Spintool is a fork of Eggplant891 project with fixes and news opts. It is a utility created with the intention of research and doing modifications on your own Sonic Spinball binary.
+Spintool is a fork of Eggplant891 project with fixes and news features. It is a utility created with the intention of research and doing modifications on your own Sonic Spinball binary.
 
 This project was tested successfully with the game from Steam Version of "SEGA Mega Drive and Genesis Classics"
 
