@@ -5,6 +5,15 @@
 
 namespace spintool
 {
+	void EditorSpriteViewer::InvalidatePaletteDependentTextures()
+	{
+		m_rendered_sprite_texture.texture.reset();
+		for (UISpriteTileTexture& tile : m_rendered_sprite_tile_textures)
+		{
+			tile.texture.reset();
+		}
+	}
+
 	size_t EditorSpriteViewer::GetOffset() const
 	{
 		return m_offset;
