@@ -44,6 +44,7 @@ namespace spintool
 		using EditorWindowBase::EditorWindowBase;
 
 		void Update() override;
+		void InvalidatePaletteDependentTextures();
 
 	private:
 		void LoadBonusStageImages();
