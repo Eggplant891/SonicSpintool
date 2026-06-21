@@ -96,7 +96,7 @@ namespace spintool
 			"SpinTool",
 			s_window_width,
 			s_window_height,
-			0,
+			SDL_WINDOW_RESIZABLE,
 			&s_window,
 			&s_renderer))
 		{
@@ -109,6 +109,11 @@ namespace spintool
 			std::cerr << "SDL returned a null window or renderer\n";
 			Shutdown();
 			return false;
+		}
+
+		if (!SDL_MaximizeWindow(s_window))
+		{
+			std::cerr << "SDL_MaximizeWindow failed: " << SDL_GetError() << '\n';
 		}
 
 		if (!SDL_SetRenderDrawColor(s_renderer, 0, 0, 0, 255) ||
