@@ -52,6 +52,7 @@ namespace spintool::rom
 	struct TailsPlaneImportResult
 	{
 		bool success = false;
+		bool changed = false;
 		std::string message;
 	};
 
