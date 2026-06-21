@@ -680,6 +680,18 @@ namespace spintool
 		return m_palettes;
 	}
 
+	void EditorUI::NotifyPaletteChanged()
+	{
+		m_sprite_navigator.InvalidatePaletteDependentTextures();
+		for (const std::unique_ptr<EditorSpriteViewer>& viewer : m_sprite_viewer_windows)
+		{
+			if (viewer)
+			{
+				viewer->InvalidatePaletteDependentTextures();
+			}
+		}
+	}
+
 	void EditorUI::OpenSpriteViewer(
 		std::shared_ptr<const rom::Sprite>& sprite
 	)
