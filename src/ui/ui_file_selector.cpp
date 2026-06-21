@@ -393,6 +393,7 @@ std::optional<std::filesystem::path> DrawFileSelector(
             return_path = s_highlighted_path;
         }
 
+        ImGui::EndDisabled();
         ImGui::SameLine();
 
         if (ImGui::Button("Cancel"))
@@ -400,8 +401,6 @@ std::optional<std::filesystem::path> DrawFileSelector(
             s_highlighted_path.reset();
             ImGui::CloseCurrentPopup();
         }
-
-        ImGui::EndDisabled();
         ImGui::EndPopup();
     }
 
