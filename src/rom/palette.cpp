@@ -4,6 +4,10 @@
 
 #include "imgui.h"
 
+#include <algorithm>
+#include <cstdlib>
+#include <limits>
+
 namespace spintool::rom
 {
 	std::shared_ptr<spintool::rom::Palette> Palette::LoadFromROM(const SpinballROM& src_rom, Uint32 offset)
@@ -34,15 +38,42 @@ namespace spintool::rom
 
 	Uint16 Swatch::Pack(float r, float g, float b)
 	{
-		const auto red_it = std::find(std::begin(Colour::levels_lookup), std::end(Colour::levels_lookup), static_cast<Uint8>(std::clamp(r * 255.0f, 0.0f, 255.0f)));
-		const auto green_it = std::find(std::begin(Colour::levels_lookup), std::end(Colour::levels_lookup), static_cast<Uint8>(std::clamp(g * 255.0f, 0.0f, 255.0f)));
-		const auto blue_it = std::find(std::begin(Colour::levels_lookup), std::end(Colour::levels_lookup), static_cast<Uint8>(std::clamp(b * 255.0f, 0.0f, 255.0f)));
+		// ImGui's colour picker returns arbitrary RGB values, while the ROM can
+		// only store the discrete colour levels supported by the Mega Drive.
+		// The former implementation required an exact match with one of those
+		// levels, so almost every picked value was converted to zero. Quantise
+		// each component to the nearest representable level instead.
+		auto nearest_level = [](float component) -> Uint8
+		{
+			const int target = static_cast<int>(
+				std::clamp(component, 0.0f, 1.0f) * 255.0f + 0.5f
+			);
 
-		const Uint8 red = red_it != std::end(Colour::levels_lookup) ? static_cast<Uint8>(std::distance(std::begin(Colour::levels_lookup), red_it)) : 0;
-		const Uint8 green = green_it != std::end(Colour::levels_lookup) ? static_cast<Uint8>(std::distance(std::begin(Colour::levels_lookup), green_it)) : 0;
-		const Uint8 blue = blue_it != std::end(Colour::levels_lookup) ? static_cast<Uint8>(std::distance(std::begin(Colour::levels_lookup), blue_it)) : 0;
+			Uint8 best_index = 0;
+			int best_distance = std::numeric_limits<int>::max();
+			for (std::size_t index = 0; index < Colour::levels_lookup.size(); ++index)
+			{
+				const int distance = std::abs(
+					target - static_cast<int>(Colour::levels_lookup[index])
+				);
+				if (distance < best_distance)
+				{
+					best_distance = distance;
+					best_index = static_cast<Uint8>(index);
+				}
+			}
+			return best_index;
+		};
 
-		return static_cast<Uint16>(0x0F00 & (blue << 8)) | static_cast<Uint16>(0x00F0 & (green << 4)) | static_cast<Uint16>(0x000F & red);
+		const Uint8 red = nearest_level(r);
+		const Uint8 green = nearest_level(g);
+		const Uint8 blue = nearest_level(b);
+
+		return static_cast<Uint16>(
+			(static_cast<Uint16>(blue) << 8U) |
+			(static_cast<Uint16>(green) << 4U) |
+			static_cast<Uint16>(red)
+		);
 	}
 
 	ImColor rom::Swatch::AsImColor() const
