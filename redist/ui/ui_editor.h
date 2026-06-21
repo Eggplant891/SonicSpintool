@@ -55,6 +55,7 @@ namespace spintool
 
 		[[nodiscard]] const std::vector<TilesetEntry>& GetTilesets() const;
 		[[nodiscard]] const std::vector<std::shared_ptr<rom::Palette>>& GetPalettes() const;
+		void NotifyPaletteChanged();
 
 		void OpenSpriteViewer(std::shared_ptr<const rom::Sprite>& sprite);
 		void OpenImageImporter(rom::Sprite& sprite);
