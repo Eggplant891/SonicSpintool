@@ -1,5 +1,7 @@
 #include "rom/tails_plane_decoder.h"
 
+#include "rom/compressed2_optimizer.h"
+
 // tile.h must be complete before spinball_rom.h/tileset.h with GCC 15.
 #include "rom/tile.h"
 #include "rom/lzss_decompressor.h"
@@ -135,36 +137,6 @@ namespace spintool::rom
 			[[nodiscard]] int Height() const { return maximum_y - minimum_y; }
 		};
 
-		class LsbBitWriter
-		{
-		public:
-			void Write(const Uint16 value, const unsigned int bit_count)
-			{
-				m_bit_buffer |= static_cast<std::uint64_t>(value) << m_buffered_bits;
-				m_buffered_bits += bit_count;
-				while (m_buffered_bits >= 8U)
-				{
-					m_bytes.emplace_back(static_cast<Uint8>(m_bit_buffer & 0xFFU));
-					m_bit_buffer >>= 8U;
-					m_buffered_bits -= 8U;
-				}
-			}
-
-			std::vector<Uint8> Finish()
-			{
-				if (m_buffered_bits != 0U)
-				{
-					m_bytes.emplace_back(static_cast<Uint8>(m_bit_buffer & 0xFFU));
-				}
-				return std::move(m_bytes);
-			}
-
-		private:
-			std::vector<Uint8> m_bytes;
-			std::uint64_t m_bit_buffer = 0;
-			unsigned int m_buffered_bits = 0;
-		};
-
 		bool CanRead(const std::vector<Uint8>& data, const Uint32 offset, const std::size_t count)
 		{
 			return offset <= data.size() && count <= data.size() - offset;
@@ -176,83 +148,6 @@ namespace spintool::rom
 				(static_cast<Uint16>(data[offset]) << 8U) |
 				static_cast<Uint16>(data[offset + 1U])
 			);
-		}
-
-		bool GetCompressed2StreamSize(
-			const std::vector<Uint8>& data,
-			const Uint32 offset,
-			std::size_t& output_size,
-			std::string& error
-		)
-		{
-			constexpr Uint16 clear_code = 0x0100U;
-			constexpr Uint16 end_code = 0x0101U;
-			std::size_t bit_position = 0U;
-			unsigned int token_width = 9U;
-			Uint16 next_dictionary_code = 0x0102U;
-			Uint16 width_threshold = 0x0200U;
-
-			auto read_token = [&](Uint16& token) -> bool
-			{
-				const std::size_t byte_index = static_cast<std::size_t>(offset) +
-					(bit_position / 8U);
-				if (byte_index > data.size() || data.size() - byte_index < 3U)
-				{
-					error = "Compressed2 stream ends before its halt token";
-					return false;
-				}
-				const Uint32 packed =
-					static_cast<Uint32>(data[byte_index]) |
-					(static_cast<Uint32>(data[byte_index + 1U]) << 8U) |
-					(static_cast<Uint32>(data[byte_index + 2U]) << 16U);
-				const unsigned int shift = static_cast<unsigned int>(bit_position & 7U);
-				token = static_cast<Uint16>(
-					(packed >> shift) & ((1U << token_width) - 1U)
-				);
-				bit_position += token_width;
-				return true;
-			};
-
-			for (std::size_t token_count = 0U; token_count < 0x100000U; ++token_count)
-			{
-				Uint16 token = 0U;
-				if (!read_token(token))
-				{
-					return false;
-				}
-				if (token == end_code)
-				{
-					output_size = (bit_position + 7U) / 8U;
-					return true;
-				}
-				if (token == clear_code)
-				{
-					token_width = 9U;
-					next_dictionary_code = 0x0102U;
-					width_threshold = 0x0200U;
-					// The game decoder consumes one raw token immediately after clear.
-					if (!read_token(token))
-					{
-						return false;
-					}
-					if (token == end_code)
-					{
-						output_size = (bit_position + 7U) / 8U;
-						return true;
-					}
-					continue;
-				}
-
-				++next_dictionary_code;
-				if (next_dictionary_code >= width_threshold && token_width < 11U)
-				{
-					++token_width;
-					width_threshold = static_cast<Uint16>(width_threshold << 1U);
-				}
-			}
-
-			error = "Compressed2 stream contains too many tokens";
-			return false;
 		}
 
 		Uint32 ReadBE32(const std::vector<Uint8>& data, const Uint32 offset)
@@ -1405,94 +1300,6 @@ namespace spintool::rom
 			return image;
 		}
 
-		std::vector<Uint8> EncodeCompressed2LzwStream(const std::vector<Uint8>& source)
-		{
-			constexpr Uint16 clear_code = 0x0100U;
-			constexpr Uint16 end_code = 0x0101U;
-			constexpr Uint16 first_dictionary_code = 0x0102U;
-			constexpr Uint16 maximum_dictionary_code = 0x07FFU;
-
-			const Uint8 fallback_zero = 0U;
-			const Uint8* input = source.empty() ? &fallback_zero : source.data();
-			const std::size_t input_size = source.empty() ? 1U : source.size();
-
-			LsbBitWriter bit_writer;
-			std::unordered_map<Uint32, Uint16> transitions;
-			transitions.reserve(2048U);
-
-			Uint16 next_dictionary_code = first_dictionary_code;
-			unsigned int stream_width = 9U;
-			Uint16 decoder_next_code = first_dictionary_code;
-			Uint16 decoder_width_threshold = 0x0200U;
-			bool first_data_code_after_clear = true;
-
-			auto reset_encoder_dictionary = [&]()
-			{
-				transitions.clear();
-				next_dictionary_code = first_dictionary_code;
-			};
-			auto reset_stream_state = [&]()
-			{
-				stream_width = 9U;
-				decoder_next_code = first_dictionary_code;
-				decoder_width_threshold = 0x0200U;
-				first_data_code_after_clear = true;
-			};
-			auto write_clear = [&]()
-			{
-				bit_writer.Write(clear_code, stream_width);
-				reset_encoder_dictionary();
-				reset_stream_state();
-			};
-			auto write_data_code = [&](const Uint16 code)
-			{
-				bit_writer.Write(code, stream_width);
-				if (first_data_code_after_clear)
-				{
-					first_data_code_after_clear = false;
-					return;
-				}
-				++decoder_next_code;
-				if (decoder_next_code >= decoder_width_threshold && stream_width < 11U)
-				{
-					++stream_width;
-					decoder_width_threshold = static_cast<Uint16>(decoder_width_threshold << 1U);
-				}
-			};
-
-			write_clear();
-			Uint16 current_code = input[0];
-			for (std::size_t position = 1U; position < input_size; ++position)
-			{
-				const Uint8 next_byte = input[position];
-				const Uint32 transition_key =
-					(static_cast<Uint32>(current_code) << 8U) |
-					static_cast<Uint32>(next_byte);
-				const auto found = transitions.find(transition_key);
-				if (found != transitions.end())
-				{
-					current_code = found->second;
-					continue;
-				}
-
-				write_data_code(current_code);
-				if (next_dictionary_code <= maximum_dictionary_code)
-				{
-					transitions.emplace(transition_key, next_dictionary_code);
-					++next_dictionary_code;
-				}
-				else
-				{
-					write_clear();
-				}
-				current_code = next_byte;
-			}
-
-			write_data_code(current_code);
-			bit_writer.Write(end_code, stream_width);
-			return bit_writer.Finish();
-		}
-
 		void UpdateMegaDriveChecksum(SpinballROM& rom)
 		{
 			if (rom.m_buffer.size() < 0x190U)
@@ -1607,9 +1414,13 @@ namespace spintool::rom
 			const std::vector<Uint8>& indexed_pixels,
 			const int image_width,
 			const int image_height,
+			std::size_t& changed_pixel_count,
+			std::size_t& conflicting_shared_pixels,
 			std::string& error
 		)
 		{
+			changed_pixel_count = 0U;
+			conflicting_shared_pixels = 0U;
 			if (image_width <= 0 || image_height <= 0)
 			{
 				error = "PNG dimensions are invalid";
@@ -1721,21 +1532,21 @@ namespace spintool::rom
 					const std::size_t source_key = selected->byte_offset * 2U +
 						(selected->high_nibble ? 0U : 1U);
 					const auto existing = changed_pixels.find(source_key);
-					if (existing != changed_pixels.end() &&
-						existing->second.colour != imported_colour)
+					if (existing != changed_pixels.end())
 					{
-						std::ostringstream message;
-						message << "The PNG assigns different colours to a shared or mirrored "
-							<< "plane pixel near (" << image_x << ',' << image_y << "). "
-							<< "Make both appearances identical.";
-						error = message.str();
-						return false;
+						if (existing->second.colour != imported_colour)
+						{
+							// Shared or mirrored appearances cannot hold two colours. Keep the
+							// first actual edit instead of rejecting the complete PNG.
+							++conflicting_shared_pixels;
+						}
+						continue;
 					}
-					changed_pixels[source_key] = PixelAssignment{
+					changed_pixels.emplace(source_key, PixelAssignment{
 						selected->byte_offset,
 						selected->high_nibble,
 						imported_colour
-					};
+					});
 				}
 			}
 
@@ -1749,6 +1560,7 @@ namespace spintool::rom
 					assignment.colour
 				);
 			}
+			changed_pixel_count = changed_pixels.size();
 			return true;
 		}
 
@@ -1851,9 +1663,7 @@ namespace spintool::rom
 					result.frames[*duplicate_index].scene_mask | definition.scene_mask
 				);
 				result.warnings.emplace_back(
-					definition.name + " is visually identical to " +
-					result.frames[*duplicate_index].name +
-					" in the same scene and was merged"
+					"Visually identical to another frame in the same scene and was merged"
 				);
 				continue;
 			}
@@ -1870,7 +1680,7 @@ namespace spintool::rom
 
 		if (result.frames.empty())
 		{
-			result.error = "No complete Tails plane frame could be assembled";
+			result.error = "No complete frame could be assembled";
 		}
 		return result;
 	}
@@ -1888,13 +1698,13 @@ namespace spintool::rom
 		if (!CanRead(rom.m_buffer, kPlaneArtHeaderOffset, 2U) ||
 			ReadBE16(rom.m_buffer, kPlaneArtHeaderOffset) != 0xFFFFU)
 		{
-			result.message = "Tails plane Compressed2 marker FFFF is missing at 0xA3124";
+			result.message = "Compressed2 marker FFFF is missing at 0xA3124";
 			return result;
 		}
 		if (!CanRead(reference_rom.m_buffer, kPlaneArtHeaderOffset, 2U) ||
 			ReadBE16(reference_rom.m_buffer, kPlaneArtHeaderOffset) != 0xFFFFU)
 		{
-			result.message = "Reference ROM has no Tails plane Compressed2 marker at 0xA3124";
+			result.message = "Reference ROM has no Compressed2 marker at 0xA3124";
 			return result;
 		}
 
@@ -1911,122 +1721,169 @@ namespace spintool::rom
 		);
 		if (definition_it == definitions.end())
 		{
-			result.message = "Selected Tails plane frame ID is not available";
+			result.message = "Selected frame ID is not available";
 			return result;
 		}
 		const FrameDefinition& definition = *definition_it;
 
-		const LZSSDecompressionResult current =
-			LZSSDecompressor::DecompressDataRefactored(
-				rom.m_buffer,
-				definition.art_offset
-			);
-		if (current.error_msg.has_value() || current.uncompressed_data.size() <= 2U)
-		{
-			result.message = current.error_msg.has_value()
-				? "Could not decompress working plane art: " + *current.error_msg
-				: "Working plane art has no tile payload";
-			return result;
-		}
-
-		const LZSSDecompressionResult reference =
-			LZSSDecompressor::DecompressDataRefactored(
-				reference_rom.m_buffer,
-				definition.art_offset
-			);
-		if (reference.error_msg.has_value())
-		{
-			result.message = "Could not inspect reference plane art: " +
-				*reference.error_msg;
-			return result;
-		}
-		std::size_t capacity = 0U;
-		std::string capacity_error;
-		if (!GetCompressed2StreamSize(
-			reference_rom.m_buffer,
+		// Decode the working stream with the same exact Compressed2 decoder used
+		// for validation and recompression.  The old path used the legacy game
+		// emulation decoder for the working ROM and the portable decoder for the
+		// reference ROM, then required both payload sizes to match.  That could
+		// reject every later import after a ROM had already been saved by SpinTool,
+		// even though the selected frame and its mapped tiles were still valid.
+		std::vector<Uint8> tile_art;
+		std::size_t current_stream_size = 0U;
+		std::string error;
+		if (!Compressed2Optimizer::Decode(
+			rom.m_buffer,
 			definition.art_offset,
-			capacity,
-			capacity_error
+			tile_art,
+			error,
+			&current_stream_size,
+			nullptr
 		))
 		{
-			result.message = "Could not determine reference plane-art capacity: " +
-				capacity_error;
+			result.message = "Could not decompress working art: " + error;
+			return result;
+		}
+		if (tile_art.empty())
+		{
+			result.message = "Working art has no tile payload";
 			return result;
 		}
 
-		std::vector<Uint8> tile_art(
-			current.uncompressed_data.begin() + 2,
-			current.uncompressed_data.end()
+		std::vector<Uint8> reference_tile_art;
+		std::size_t capacity = 0U;
+		if (!Compressed2Optimizer::Decode(
+			reference_rom.m_buffer,
+			definition.art_offset,
+			reference_tile_art,
+			error,
+			&capacity,
+			nullptr
+		))
+		{
+			result.message = "Could not determine exact reference capacity: " +
+				error;
+			return result;
+		}
+		if (definition.art_offset > reference_rom.m_buffer.size() ||
+			capacity > reference_rom.m_buffer.size() - definition.art_offset)
+		{
+			result.message = "Reference compressed-art block extends outside the ROM";
+			return result;
+		}
+		// The reference stream defines only the maximum writable span.  The
+		// editable payload must come from the current working ROM: it may already
+		// contain valid previous edits and therefore does not have to be byte-for-
+		// byte or size-for-size identical to the reference payload.
+		if (definition.art_offset > rom.m_buffer.size() ||
+			current_stream_size > rom.m_buffer.size() - definition.art_offset)
+		{
+			result.message = "Working compressed-art block extends outside the ROM";
+			return result;
+		}
+		const std::vector<Uint8> original_stream(
+			rom.m_buffer.begin() + definition.art_offset,
+			rom.m_buffer.begin() + definition.art_offset + current_stream_size
 		);
-		std::string error;
+		std::size_t changed_pixel_count = 0U;
+		std::size_t conflicting_shared_pixels = 0U;
 		if (!WriteFramePixelsToArt(
 			definition,
 			tile_art,
 			indexed_pixels,
 			image_width,
 			image_height,
+			changed_pixel_count,
+			conflicting_shared_pixels,
 			error
 		))
 		{
 			result.message = error;
 			return result;
 		}
-
-		const std::vector<Uint8> compressed = EncodeCompressed2LzwStream(tile_art);
-		std::vector<Uint8> validation_stream = compressed;
-		validation_stream.insert(validation_stream.end(), 3U, 0U);
-		const LZSSDecompressionResult validation =
-			LZSSDecompressor::DecompressDataRefactored(validation_stream, 0U);
-		if (validation.error_msg.has_value())
+		if (changed_pixel_count == 0U)
 		{
-			result.message = "Compressed2 validation failed: " +
-				*validation.error_msg;
-			return result;
-		}
-		if (validation.uncompressed_data.size() <= 2U ||
-			!std::equal(
-				tile_art.begin(),
-				tile_art.end(),
-				validation.uncompressed_data.begin() + 2,
-				validation.uncompressed_data.end()
-			))
-		{
-			result.message = "Compressed2 validation produced different plane art";
+			result.success = true;
+			result.changed = false;
+			result.message =
+				"The PNG is identical to the current frame; the ROM was not modified.";
 			return result;
 		}
 
-		if (compressed.size() > capacity)
+		const Compressed2CompressionResult compression =
+			Compressed2Optimizer::Compress(tile_art, original_stream);
+		std::vector<Uint8> verified_art;
+		std::size_t consumed_size = 0U;
+		if (!Compressed2Optimizer::Decode(
+			compression.data,
+			0U,
+			verified_art,
+			error,
+			&consumed_size,
+			nullptr
+		))
+		{
+			result.message = "Optimized Compressed2 validation failed: " + error;
+			return result;
+		}
+		if (verified_art != tile_art || consumed_size != compression.data.size())
+		{
+			result.message = "Optimized Compressed2 validation produced different art";
+			return result;
+		}
+
+		if (compression.data.size() > capacity)
 		{
 			std::ostringstream message;
-			message << "Modified plane art compresses to " << compressed.size()
-				<< " bytes, but the original block only has " << capacity
-				<< " bytes. Simplify the PNG so it compresses better.";
+			message << "Import refused before writing the ROM. Modified art needs "
+				<< compression.data.size() << " bytes after optimized compression, but "
+				<< "the original block only has " << capacity << " bytes ("
+				<< compression.data.size() - capacity << " bytes too large; basic "
+				<< "compression was " << compression.baseline_size << " bytes).";
 			result.message = message.str();
 			return result;
 		}
 		if (definition.art_offset > rom.m_buffer.size() ||
 			capacity > rom.m_buffer.size() - definition.art_offset)
 		{
-			result.message = "Plane compressed-art block extends outside the working ROM";
+			result.message = "Compressed-art block extends outside the working ROM";
 			return result;
 		}
 
 		std::copy(
-			compressed.begin(),
-			compressed.end(),
+			compression.data.begin(),
+			compression.data.end(),
 			rom.m_buffer.begin() + definition.art_offset
 		);
 		std::fill(
-			rom.m_buffer.begin() + definition.art_offset + compressed.size(),
+			rom.m_buffer.begin() + definition.art_offset + compression.data.size(),
 			rom.m_buffer.begin() + definition.art_offset + capacity,
 			0U
 		);
 		UpdateMegaDriveChecksum(rom);
 
 		result.success = true;
-		result.message = definition.name +
-			" imported. The complete plane was reassembled from the real mappings; "
-			"all scenes that reference the edited source tiles will use the change.";
+		result.changed = true;
+		std::ostringstream message;
+		message << changed_pixel_count
+			<< " source pixels changed; optimized size " << compression.data.size()
+			<< "/" << capacity << " bytes; strategy " << compression.strategy;
+		if (compression.baseline_size > compression.data.size())
+		{
+			message << "; saved "
+				<< compression.baseline_size - compression.data.size()
+				<< " bytes versus basic compression";
+		}
+		if (conflicting_shared_pixels != 0U)
+		{
+			message << "; " << conflicting_shared_pixels
+				<< " conflicting shared appearances kept their first edited colour";
+		}
+		message << ". All scenes referencing these source tiles use the change.";
+		result.message = message.str();
 		return result;
 	}
 }
