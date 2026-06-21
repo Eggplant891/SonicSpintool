@@ -20,6 +20,7 @@ namespace spintool
 		EditorSpriteViewer(EditorUI& owning_ui, std::shared_ptr<const rom::Sprite> sprite);
 		void Update();
 		size_t GetOffset() const;
+		void InvalidatePaletteDependentTextures();
 
 	private:
 		size_t m_offset;
