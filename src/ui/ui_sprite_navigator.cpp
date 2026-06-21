@@ -2,6 +2,7 @@
 
 #include "rom/spinball_rom.h"
 #include "rom/bonus_stage_decoder.h"
+#include "rom/tails_plane_decoder.h"
 #include "ui/ui_editor.h"
 #include "ui/ui_file_selector.h"
 
@@ -362,6 +363,278 @@ namespace spintool
 			PathToUtf8(displayed_path);*/
 	}
 
+
+	void EditorSpriteNavigator::LoadTailsPlaneImages()
+	{
+		m_result_display_mode = ResultDisplayMode::TAILS_PLANE_FRAMES;
+		m_tails_plane_images.clear();
+		m_tails_plane_warnings.clear();
+		m_tails_plane_status.clear();
+		m_selected_tails_image = -1;
+
+		const rom::TailsPlaneDecodeResult decode_result =
+			rom::TailsPlaneDecoder::Decode(m_owning_ui.GetROM());
+		m_tails_plane_warnings = decode_result.warnings;
+		if (!decode_result.error.empty())
+		{
+			m_tails_plane_status = "Error: " + decode_result.error;
+			return;
+		}
+
+		const Uint8 selected_scene_mask = static_cast<Uint8>(
+			1U << static_cast<unsigned int>(m_selected_tails_scene)
+		);
+		for (const rom::TailsPlaneFrame& decoded_frame : decode_result.frames)
+		{
+			if (!decoded_frame.sprite ||
+				(decoded_frame.scene_mask & selected_scene_mask) == 0U)
+			{
+				continue;
+			}
+			std::shared_ptr<const rom::Sprite> frame_sprite = decoded_frame.sprite;
+			TailsPlaneFramePreview preview;
+			preview.name = decoded_frame.name;
+			preview.usage = decoded_frame.usage;
+			preview.frame_id = decoded_frame.frame_id;
+			preview.scene_mask = decoded_frame.scene_mask;
+			preview.texture = std::make_shared<UISpriteTexture>(frame_sprite);
+			m_tails_plane_images.emplace_back(std::move(preview));
+		}
+
+		const auto& palettes = m_owning_ui.GetPalettes();
+		if (!palettes.empty())
+		{
+			// Keep the palette currently selected by the user. Loading Tails-plane
+			// frames must not silently switch the editor to palette 50.
+			m_chosen_palette = std::clamp(
+				m_chosen_palette,
+				0,
+				static_cast<int>(palettes.size()) - 1
+			);
+		}
+
+		if (m_tails_plane_images.empty())
+		{
+			m_tails_plane_status = "No complete Tails plane frame could be decoded.";
+		}
+	}
+
+	void EditorSpriteNavigator::ImportTailsPlaneImage(
+		const std::filesystem::path& path,
+		const std::size_t image_index
+	)
+	{
+		m_result_display_mode = ResultDisplayMode::TAILS_PLANE_FRAMES;
+		if (image_index >= m_tails_plane_images.size())
+		{
+			m_tails_plane_status = "The selected Tails plane frame no longer exists.";
+			return;
+		}
+
+		const std::string path_utf8 = PathToUtf8(path);
+		SDLSurfaceHandle loaded_image{ IMG_Load(path_utf8.c_str()) };
+		if (!loaded_image)
+		{
+			m_tails_plane_status = "Could not load PNG: " + path_utf8;
+			return;
+		}
+
+		const auto& palettes = m_owning_ui.GetPalettes();
+		if (palettes.empty())
+		{
+			m_tails_plane_status = "No palette is loaded.";
+			return;
+		}
+		m_chosen_palette = std::clamp(
+			m_chosen_palette,
+			0,
+			static_cast<int>(palettes.size()) - 1
+		);
+		const std::vector<Uint8> indexed_pixels = ConvertSurfaceToIndexed(
+			loaded_image.get(),
+			*palettes[static_cast<std::size_t>(m_chosen_palette)]
+		);
+		if (indexed_pixels.empty())
+		{
+			m_tails_plane_status = "The PNG could not be converted to indexed pixels.";
+			return;
+		}
+
+		rom::SpinballROM& working_rom = m_owning_ui.GetROM();
+		const std::filesystem::path reference_rom_path =
+			m_owning_ui.GetReferenceROMPath();
+		if (reference_rom_path.empty())
+		{
+			m_tails_plane_status =
+				"No reference ROM is associated with the current working ROM.";
+			return;
+		}
+
+		rom::SpinballROM reference_rom;
+		if (!reference_rom.LoadROMFromPath(reference_rom_path))
+		{
+			m_tails_plane_status = "Could not load reference ROM: " +
+				PathToUtf8(reference_rom_path);
+			return;
+		}
+
+		if (!working_rom.m_filepath.empty())
+		{
+			std::filesystem::path backup_path = working_rom.m_filepath;
+			backup_path += ".bak";
+			std::error_code backup_error;
+			if (!std::filesystem::exists(backup_path, backup_error))
+			{
+				std::filesystem::copy_file(
+					working_rom.m_filepath,
+					backup_path,
+					std::filesystem::copy_options::none,
+					backup_error
+				);
+			}
+			if (backup_error)
+			{
+				m_tails_plane_status = "Could not create ROM backup: " +
+					backup_error.message();
+				return;
+			}
+		}
+
+		const TailsPlaneFramePreview target = m_tails_plane_images[image_index];
+		const rom::TailsPlaneImportResult import_result =
+			rom::TailsPlaneDecoder::ImportIndexedImage(
+				working_rom,
+				reference_rom,
+				target.frame_id,
+				indexed_pixels,
+				loaded_image->w,
+				loaded_image->h
+			);
+		if (!import_result.success)
+		{
+			m_tails_plane_status = "Import failed: " + import_result.message;
+			return;
+		}
+
+		const std::filesystem::path saved_rom_path = working_rom.m_filepath;
+		if (saved_rom_path.empty())
+		{
+			m_tails_plane_status =
+				"Import succeeded in memory, but the ROM has no file path and could not be saved.";
+			return;
+		}
+
+		working_rom.SaveROM();
+		std::ifstream saved_rom_file(saved_rom_path, std::ios::binary);
+		if (!saved_rom_file)
+		{
+			m_tails_plane_status =
+				"Import changed the in-memory ROM, but the saved ROM could not be reopened: " +
+				PathToUtf8(saved_rom_path);
+			return;
+		}
+		const std::vector<Uint8> disk_buffer{
+			std::istreambuf_iterator<char>(saved_rom_file),
+			std::istreambuf_iterator<char>{}
+		};
+		if (disk_buffer != working_rom.m_buffer)
+		{
+			m_tails_plane_status =
+				"Import changed the in-memory ROM, but disk verification failed: " +
+				PathToUtf8(saved_rom_path);
+			return;
+		}
+		if (!working_rom.LoadROMFromPath(saved_rom_path))
+		{
+			m_tails_plane_status =
+				"The ROM was written and verified, but SpinTool could not reload it: " +
+				PathToUtf8(saved_rom_path);
+			return;
+		}
+
+		LoadTailsPlaneImages();
+		m_tails_plane_status = import_result.message;
+	}
+
+	void EditorSpriteNavigator::ExportTailsPlaneImage(const std::size_t image_index)
+	{
+		if (image_index >= m_tails_plane_images.size())
+		{
+			m_tails_plane_status = "The selected Tails plane frame no longer exists.";
+			return;
+		}
+		const TailsPlaneFramePreview& image = m_tails_plane_images[image_index];
+		if (!image.texture || !image.texture->sprite)
+		{
+			m_tails_plane_status = "The selected Tails plane frame has no image.";
+			return;
+		}
+		const auto& palettes = m_owning_ui.GetPalettes();
+		if (palettes.empty())
+		{
+			m_tails_plane_status = "No palette is loaded.";
+			return;
+		}
+		m_chosen_palette = std::clamp(
+			m_chosen_palette,
+			0,
+			static_cast<int>(palettes.size()) - 1
+		);
+
+		const char* scene_slug = "ending";
+		switch (m_selected_tails_scene)
+		{
+		case 0: scene_slug = "intro"; break;
+		case 1: scene_slug = "after_start"; break;
+		case 2: scene_slug = "before_demo"; break;
+		default: break;
+		}
+		char filename[160]{};
+		snprintf(
+			filename,
+			sizeof(filename),
+			"tails_plane_%s_frame_%02zu_id_%02zu.png",
+			scene_slug,
+			image_index,
+			image.frame_id
+		);
+		std::filesystem::path export_path =
+			m_owning_ui.GetSpriteExportPath().append(filename);
+		std::error_code directory_error;
+		std::filesystem::create_directories(export_path.parent_path(), directory_error);
+		if (directory_error)
+		{
+			m_tails_plane_status = "Could not create export directory: " +
+				directory_error.message();
+			return;
+		}
+
+		SDLPaletteHandle palette = Renderer::CreateSDLPalette(
+			*palettes[static_cast<std::size_t>(m_chosen_palette)]
+		);
+		const BoundingBox bounds = image.texture->sprite->GetBoundingBox();
+		SDLSurfaceHandle output_surface{ SDL_CreateSurface(
+			bounds.Width(),
+			bounds.Height(),
+			SDL_PIXELFORMAT_INDEX8
+		) };
+		if (!output_surface)
+		{
+			m_tails_plane_status = "Could not create the PNG export surface.";
+			return;
+		}
+		SDL_SetSurfacePalette(output_surface.get(), palette.get());
+		SDL_SetSurfaceColorKey(output_surface.get(), true, 0);
+		image.texture->sprite->RenderToSurface(output_surface.get());
+		const std::string export_path_utf8 = PathToUtf8(export_path);
+		if (!IMG_SavePNG(output_surface.get(), export_path_utf8.c_str()))
+		{
+			m_tails_plane_status = "Could not export PNG: " + export_path_utf8;
+			return;
+		}
+		m_tails_plane_status = "Tails plane frame exported: " + export_path_utf8;
+	}
+
 	void EditorSpriteNavigator::ImportMainSpriteImage(
 		const std::filesystem::path& path,
 		Uint32 sprite_rom_offset
@@ -662,7 +935,7 @@ namespace spintool
 			}
 			ImGui::SameLine();
 			if (ImGui::RadioButton(
-				"Render 126-bit Colour",
+				"Render 16-bit Colour",
 				m_render_arbitrary_with_palette == ArbitraryRenderMode::VDP_COLOUR
 			))
 			{
@@ -778,12 +1051,12 @@ namespace spintool
 				4
 			);
 			ImGui::SameLine();
-			if (ImGui::Button("Load Images"))
+			if (ImGui::Button("Load Bonus Images"))
 			{
 				LoadBonusStageImages();
 			}
 			ImGui::SameLine();
-			if (ImGui::Button("Clear Images"))
+			if (ImGui::Button("Clear Bonus Images"))
 			{
 				m_result_display_mode = ResultDisplayMode::BONUS_OBJECT_FRAMES;
 				m_bonus_stage_images.clear();
@@ -794,6 +1067,49 @@ namespace spintool
 			if (!m_bonus_stage_status.empty())
 			{
 				ImGui::TextWrapped("%s", m_bonus_stage_status.c_str());
+			}
+
+
+			ImGui::SeparatorText("Tails Plane / Cinematic Frames");
+			static const char* tails_scene_names[] =
+			{
+				"Betore title screen",
+				"Before last level",
+				"Before gameplay demo",
+				"Ending cutscene",
+			};
+			ImGui::SetNextItemWidth(220.0f);
+			ImGui::Combo(
+				"Scene##tails_plane_scene",
+				&m_selected_tails_scene,
+				tails_scene_names,
+				4
+			);
+			ImGui::SameLine();
+			if (ImGui::Button("Load TPC Images"))
+			{
+				LoadTailsPlaneImages();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear TPC Images"))
+			{
+				m_result_display_mode = ResultDisplayMode::TAILS_PLANE_FRAMES;
+				m_tails_plane_images.clear();
+				m_tails_plane_warnings.clear();
+				m_tails_plane_status.clear();
+				m_selected_tails_image = -1;
+			}
+			if (!m_tails_plane_status.empty())
+			{
+				ImGui::TextWrapped("%s", m_tails_plane_status.c_str());
+			}
+			if (!m_tails_plane_warnings.empty() && ImGui::TreeNode("Decoder notes"))
+			{
+				for (const std::string& warning : m_tails_plane_warnings)
+				{
+					ImGui::BulletText("%s", warning.c_str());
+				}
+				ImGui::TreePop();
 			}
 
 			FileSelectorSettings bonus_import_settings;
@@ -822,6 +1138,35 @@ namespace spintool
 				m_bonus_import_target.reset();
 				m_close_bonus_import_popup = true;
 				ImportBonusStageImage(*selected_bonus_png, target_index);
+			}
+
+
+			FileSelectorSettings tails_import_settings;
+			tails_import_settings.object_typename = "Tails Plane PNG";
+			tails_import_settings.target_directory = m_owning_ui.GetSpriteExportPath();
+			tails_import_settings.file_extension_filter = { ".png" };
+			tails_import_settings.tiled_previews = true;
+			tails_import_settings.num_columns = 4;
+			tails_import_settings.open_popup = std::exchange(
+				m_open_tails_import_popup,
+				false
+			);
+			tails_import_settings.close_popup = std::exchange(
+				m_close_tails_import_popup,
+				false
+			);
+			const std::optional<std::filesystem::path> selected_tails_png =
+				DrawFileSelector(
+					tails_import_settings,
+					m_owning_ui,
+					std::nullopt
+				);
+			if (selected_tails_png && m_tails_import_target.has_value())
+			{
+				const std::size_t target_index = *m_tails_import_target;
+				m_tails_import_target.reset();
+				m_close_tails_import_popup = true;
+				ImportTailsPlaneImage(*selected_tails_png, target_index);
 			}
 
 			FileSelectorSettings main_import_settings;
@@ -1119,14 +1464,7 @@ namespace spintool
 				}
 				m_selected_sprite_rom_offset = 0;
 			}
-
-
-			ImGui::TextDisabled(
-				"Applied scan range: 0x%06X - 0x%06X",
-				static_cast<unsigned int>(m_scan_start_offset),
-				static_cast<unsigned int>(m_scan_end_offset)
-			);
-
+			
 			if (m_find_all_running)
 			{
 				ImGui::ProgressBar(m_find_all_progress.load());
@@ -1162,6 +1500,13 @@ namespace spintool
 					tex->texture.reset();
 				}
 				for (BonusStageImagePreview& image : m_bonus_stage_images)
+				{
+					if (image.texture)
+					{
+						image.texture->texture.reset();
+					}
+				}
+				for (TailsPlaneFramePreview& image : m_tails_plane_images)
 				{
 					if (image.texture)
 					{
@@ -1316,6 +1661,113 @@ namespace spintool
 					if (clicked)
 					{
 						m_selected_bonus_image = static_cast<int>(image_index);
+						m_owning_ui.OpenSpriteViewer(tex->sprite);
+					}
+					ImGui::PopID();
+				}
+			}
+			else if (m_result_display_mode == ResultDisplayMode::TAILS_PLANE_FRAMES)
+			{
+				// LoadTailsPlaneImages stores only the frames from the selected scene,
+				// so frames belonging to the other three groups cannot leak into this list.
+				ImGui::Text("Tails Plane / Cinematic Frames: %zu", m_tails_plane_images.size());
+				current_width = static_cast<int>(ImGui::GetCursorPosX());
+				bool has_item_on_row = false;
+
+				std::lock_guard<std::recursive_mutex> render_lock(
+					m_owning_ui.m_render_to_texture_mutex
+				);
+				for (std::size_t image_index = 0;
+					image_index < m_tails_plane_images.size();
+					++image_index)
+				{
+					TailsPlaneFramePreview& image = m_tails_plane_images[image_index];
+					std::shared_ptr<UISpriteTexture>& tex = image.texture;
+					if (!tex || !tex->sprite)
+					{
+						continue;
+					}
+					if (tex->texture == nullptr)
+					{
+						tex->texture = tex->RenderTextureForPalette(
+							*m_owning_ui.GetPalettes().at(
+								static_cast<std::size_t>(m_chosen_palette)
+							)
+						);
+					}
+					if (tex->dimensions.x <= 0 || tex->dimensions.y <= 0 || !tex->texture)
+					{
+						continue;
+					}
+
+					if (has_item_on_row &&
+						ImGui::GetContentRegionAvail().x <
+						current_width + padding_x + (tex->dimensions.x * m_zoom))
+					{
+						ImGui::NewLine();
+						ImGui::SameLine();
+						ImGui::Dummy(ImVec2(0, 0));
+						current_width = static_cast<int>(ImGui::GetCursorPosX());
+						has_item_on_row = false;
+					}
+					if (has_item_on_row)
+					{
+						ImGui::SameLine();
+					}
+
+					ImGui::PushID(static_cast<int>(image.frame_id));
+					tex->DrawForImGui(m_zoom);
+					current_width += static_cast<int>(
+						(tex->dimensions.x * m_zoom) + ImGui::GetStyle().ItemSpacing.x
+					);
+					has_item_on_row = true;
+					const bool hovered = ImGui::IsItemHovered();
+					const bool clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+
+					if (ImGui::BeginPopupContextItem(
+						"tails_plane_frame_popup",
+						ImGuiPopupFlags_MouseButtonRight
+					))
+					{
+						ImGui::TextUnformatted(image.name.c_str());
+						ImGui::Separator();
+						if (ImGui::MenuItem("Import PNG into ROM"))
+						{
+							m_tails_import_target = image_index;
+							m_open_tails_import_popup = true;
+						}
+						if (ImGui::MenuItem("Export image as PNG"))
+						{
+							ExportTailsPlaneImage(image_index);
+						}
+						ImGui::EndPopup();
+					}
+
+					if (m_selected_tails_image == static_cast<int>(image_index))
+					{
+						ImGui::GetWindowDrawList()->AddRect(
+							ImGui::GetItemRectMin(),
+							ImGui::GetItemRectMax(),
+							ImGui::GetColorU32(ImVec4{ 0, 192, 0, 255 }),
+							1.0f,
+							0,
+							2.0f
+						);
+					}
+					if (hovered)
+					{
+						ImGui::GetWindowDrawList()->AddRect(
+							ImGui::GetItemRectMin(),
+							ImGui::GetItemRectMax(),
+							ImGui::GetColorU32(ImVec4{ 255, 255, 255, 255 }),
+							1.0f,
+							0,
+							2.0f
+						);
+					}
+					if (clicked)
+					{
+						m_selected_tails_image = static_cast<int>(image_index);
 						m_owning_ui.OpenSpriteViewer(tex->sprite);
 					}
 					ImGui::PopID();
