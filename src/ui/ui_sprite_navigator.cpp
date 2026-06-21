@@ -45,9 +45,67 @@ namespace
 #endif
 	}
 
+	std::vector<Uint8> CopyIndexedSurfacePixels(SDL_Surface* surface)
+	{
+		std::vector<Uint8> pixels;
+		if (!surface || surface->format != SDL_PIXELFORMAT_INDEX8 ||
+			surface->w <= 0 || surface->h <= 0 || !surface->pixels)
+		{
+			return pixels;
+		}
+
+		pixels.resize(
+			static_cast<std::size_t>(surface->w) *
+			static_cast<std::size_t>(surface->h)
+		);
+		for (int y = 0; y < surface->h; ++y)
+		{
+			const Uint8* source_row = static_cast<const Uint8*>(surface->pixels) +
+				static_cast<std::size_t>(y) * surface->pitch;
+			std::copy_n(
+				source_row,
+				static_cast<std::size_t>(surface->w),
+				pixels.begin() + static_cast<std::size_t>(y) * surface->w
+			);
+		}
+		return pixels;
+	}
+
+	std::vector<Uint8> RenderSpriteIndexedPixels(
+		const spintool::rom::Sprite& sprite,
+		const spintool::rom::Palette& palette,
+		int& width,
+		int& height
+	)
+	{
+		const spintool::BoundingBox bounds = sprite.GetBoundingBox();
+		width = bounds.Width();
+		height = bounds.Height();
+		if (width <= 0 || height <= 0)
+		{
+			return {};
+		}
+
+		SDLSurfaceHandle surface{
+			SDL_CreateSurface(width, height, SDL_PIXELFORMAT_INDEX8)
+		};
+		if (!surface)
+		{
+			return {};
+		}
+		SDLPaletteHandle sdl_palette = spintool::Renderer::CreateSDLPalette(palette);
+		SDL_SetSurfacePalette(surface.get(), sdl_palette.get());
+		SDL_SetSurfaceColorKey(surface.get(), true, 0);
+		sprite.RenderToSurface(surface.get());
+		return CopyIndexedSurfacePixels(surface.get());
+	}
+
 	std::vector<Uint8> ConvertSurfaceToIndexed(
 		SDL_Surface* source,
-		const spintool::rom::Palette& palette
+		const spintool::rom::Palette& palette,
+		const std::vector<Uint8>& preferred_indices,
+		const int preferred_width,
+		const int preferred_height
 	)
 	{
 		std::vector<Uint8> output;
@@ -56,26 +114,120 @@ namespace
 			return output;
 		}
 
+		const bool has_preferred_indices =
+			preferred_width == source->w && preferred_height == source->h &&
+			preferred_indices.size() >=
+				static_cast<std::size_t>(source->w) * source->h;
+
+		auto select_palette_index = [&](const Uint8 red, const Uint8 green,
+			const Uint8 blue, const Uint8 alpha, const std::size_t pixel_index) -> Uint8
+		{
+			if (alpha < 0x80U)
+			{
+				return 0U;
+			}
+
+			const Uint8 preferred = has_preferred_indices
+				? static_cast<Uint8>(preferred_indices[pixel_index] & 0x0FU)
+				: 0xFFU;
+			Uint8 best_index = 0U;
+			Uint32 best_distance = std::numeric_limits<Uint32>::max();
+			for (Uint8 palette_index = 0; palette_index < 16U; ++palette_index)
+			{
+				const spintool::rom::Colour colour =
+					palette.palette_swatches[palette_index].GetUnpacked();
+				const int red_delta = static_cast<int>(red) - colour.r;
+				const int green_delta = static_cast<int>(green) - colour.g;
+				const int blue_delta = static_cast<int>(blue) - colour.b;
+				const Uint32 distance = static_cast<Uint32>(
+					red_delta * red_delta +
+					green_delta * green_delta +
+					blue_delta * blue_delta
+				);
+				if (distance < best_distance ||
+					(distance == best_distance && palette_index == preferred))
+				{
+					best_distance = distance;
+					best_index = palette_index;
+				}
+			}
+			return best_index;
+		};
+
+		output.resize(
+			static_cast<std::size_t>(source->w) *
+			static_cast<std::size_t>(source->h),
+			0U
+		);
+
+		// PNGs exported by SpinTool are indexed. Preserve their 0-15 indices
+		// directly whenever the indexed colour still matches the selected ROM
+		// palette. This keeps duplicate-looking palette entries distinct.
+		if (source->format == SDL_PIXELFORMAT_INDEX8 && source->pixels)
+		{
+			SDL_Palette* source_palette = SDL_GetSurfacePalette(source);
+			for (int y = 0; y < source->h; ++y)
+			{
+				const Uint8* row = static_cast<const Uint8*>(source->pixels) +
+					static_cast<std::size_t>(y) * source->pitch;
+				for (int x = 0; x < source->w; ++x)
+				{
+					const std::size_t pixel_index =
+						static_cast<std::size_t>(y) * source->w + x;
+					const Uint8 raw_index = row[x];
+					if (raw_index < 16U && !source_palette)
+					{
+						output[pixel_index] = raw_index;
+						continue;
+					}
+					if (raw_index < 16U && source_palette &&
+						raw_index < source_palette->ncolors)
+					{
+						const SDL_Color source_colour = source_palette->colors[raw_index];
+						const spintool::rom::Colour target_colour =
+							palette.palette_swatches[raw_index].GetUnpacked();
+						const bool transparent_index = raw_index == 0U;
+						const bool opaque_matching_index = source_colour.a >= 0x80U &&
+							source_colour.r == target_colour.r &&
+							source_colour.g == target_colour.g &&
+							source_colour.b == target_colour.b;
+						if (transparent_index || opaque_matching_index)
+						{
+							output[pixel_index] = raw_index;
+							continue;
+						}
+					}
+
+					if (source_palette && raw_index < source_palette->ncolors)
+					{
+						const SDL_Color colour = source_palette->colors[raw_index];
+						output[pixel_index] = select_palette_index(
+							colour.r,
+							colour.g,
+							colour.b,
+							colour.a,
+							pixel_index
+						);
+					}
+				}
+			}
+			return output;
+		}
+
 		SDLSurfaceHandle converted{
 			SDL_ConvertSurface(source, SDL_PIXELFORMAT_RGBA32)
 		};
 		if (!converted)
 		{
-			return output;
+			return {};
 		}
 
 		const SDL_PixelFormatDetails* format =
 			SDL_GetPixelFormatDetails(converted->format);
 		if (!format)
 		{
-			return output;
+			return {};
 		}
-
-		output.resize(
-			static_cast<std::size_t>(converted->w) *
-			static_cast<std::size_t>(converted->h),
-			0
-		);
 		const auto extract_channel = [](Uint32 packed, Uint32 mask, Uint8 shift) -> Uint8
 		{
 			return mask == 0 ? 0xFFU : static_cast<Uint8>((packed & mask) >> shift);
@@ -94,34 +246,15 @@ namespace
 				const Uint8 alpha = format->Amask == 0
 					? 0xFFU
 					: extract_channel(packed, format->Amask, format->Ashift);
-
-				Uint8 best_index = 0;
-				if (alpha >= 0x80U)
-				{
-					Uint32 best_distance = std::numeric_limits<Uint32>::max();
-					for (Uint8 palette_index = 0; palette_index < 16U; ++palette_index)
-					{
-						const spintool::rom::Colour colour =
-							palette.palette_swatches[palette_index].GetUnpacked();
-						const int red_delta = static_cast<int>(red) - colour.r;
-						const int green_delta = static_cast<int>(green) - colour.g;
-						const int blue_delta = static_cast<int>(blue) - colour.b;
-						const Uint32 distance = static_cast<Uint32>(
-							red_delta * red_delta +
-							green_delta * green_delta +
-							blue_delta * blue_delta
-						);
-						if (distance < best_distance)
-						{
-							best_distance = distance;
-							best_index = palette_index;
-						}
-					}
-				}
-				output[
-					static_cast<std::size_t>(y) * static_cast<std::size_t>(converted->w) +
-					static_cast<std::size_t>(x)
-				] = best_index;
+				const std::size_t pixel_index =
+					static_cast<std::size_t>(y) * converted->w + x;
+				output[pixel_index] = select_palette_index(
+					red,
+					green,
+					blue,
+					alpha,
+					pixel_index
+				);
 			}
 		}
 		return output;
@@ -241,9 +374,26 @@ namespace spintool
 			0,
 			static_cast<int>(palettes.size()) - 1
 		);
+		const BonusStageImagePreview target = m_bonus_stage_images[image_index];
+		if (!target.texture || !target.texture->sprite)
+		{
+			m_bonus_stage_status = "The selected Bonus Stage image has no sprite data.";
+			return;
+		}
+		int preferred_width = 0;
+		int preferred_height = 0;
+		const std::vector<Uint8> preferred_indices = RenderSpriteIndexedPixels(
+			*target.texture->sprite,
+			*palettes[static_cast<std::size_t>(m_chosen_palette)],
+			preferred_width,
+			preferred_height
+		);
 		const std::vector<Uint8> indexed_pixels = ConvertSurfaceToIndexed(
 			loaded_image.get(),
-			*palettes[static_cast<std::size_t>(m_chosen_palette)]
+			*palettes[static_cast<std::size_t>(m_chosen_palette)],
+			preferred_indices,
+			preferred_width,
+			preferred_height
 		);
 		if (indexed_pixels.empty())
 		{
@@ -252,27 +402,13 @@ namespace spintool
 		}
 
 		rom::SpinballROM& rom = m_owning_ui.GetROM();
-		if (!rom.m_filepath.empty())
+		const std::filesystem::path saved_rom_path = rom.m_filepath;
+		if (saved_rom_path.empty())
 		{
-			std::filesystem::path backup_path = rom.m_filepath;
-			backup_path += ".bak";
-			std::error_code backup_error;
-			if (!std::filesystem::exists(backup_path, backup_error))
-			{
-				std::filesystem::copy_file(
-					rom.m_filepath,
-					backup_path,
-					std::filesystem::copy_options::none,
-					backup_error
-				);
-			}
-			if (backup_error)
-			{
-				m_bonus_stage_status = "Could not create ROM backup: " +
-					backup_error.message();
-				return;
-			}
+			m_bonus_stage_status = "The working ROM has no file path and cannot be saved.";
+			return;
 		}
+		const std::vector<Uint8> original_rom_buffer = rom.m_buffer;
 
 		const std::filesystem::path reference_rom_path =
 			m_owning_ui.GetReferenceROMPath();
@@ -291,7 +427,6 @@ namespace spintool
 			return;
 		}
 
-		const BonusStageImagePreview target = m_bonus_stage_images[image_index];
 		const rom::BonusStageImportResult import_result =
 			rom::BonusStageDecoder::ImportIndexedImage(
 				rom,
@@ -308,12 +443,29 @@ namespace spintool
 			m_bonus_stage_status = "Import failed: " + import_result.message;
 			return;
 		}
-
-		const std::filesystem::path saved_rom_path = rom.m_filepath;
-		if (saved_rom_path.empty())
+		if (!import_result.changed)
 		{
-			m_bonus_stage_status =
-				"Import succeeded in memory, but the ROM has no file path and could not be saved.";
+			m_bonus_stage_status = import_result.message;
+			return;
+		}
+
+		std::filesystem::path backup_path = saved_rom_path;
+		backup_path += ".bak";
+		std::error_code backup_error;
+		if (!std::filesystem::exists(backup_path, backup_error))
+		{
+			std::filesystem::copy_file(
+				saved_rom_path,
+				backup_path,
+				std::filesystem::copy_options::none,
+				backup_error
+			);
+		}
+		if (backup_error)
+		{
+			rom.m_buffer = original_rom_buffer;
+			m_bonus_stage_status = "Could not create ROM backup: " +
+				backup_error.message();
 			return;
 		}
 
@@ -450,9 +602,26 @@ namespace spintool
 			0,
 			static_cast<int>(palettes.size()) - 1
 		);
+		const TailsPlaneFramePreview target = m_tails_plane_images[image_index];
+		if (!target.texture || !target.texture->sprite)
+		{
+			m_tails_plane_status = "The selected Tails plane frame has no sprite data.";
+			return;
+		}
+		int preferred_width = 0;
+		int preferred_height = 0;
+		const std::vector<Uint8> preferred_indices = RenderSpriteIndexedPixels(
+			*target.texture->sprite,
+			*palettes[static_cast<std::size_t>(m_chosen_palette)],
+			preferred_width,
+			preferred_height
+		);
 		const std::vector<Uint8> indexed_pixels = ConvertSurfaceToIndexed(
 			loaded_image.get(),
-			*palettes[static_cast<std::size_t>(m_chosen_palette)]
+			*palettes[static_cast<std::size_t>(m_chosen_palette)],
+			preferred_indices,
+			preferred_width,
+			preferred_height
 		);
 		if (indexed_pixels.empty())
 		{
@@ -461,6 +630,13 @@ namespace spintool
 		}
 
 		rom::SpinballROM& working_rom = m_owning_ui.GetROM();
+		const std::filesystem::path saved_rom_path = working_rom.m_filepath;
+		if (saved_rom_path.empty())
+		{
+			m_tails_plane_status = "The working ROM has no file path and cannot be saved.";
+			return;
+		}
+		const std::vector<Uint8> original_rom_buffer = working_rom.m_buffer;
 		const std::filesystem::path reference_rom_path =
 			m_owning_ui.GetReferenceROMPath();
 		if (reference_rom_path.empty())
@@ -478,29 +654,6 @@ namespace spintool
 			return;
 		}
 
-		if (!working_rom.m_filepath.empty())
-		{
-			std::filesystem::path backup_path = working_rom.m_filepath;
-			backup_path += ".bak";
-			std::error_code backup_error;
-			if (!std::filesystem::exists(backup_path, backup_error))
-			{
-				std::filesystem::copy_file(
-					working_rom.m_filepath,
-					backup_path,
-					std::filesystem::copy_options::none,
-					backup_error
-				);
-			}
-			if (backup_error)
-			{
-				m_tails_plane_status = "Could not create ROM backup: " +
-					backup_error.message();
-				return;
-			}
-		}
-
-		const TailsPlaneFramePreview target = m_tails_plane_images[image_index];
 		const rom::TailsPlaneImportResult import_result =
 			rom::TailsPlaneDecoder::ImportIndexedImage(
 				working_rom,
@@ -515,12 +668,29 @@ namespace spintool
 			m_tails_plane_status = "Import failed: " + import_result.message;
 			return;
 		}
-
-		const std::filesystem::path saved_rom_path = working_rom.m_filepath;
-		if (saved_rom_path.empty())
+		if (!import_result.changed)
 		{
-			m_tails_plane_status =
-				"Import succeeded in memory, but the ROM has no file path and could not be saved.";
+			m_tails_plane_status = import_result.message;
+			return;
+		}
+
+		std::filesystem::path backup_path = saved_rom_path;
+		backup_path += ".bak";
+		std::error_code backup_error;
+		if (!std::filesystem::exists(backup_path, backup_error))
+		{
+			std::filesystem::copy_file(
+				saved_rom_path,
+				backup_path,
+				std::filesystem::copy_options::none,
+				backup_error
+			);
+		}
+		if (backup_error)
+		{
+			working_rom.m_buffer = original_rom_buffer;
+			m_tails_plane_status = "Could not create ROM backup: " +
+				backup_error.message();
 			return;
 		}
 
@@ -558,6 +728,10 @@ namespace spintool
 
 	void EditorSpriteNavigator::ExportTailsPlaneImage(const std::size_t image_index)
 	{
+		// Exporting a valid Tails frame is intentionally silent.  Clear any
+		// previous status first, while still reporting errors below.
+		m_tails_plane_status.clear();
+
 		if (image_index >= m_tails_plane_images.size())
 		{
 			m_tails_plane_status = "The selected Tails plane frame no longer exists.";
@@ -632,7 +806,6 @@ namespace spintool
 			m_tails_plane_status = "Could not export PNG: " + export_path_utf8;
 			return;
 		}
-		m_tails_plane_status = "Tails plane frame exported: " + export_path_utf8;
 	}
 
 	void EditorSpriteNavigator::ImportMainSpriteImage(
@@ -674,9 +847,20 @@ namespace spintool
 			0,
 			static_cast<int>(palettes.size()) - 1
 		);
+		int preferred_width = 0;
+		int preferred_height = 0;
+		const std::vector<Uint8> preferred_indices = RenderSpriteIndexedPixels(
+			*target_sprite,
+			*palettes[static_cast<std::size_t>(m_chosen_palette)],
+			preferred_width,
+			preferred_height
+		);
 		const std::vector<Uint8> indexed_pixels = ConvertSurfaceToIndexed(
 			loaded_image.get(),
-			*palettes[static_cast<std::size_t>(m_chosen_palette)]
+			*palettes[static_cast<std::size_t>(m_chosen_palette)],
+			preferred_indices,
+			preferred_width,
+			preferred_height
 		);
 		if (indexed_pixels.empty())
 		{
@@ -875,6 +1059,37 @@ namespace spintool
 				<< " (extra pixels ignored, missing pixels made transparent)";
 		}
 		m_main_sprite_status = status.str();
+	}
+
+
+	void EditorSpriteNavigator::InvalidatePaletteDependentTextures()
+	{
+		for (std::shared_ptr<UISpriteTexture>& texture : m_sprites_found)
+		{
+			if (texture)
+			{
+				texture->texture.reset();
+			}
+		}
+
+		for (BonusStageImagePreview& image : m_bonus_stage_images)
+		{
+			if (image.texture)
+			{
+				image.texture->texture.reset();
+			}
+		}
+
+		for (TailsPlaneFramePreview& image : m_tails_plane_images)
+		{
+			if (image.texture)
+			{
+				image.texture->texture.reset();
+			}
+		}
+
+		m_random_texture.reset();
+		m_attempt_render_of_arbitrary_data = true;
 	}
 
 	void EditorSpriteNavigator::Update()
@@ -1729,8 +1944,6 @@ namespace spintool
 						ImGuiPopupFlags_MouseButtonRight
 					))
 					{
-						ImGui::TextUnformatted(image.name.c_str());
-						ImGui::Separator();
 						if (ImGui::MenuItem("Import PNG into ROM"))
 						{
 							m_tails_import_target = image_index;
