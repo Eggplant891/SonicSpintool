@@ -97,6 +97,7 @@ namespace spintool::rom
 	struct BonusStageImportResult
 	{
 		bool success = false;
+		bool changed = false;
 		std::string message;
 		std::vector<Uint32> rewritten_art_offsets;
 	};
