@@ -21,7 +21,7 @@ GUI / CORE :
 TOOLS - SPRITE NAVIGATOR :
 -----
 - Updated elements / windows gui
-- Bonus Level and Tails Plane Sprites support added : Compressed2/LZW support added
+- Bonus Level and Tails Plane Sprites support added : Optimized LZW support added
 - Main Sprites and Bonus Level Sprites can be import and export easily : you have just to choose correctly the palette
 - After sprites modifications, modifications are saved directly on the file in "rom_export" folder
 
@@ -32,6 +32,30 @@ TOOLS - TILE LAYOUT VIEWER :
 - Added Views for Intro
 - Added Bonus Views
 - After levels modifications, modifications are saved directly on the file in "rom_export" folder
+
+## NOTES
+
+LZW Compression in SpinTool:
+-----
+Sonic Spinball stores some graphical data ( for example Bonus Stages, Tails' Plane ) using an LZW-based compression format (called on SpinTool as `Compressed2`).
+
+When a PNG is imported, SpinTool converts the image back into Mega Drive tile data and recompresses the complete graphics block before writing it to the ROM.
+
+Changing only a few pixels or colors does not change the number of tiles, but it can still change the compressed size. LZW compression depends on repeated byte sequences. A small graphical modification may reduce the number of repeated patterns, causing the compressed data to become larger.
+
+SpinTool uses an optimized LZW compressor that tries several compatible dictionary-reset strategies and keeps the smallest valid result. The generated data remains fully compatible with the original game decompressor.
+
+The original graphics block has a fixed amount of space available in the ROM. SpinTool does not relocate or enlarge this block to avoid ROM corruption.
+
+The import follows these rules:
+* If the new compressed data fits within the original capacity, the import is accepted.
+* If the compressed data is smaller, the unused bytes are safely cleared.
+* If the smallest possible result is still larger than the original capacity, the import is refused.
+* The ROM is not modified when an import is refused.
+* If the imported PNG produces exactly the same tile data as the current frame, SpinTool keeps the original compressed stream and performs no write.
+
+An image can therefore have exactly the same dimensions as the original and still exceed the available capacity. The limitation is not related to the PNG size or the sprite dimensions. It is determined only by the size of the resulting compressed tile data.
+
 
 ## Prerequisites
 
