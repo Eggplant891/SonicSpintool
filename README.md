@@ -45,7 +45,7 @@ Changing only a few pixels or colors does not change the number of tiles, but it
 
 SpinTool uses an optimized LZW compressor that tries several compatible dictionary-reset strategies and keeps the smallest valid result. The generated data remains fully compatible with the original game decompressor.
 
-The original graphics block has a fixed amount of space available in the ROM. SpinTool does not relocate or enlarge this block to avoid ROM corruption.
+**The original graphics block has a fixed amount of space available in the ROM. SpinTool does not relocate or enlarge this block to avoid ROM corruption.**
 
 The import follows these rules:
 * If the new compressed data fits within the original capacity, the import is accepted.
