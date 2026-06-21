@@ -21,7 +21,7 @@ GUI / CORE :
 TOOLS - SPRITE NAVIGATOR :
 -----
 - Updated elements / windows gui
-- Bonus Level Sprites support added : SSC support added
+- Bonus Level and Tails Plane Sprites support added : Compressed2/LZW support added
 - Main Sprites and Bonus Level Sprites can be import and export easily : you have just to choose correctly the palette
 - After sprites modifications, modifications are saved directly on the file in "rom_export" folder
 
