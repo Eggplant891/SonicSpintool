@@ -35,7 +35,7 @@ TOOLS - TILE LAYOUT VIEWER :
 
 ## NOTES
 
-LZW Compression in SpinTool :
+LZW Compression in SpinTool - June 21th, 2026 :
 -----
 Sonic Spinball stores some graphical data ( for example Bonus Stages, Tails' Plane ) using an LZW-based compression format (called on SpinTool as `Compressed2`).
 
