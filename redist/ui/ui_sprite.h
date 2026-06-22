@@ -32,5 +32,6 @@ namespace spintool
 		void DrawForImGui(const float zoom = 1.0f) const;
 		void DrawForImGuiWithOffset(const float zoom /*= 1.0f*/) const;
 		SDLTextureHandle RenderTextureForPalette(const UIPalette& palette, bool flip_x = false, bool flip_y = false) const;
+		SDLTextureHandle RenderTextureForPaletteSet(const rom::PaletteSet& palette_set, bool flip_x = false, bool flip_y = false) const;
 	};
 }
