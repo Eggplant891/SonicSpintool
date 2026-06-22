@@ -35,6 +35,10 @@ TOOLS - TILE LAYOUT VIEWER :
 - Added Bonus Views
 - After levels modifications, modifications are saved directly on the file in "rom_export" folder
 
+TOOLS - PALETTES :
+-----
+- Changing Palette system to a Mega Drive compatible color picker tool ( HUE, Gray colors or RGB -> Mega Drive value )
+
 ## NOTES
 
 LZW Compression in SpinTool - June 21th, 2026 :
