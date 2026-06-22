@@ -3,6 +3,7 @@
 #include "rom/spinball_rom.h"
 #include "rom/bonus_stage_decoder.h"
 #include "rom/tails_plane_decoder.h"
+#include "rom/title_screen_decoder.h"
 #include "ui/ui_editor.h"
 #include "ui/ui_file_selector.h"
 
@@ -96,6 +97,40 @@ namespace
 		SDLPaletteHandle sdl_palette = spintool::Renderer::CreateSDLPalette(palette);
 		SDL_SetSurfacePalette(surface.get(), sdl_palette.get());
 		SDL_SetSurfaceColorKey(surface.get(), true, 0);
+		sprite.RenderToSurface(surface.get());
+		return CopyIndexedSurfacePixels(surface.get());
+	}
+
+	std::vector<Uint8> RenderSpriteIndexedPixels(
+		const spintool::rom::Sprite& sprite,
+		const spintool::rom::PaletteSet& palette_set,
+		int& width,
+		int& height
+	)
+	{
+		const spintool::BoundingBox bounds = sprite.GetBoundingBox();
+		width = bounds.Width();
+		height = bounds.Height();
+		if (width <= 0 || height <= 0)
+		{
+			return {};
+		}
+
+		SDLSurfaceHandle surface{
+			SDL_CreateSurface(width, height, SDL_PIXELFORMAT_INDEX8)
+		};
+		if (!surface)
+		{
+			return {};
+		}
+		SDLPaletteHandle sdl_palette =
+			spintool::Renderer::CreateSDLPaletteForSet(palette_set);
+		if (!sdl_palette ||
+			!SDL_SetSurfacePalette(surface.get(), sdl_palette.get()) ||
+			!SDL_SetSurfaceColorKey(surface.get(), true, 0))
+		{
+			return {};
+		}
 		sprite.RenderToSurface(surface.get());
 		return CopyIndexedSurfacePixels(surface.get());
 	}
@@ -258,6 +293,210 @@ namespace
 			}
 		}
 		return output;
+	}
+
+
+	std::vector<Uint8> ConvertSurfaceToTitleIndexed(
+		SDL_Surface* source,
+		const spintool::rom::PaletteSet& palette_set,
+		const std::vector<Uint8>& palette_line_map,
+		const std::vector<Uint8>& preferred_indices,
+		const int preferred_width,
+		const int preferred_height
+	)
+	{
+		std::vector<Uint8> output;
+		if (!source || source->w <= 0 || source->h <= 0)
+		{
+			return output;
+		}
+		for (const std::shared_ptr<spintool::rom::Palette>& line : palette_set.palette_lines)
+		{
+			if (!line) return output;
+		}
+
+		const std::size_t pixel_count =
+			static_cast<std::size_t>(source->w) * source->h;
+		const bool has_preferred =
+			preferred_width == source->w && preferred_height == source->h &&
+			preferred_indices.size() >= pixel_count;
+		const bool has_line_map =
+			preferred_width == source->w && preferred_height == source->h &&
+			palette_line_map.size() >= pixel_count;
+
+		auto palette_line_for = [&](const std::size_t pixel_index) -> Uint8
+		{
+			if (has_line_map)
+			{
+				return static_cast<Uint8>(palette_line_map[pixel_index] & 3U);
+			}
+			if (has_preferred && preferred_indices[pixel_index] != 0U)
+			{
+				return static_cast<Uint8>((preferred_indices[pixel_index] >> 4U) & 3U);
+			}
+			return 0U;
+		};
+
+		auto select_palette_index = [&](
+			const Uint8 red,
+			const Uint8 green,
+			const Uint8 blue,
+			const Uint8 alpha,
+			const std::size_t pixel_index
+		) -> Uint8
+		{
+			if (alpha < 0x80U) return 0U;
+			const Uint8 line = palette_line_for(pixel_index);
+			const spintool::rom::Palette& palette = *palette_set.palette_lines[line];
+			const Uint8 preferred_local = has_preferred
+				? static_cast<Uint8>(preferred_indices[pixel_index] & 0x0FU)
+				: 0xFFU;
+			Uint8 best_local = 1U;
+			Uint32 best_distance = std::numeric_limits<Uint32>::max();
+			// Local colour zero is transparent for Mega Drive sprites, so opaque
+			// PNG pixels are quantised only to visible entries 1-15.
+			for (Uint8 local = 1U; local < 16U; ++local)
+			{
+				const spintool::rom::Colour colour =
+					palette.palette_swatches[local].GetUnpacked();
+				const int red_delta = static_cast<int>(red) - colour.r;
+				const int green_delta = static_cast<int>(green) - colour.g;
+				const int blue_delta = static_cast<int>(blue) - colour.b;
+				const Uint32 distance = static_cast<Uint32>(
+					red_delta * red_delta +
+					green_delta * green_delta +
+					blue_delta * blue_delta
+				);
+				if (distance < best_distance ||
+					(distance == best_distance && local == preferred_local))
+				{
+					best_distance = distance;
+					best_local = local;
+				}
+			}
+			return static_cast<Uint8>((line * 16U) + best_local);
+		};
+
+		output.assign(pixel_count, 0U);
+		if (source->format == SDL_PIXELFORMAT_INDEX8 && source->pixels)
+		{
+			SDL_Palette* source_palette = SDL_GetSurfacePalette(source);
+			for (int y = 0; y < source->h; ++y)
+			{
+				const Uint8* row = static_cast<const Uint8*>(source->pixels) +
+					static_cast<std::size_t>(y) * source->pitch;
+				for (int x = 0; x < source->w; ++x)
+				{
+					const std::size_t pixel_index =
+						static_cast<std::size_t>(y) * source->w + x;
+					const Uint8 raw_index = row[x];
+					if (raw_index == 0U)
+					{
+						output[pixel_index] = 0U;
+						continue;
+					}
+					const Uint8 expected_line = palette_line_for(pixel_index);
+					if (!source_palette && raw_index < 64U)
+					{
+						output[pixel_index] = static_cast<Uint8>(
+							(expected_line * 16U) + (raw_index & 0x0FU)
+						);
+						continue;
+					}
+					if (source_palette && raw_index < source_palette->ncolors)
+					{
+						const SDL_Color source_colour = source_palette->colors[raw_index];
+						const Uint8 raw_line = static_cast<Uint8>((raw_index >> 4U) & 3U);
+						const Uint8 raw_local = static_cast<Uint8>(raw_index & 0x0FU);
+						if (raw_index < 64U && raw_line == expected_line && raw_local != 0U)
+						{
+							const spintool::rom::Colour target_colour =
+								palette_set.palette_lines[expected_line]
+									->palette_swatches[raw_local].GetUnpacked();
+							if (source_colour.a >= 0x80U &&
+								source_colour.r == target_colour.r &&
+								source_colour.g == target_colour.g &&
+								source_colour.b == target_colour.b)
+							{
+								output[pixel_index] = raw_index;
+								continue;
+							}
+						}
+						output[pixel_index] = select_palette_index(
+							source_colour.r, source_colour.g, source_colour.b,
+							source_colour.a, pixel_index
+						);
+					}
+				}
+			}
+			return output;
+		}
+
+		SDLSurfaceHandle converted{ SDL_ConvertSurface(source, SDL_PIXELFORMAT_RGBA32) };
+		if (!converted) return {};
+		const SDL_PixelFormatDetails* format = SDL_GetPixelFormatDetails(converted->format);
+		if (!format) return {};
+		const auto extract_channel = [](Uint32 packed, Uint32 mask, Uint8 shift) -> Uint8
+		{
+			return mask == 0U ? 0xFFU : static_cast<Uint8>((packed & mask) >> shift);
+		};
+		for (int y = 0; y < converted->h; ++y)
+		{
+			const Uint8* row = static_cast<const Uint8*>(converted->pixels) +
+				static_cast<std::size_t>(y) * converted->pitch;
+			for (int x = 0; x < converted->w; ++x)
+			{
+				const Uint32 packed = reinterpret_cast<const Uint32*>(row)[x];
+				const Uint8 red = extract_channel(packed, format->Rmask, format->Rshift);
+				const Uint8 green = extract_channel(packed, format->Gmask, format->Gshift);
+				const Uint8 blue = extract_channel(packed, format->Bmask, format->Bshift);
+				const Uint8 alpha = format->Amask == 0U
+					? 0xFFU : extract_channel(packed, format->Amask, format->Ashift);
+				const std::size_t pixel_index =
+					static_cast<std::size_t>(y) * converted->w + x;
+				output[pixel_index] = select_palette_index(
+					red, green, blue, alpha, pixel_index
+				);
+			}
+		}
+		return output;
+	}
+
+
+	const char* TitleCategoryName(const spintool::rom::TitleScreenCategory category)
+	{
+		switch (category)
+		{
+		case spintool::rom::TitleScreenCategory::SONIC:
+			return "Sonic Frames";
+		case spintool::rom::TitleScreenCategory::BUMPER_RING:
+			return "Bumper / Ring";
+		case spintool::rom::TitleScreenCategory::LOGO_SONIC:
+			return "Logo Sonic";
+		case spintool::rom::TitleScreenCategory::LOGO_THE_HEDGEHOG:
+			return "Logo The Hedgehog";
+		case spintool::rom::TitleScreenCategory::LOGO_SPINBALL:
+			return "Logo Spinball";
+		}
+		return "Title Frame";
+	}
+
+	const char* TitleCategorySlug(const spintool::rom::TitleScreenCategory category)
+	{
+		switch (category)
+		{
+		case spintool::rom::TitleScreenCategory::SONIC:
+			return "sonic";
+		case spintool::rom::TitleScreenCategory::BUMPER_RING:
+			return "bumper_ring";
+		case spintool::rom::TitleScreenCategory::LOGO_SONIC:
+			return "logo_sonic";
+		case spintool::rom::TitleScreenCategory::LOGO_THE_HEDGEHOG:
+			return "logo_the_hedgehog";
+		case spintool::rom::TitleScreenCategory::LOGO_SPINBALL:
+			return "logo_spinball";
+		}
+		return "title";
 	}
 
 	void UpdateMegaDriveChecksum(spintool::rom::SpinballROM& rom)
@@ -808,6 +1047,274 @@ namespace spintool
 		}
 	}
 
+
+
+	void EditorSpriteNavigator::LoadTitleScreenImages()
+	{
+		m_result_display_mode = ResultDisplayMode::TITLE_SCREEN_FRAMES;
+		m_title_screen_images.clear();
+		m_title_screen_warnings.clear();
+		m_title_screen_status.clear();
+		m_title_screen_palette_set.reset();
+		m_selected_title_image = -1;
+
+		const rom::TitleScreenDecodeResult decode_result =
+			rom::TitleScreenDecoder::Decode(m_owning_ui.GetROM());
+		m_title_screen_warnings = decode_result.warnings;
+		m_title_screen_palette_set = decode_result.palette_set;
+		if (!decode_result.error.empty())
+		{
+			m_title_screen_status = "Error: " + decode_result.error;
+			return;
+		}
+
+		for (const rom::TitleScreenFrame& decoded_frame : decode_result.frames)
+		{
+			if (!decoded_frame.sprite)
+			{
+				continue;
+			}
+			std::shared_ptr<const rom::Sprite> frame_sprite = decoded_frame.sprite;
+			TitleScreenFramePreview preview;
+			preview.category = decoded_frame.category;
+			preview.name = decoded_frame.name;
+			preview.usage = decoded_frame.usage;
+			preview.frame_id = decoded_frame.frame_id;
+			preview.palette_line_map = decoded_frame.palette_line_map;
+			preview.texture = std::make_shared<UISpriteTexture>(frame_sprite);
+			m_title_screen_images.emplace_back(std::move(preview));
+		}
+
+		if (!m_title_screen_palette_set)
+		{
+			m_title_screen_status = "The title-screen palette set could not be loaded.";
+			m_title_screen_images.clear();
+			return;
+		}
+		if (m_title_screen_images.empty())
+		{
+			m_title_screen_status = "No complete title-screen frame could be decoded.";
+		}
+	}
+
+	void EditorSpriteNavigator::ImportTitleScreenImage(
+		const std::filesystem::path& path,
+		const std::size_t image_index
+	)
+	{
+		m_result_display_mode = ResultDisplayMode::TITLE_SCREEN_FRAMES;
+		if (image_index >= m_title_screen_images.size())
+		{
+			m_title_screen_status = "The selected title-screen frame no longer exists.";
+			return;
+		}
+
+		const std::string path_utf8 = PathToUtf8(path);
+		SDLSurfaceHandle loaded_image{ IMG_Load(path_utf8.c_str()) };
+		if (!loaded_image)
+		{
+			m_title_screen_status = "Could not load PNG: " + path_utf8;
+			return;
+		}
+
+		const TitleScreenFramePreview target = m_title_screen_images[image_index];
+		if (!m_title_screen_palette_set)
+		{
+			m_title_screen_status = "The four title-screen palettes are not loaded.";
+			return;
+		}
+		if (!target.texture || !target.texture->sprite)
+		{
+			m_title_screen_status = "The selected title-screen frame has no sprite data.";
+			return;
+		}
+		int preferred_width = 0;
+		int preferred_height = 0;
+		const std::vector<Uint8> preferred_indices = RenderSpriteIndexedPixels(
+			*target.texture->sprite,
+			*m_title_screen_palette_set,
+			preferred_width,
+			preferred_height
+		);
+		const std::vector<Uint8> indexed_pixels = ConvertSurfaceToTitleIndexed(
+			loaded_image.get(),
+			*m_title_screen_palette_set,
+			target.palette_line_map,
+			preferred_indices,
+			preferred_width,
+			preferred_height
+		);
+		if (indexed_pixels.empty())
+		{
+			m_title_screen_status = "The PNG could not be converted to indexed pixels.";
+			return;
+		}
+
+		rom::SpinballROM& working_rom = m_owning_ui.GetROM();
+		const std::filesystem::path saved_rom_path = working_rom.m_filepath;
+		if (saved_rom_path.empty())
+		{
+			m_title_screen_status = "The working ROM has no file path and cannot be saved.";
+			return;
+		}
+		const std::vector<Uint8> original_rom_buffer = working_rom.m_buffer;
+		const std::filesystem::path reference_rom_path =
+			m_owning_ui.GetReferenceROMPath();
+		if (reference_rom_path.empty())
+		{
+			m_title_screen_status =
+				"No reference ROM is associated with the current working ROM.";
+			return;
+		}
+
+		rom::SpinballROM reference_rom;
+		if (!reference_rom.LoadROMFromPath(reference_rom_path))
+		{
+			m_title_screen_status = "Could not load reference ROM: " +
+				PathToUtf8(reference_rom_path);
+			return;
+		}
+
+		const rom::TitleScreenImportResult import_result =
+			rom::TitleScreenDecoder::ImportIndexedImage(
+				working_rom,
+				reference_rom,
+				target.frame_id,
+				indexed_pixels,
+				loaded_image->w,
+				loaded_image->h
+			);
+		if (!import_result.success)
+		{
+			m_title_screen_status = "Import failed: " + import_result.message;
+			return;
+		}
+		if (!import_result.changed)
+		{
+			m_title_screen_status = import_result.message;
+			return;
+		}
+
+		std::filesystem::path backup_path = saved_rom_path;
+		backup_path += ".bak";
+		std::error_code backup_error;
+		if (!std::filesystem::exists(backup_path, backup_error))
+		{
+			std::filesystem::copy_file(
+				saved_rom_path,
+				backup_path,
+				std::filesystem::copy_options::none,
+				backup_error
+			);
+		}
+		if (backup_error)
+		{
+			working_rom.m_buffer = original_rom_buffer;
+			m_title_screen_status = "Could not create ROM backup: " +
+				backup_error.message();
+			return;
+		}
+
+		working_rom.SaveROM();
+		std::ifstream saved_rom_file(saved_rom_path, std::ios::binary);
+		if (!saved_rom_file)
+		{
+			m_title_screen_status =
+				"Import changed the in-memory ROM, but the saved ROM could not be reopened: " +
+				PathToUtf8(saved_rom_path);
+			return;
+		}
+		const std::vector<Uint8> disk_buffer{
+			std::istreambuf_iterator<char>(saved_rom_file),
+			std::istreambuf_iterator<char>{}
+		};
+		if (disk_buffer != working_rom.m_buffer)
+		{
+			m_title_screen_status =
+				"Import changed the in-memory ROM, but disk verification failed: " +
+				PathToUtf8(saved_rom_path);
+			return;
+		}
+		if (!working_rom.LoadROMFromPath(saved_rom_path))
+		{
+			m_title_screen_status =
+				"The ROM was written and verified, but SpinTool could not reload it: " +
+				PathToUtf8(saved_rom_path);
+			return;
+		}
+
+		LoadTitleScreenImages();
+		m_title_screen_status = import_result.message;
+	}
+
+	void EditorSpriteNavigator::ExportTitleScreenImage(const std::size_t image_index)
+	{
+		m_title_screen_status.clear();
+		if (image_index >= m_title_screen_images.size())
+		{
+			m_title_screen_status = "The selected title-screen frame no longer exists.";
+			return;
+		}
+		const TitleScreenFramePreview& image = m_title_screen_images[image_index];
+		if (!image.texture || !image.texture->sprite)
+		{
+			m_title_screen_status = "The selected title-screen frame has no image.";
+			return;
+		}
+		if (!m_title_screen_palette_set)
+		{
+			m_title_screen_status = "The four title-screen palettes are not loaded.";
+			return;
+		}
+
+		char filename[160]{};
+		snprintf(
+			filename,
+			sizeof(filename),
+			"title_screen_%s_frame_%02zu_id_%03zu.png",
+			TitleCategorySlug(image.category),
+			image_index,
+			image.frame_id
+		);
+		std::filesystem::path export_path =
+			m_owning_ui.GetSpriteExportPath().append(filename);
+		std::error_code directory_error;
+		std::filesystem::create_directories(export_path.parent_path(), directory_error);
+		if (directory_error)
+		{
+			m_title_screen_status = "Could not create export directory: " +
+				directory_error.message();
+			return;
+		}
+
+		SDLPaletteHandle palette =
+			Renderer::CreateSDLPaletteForSet(*m_title_screen_palette_set);
+		if (!palette)
+		{
+			m_title_screen_status = "Could not create the combined title-screen palette.";
+			return;
+		}
+		const BoundingBox bounds = image.texture->sprite->GetBoundingBox();
+		SDLSurfaceHandle output_surface{ SDL_CreateSurface(
+			bounds.Width(),
+			bounds.Height(),
+			SDL_PIXELFORMAT_INDEX8
+		) };
+		if (!output_surface)
+		{
+			m_title_screen_status = "Could not create the PNG export surface.";
+			return;
+		}
+		SDL_SetSurfacePalette(output_surface.get(), palette.get());
+		SDL_SetSurfaceColorKey(output_surface.get(), true, 0);
+		image.texture->sprite->RenderToSurface(output_surface.get());
+		const std::string export_path_utf8 = PathToUtf8(export_path);
+		if (!IMG_SavePNG(output_surface.get(), export_path_utf8.c_str()))
+		{
+			m_title_screen_status = "Could not export PNG: " + export_path_utf8;
+		}
+	}
+
 	void EditorSpriteNavigator::ImportMainSpriteImage(
 		const std::filesystem::path& path,
 		Uint32 sprite_rom_offset
@@ -1088,6 +1595,23 @@ namespace spintool
 			}
 		}
 
+		for (TitleScreenFramePreview& image : m_title_screen_images)
+		{
+			if (image.texture)
+			{
+				image.texture->texture.reset();
+			}
+		}
+		if (!m_title_screen_images.empty())
+		{
+			const rom::TitleScreenDecodeResult refreshed_title =
+				rom::TitleScreenDecoder::Decode(m_owning_ui.GetROM());
+			if (refreshed_title.palette_set)
+			{
+				m_title_screen_palette_set = refreshed_title.palette_set;
+			}
+		}
+
 		m_random_texture.reset();
 		m_attempt_render_of_arbitrary_data = true;
 	}
@@ -1327,6 +1851,55 @@ namespace spintool
 				ImGui::TreePop();
 			}
 
+
+			ImGui::SeparatorText("Title Screen Frames");
+			static const char* title_category_names[] =
+			{
+				"Sonic",
+				"Bumper / Ring",
+				"Logo Sonic",
+				"Logo The Hedgehog",
+				"Logo Spinball",
+			};
+			ImGui::SetNextItemWidth(220.0f);
+			if (ImGui::Combo(
+				"Category##title_screen_category",
+				&m_selected_title_category,
+				title_category_names,
+				5
+			))
+			{
+				m_result_display_mode = ResultDisplayMode::TITLE_SCREEN_FRAMES;
+				m_selected_title_image = -1;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Load Title Images"))
+			{
+				LoadTitleScreenImages();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Clear Title Images"))
+			{
+				m_result_display_mode = ResultDisplayMode::TITLE_SCREEN_FRAMES;
+				m_title_screen_images.clear();
+				m_title_screen_warnings.clear();
+				m_title_screen_status.clear();
+				m_title_screen_palette_set.reset();
+				m_selected_title_image = -1;
+			}
+			if (!m_title_screen_status.empty())
+			{
+				ImGui::TextWrapped("%s", m_title_screen_status.c_str());
+			}
+			if (!m_title_screen_warnings.empty() && ImGui::TreeNode("Title decoder notes"))
+			{
+				for (const std::string& warning : m_title_screen_warnings)
+				{
+					ImGui::BulletText("%s", warning.c_str());
+				}
+				ImGui::TreePop();
+			}
+
 			FileSelectorSettings bonus_import_settings;
 			bonus_import_settings.object_typename = "Bonus Stage PNG";
 			bonus_import_settings.target_directory = m_owning_ui.GetSpriteExportPath();
@@ -1382,6 +1955,35 @@ namespace spintool
 				m_tails_import_target.reset();
 				m_close_tails_import_popup = true;
 				ImportTailsPlaneImage(*selected_tails_png, target_index);
+			}
+
+
+			FileSelectorSettings title_import_settings;
+			title_import_settings.object_typename = "Title Screen PNG";
+			title_import_settings.target_directory = m_owning_ui.GetSpriteExportPath();
+			title_import_settings.file_extension_filter = { ".png" };
+			title_import_settings.tiled_previews = true;
+			title_import_settings.num_columns = 4;
+			title_import_settings.open_popup = std::exchange(
+				m_open_title_import_popup,
+				false
+			);
+			title_import_settings.close_popup = std::exchange(
+				m_close_title_import_popup,
+				false
+			);
+			const std::optional<std::filesystem::path> selected_title_png =
+				DrawFileSelector(
+					title_import_settings,
+					m_owning_ui,
+					std::nullopt
+				);
+			if (selected_title_png && m_title_import_target.has_value())
+			{
+				const std::size_t target_index = *m_title_import_target;
+				m_title_import_target.reset();
+				m_close_title_import_popup = true;
+				ImportTitleScreenImage(*selected_title_png, target_index);
 			}
 
 			FileSelectorSettings main_import_settings;
@@ -1708,7 +2310,34 @@ namespace spintool
 
 			ImGui::SeparatorText("Palette");
 
-			if (DrawPaletteSelectorWithPreview(m_chosen_palette, m_owning_ui))
+			if (m_result_display_mode == ResultDisplayMode::TITLE_SCREEN_FRAMES)
+			{
+				if (!m_title_screen_palette_set)
+				{
+					ImGui::TextDisabled("Load the title-screen frames to display their palettes.");
+				}
+				else
+				{
+					ImGui::TextUnformatted("Title-screen palette set (4 lines)");
+					for (std::size_t line = 0U;
+						line < m_title_screen_palette_set->palette_lines.size();
+						++line)
+					{
+						const std::shared_ptr<rom::Palette>& palette =
+							m_title_screen_palette_set->palette_lines[line];
+						if (!palette) continue;
+						ImGui::PushID(static_cast<int>(line));
+						ImGui::Text(
+							"Line %zu (ROM 0x%06X)",
+							line,
+							palette->offset
+						);
+						DrawPaletteSwatchPreview(*palette);
+						ImGui::PopID();
+					}
+				}
+			}
+			else if (DrawPaletteSelectorWithPreview(m_chosen_palette, m_owning_ui))
 			{
 				for (std::shared_ptr<UISpriteTexture>& tex : m_sprites_found)
 				{
@@ -1716,17 +2345,11 @@ namespace spintool
 				}
 				for (BonusStageImagePreview& image : m_bonus_stage_images)
 				{
-					if (image.texture)
-					{
-						image.texture->texture.reset();
-					}
+					if (image.texture) image.texture->texture.reset();
 				}
 				for (TailsPlaneFramePreview& image : m_tails_plane_images)
 				{
-					if (image.texture)
-					{
-						image.texture->texture.reset();
-					}
+					if (image.texture) image.texture->texture.reset();
 				}
 				m_attempt_render_of_arbitrary_data = true;
 			}
@@ -1982,6 +2605,120 @@ namespace spintool
 					{
 						m_selected_tails_image = static_cast<int>(image_index);
 						m_owning_ui.OpenSpriteViewer(tex->sprite);
+					}
+					ImGui::PopID();
+				}
+			}
+			else if (m_result_display_mode == ResultDisplayMode::TITLE_SCREEN_FRAMES)
+			{
+				const rom::TitleScreenCategory selected_category =
+					static_cast<rom::TitleScreenCategory>(m_selected_title_category);
+				const std::size_t category_count = static_cast<std::size_t>(std::count_if(
+					m_title_screen_images.begin(),
+					m_title_screen_images.end(),
+					[selected_category](const TitleScreenFramePreview& image)
+					{
+						return image.category == selected_category;
+					}
+				));
+				ImGui::Text("%s: %zu", TitleCategoryName(selected_category), category_count);
+				current_width = static_cast<int>(ImGui::GetCursorPosX());
+				bool has_item_on_row = false;
+
+				std::lock_guard<std::recursive_mutex> render_lock(
+					m_owning_ui.m_render_to_texture_mutex
+				);
+				for (std::size_t image_index = 0;
+					image_index < m_title_screen_images.size();
+					++image_index)
+				{
+					TitleScreenFramePreview& image = m_title_screen_images[image_index];
+					if (image.category != selected_category)
+					{
+						continue;
+					}
+					std::shared_ptr<UISpriteTexture>& tex = image.texture;
+					if (!tex || !tex->sprite)
+					{
+						continue;
+					}
+					if (tex->texture == nullptr && m_title_screen_palette_set)
+					{
+						tex->texture = tex->RenderTextureForPaletteSet(
+							*m_title_screen_palette_set
+						);
+					}
+					if (tex->dimensions.x <= 0 || tex->dimensions.y <= 0 || !tex->texture)
+					{
+						continue;
+					}
+
+					if (has_item_on_row &&
+						ImGui::GetContentRegionAvail().x <
+						current_width + padding_x + (tex->dimensions.x * m_zoom))
+					{
+						ImGui::NewLine();
+						ImGui::SameLine();
+						ImGui::Dummy(ImVec2(0, 0));
+						current_width = static_cast<int>(ImGui::GetCursorPosX());
+						has_item_on_row = false;
+					}
+					if (has_item_on_row)
+					{
+						ImGui::SameLine();
+					}
+
+					ImGui::PushID(static_cast<int>(image.frame_id));
+					tex->DrawForImGui(m_zoom);
+					current_width += static_cast<int>(
+						(tex->dimensions.x * m_zoom) + ImGui::GetStyle().ItemSpacing.x
+					);
+					has_item_on_row = true;
+					const bool hovered = ImGui::IsItemHovered();
+					const bool clicked = ImGui::IsItemClicked(ImGuiMouseButton_Left);
+
+					if (ImGui::BeginPopupContextItem(
+						"title_screen_frame_popup",
+						ImGuiPopupFlags_MouseButtonRight
+					))
+					{
+						if (ImGui::MenuItem("Import PNG into ROM"))
+						{
+							m_title_import_target = image_index;
+							m_open_title_import_popup = true;
+						}
+						if (ImGui::MenuItem("Export image as PNG"))
+						{
+							ExportTitleScreenImage(image_index);
+						}
+						ImGui::EndPopup();
+					}
+
+					if (m_selected_title_image == static_cast<int>(image_index))
+					{
+						ImGui::GetWindowDrawList()->AddRect(
+							ImGui::GetItemRectMin(),
+							ImGui::GetItemRectMax(),
+							ImGui::GetColorU32(ImVec4{ 0, 192, 0, 255 }),
+							1.0f,
+							0,
+							2.0f
+						);
+					}
+					if (hovered)
+					{
+						ImGui::GetWindowDrawList()->AddRect(
+							ImGui::GetItemRectMin(),
+							ImGui::GetItemRectMax(),
+							ImGui::GetColorU32(ImVec4{ 255, 255, 255, 255 }),
+							1.0f,
+							0,
+							2.0f
+						);
+					}
+					if (clicked)
+					{
+						m_selected_title_image = static_cast<int>(image_index);
 					}
 					ImGui::PopID();
 				}
