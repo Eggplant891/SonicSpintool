@@ -48,6 +48,9 @@ namespace spintool::rom
 		, public SpriteTileData
 	{
 		BlitSettings blit_settings;
+		// Title-screen object mappings may select one of four palette lines.
+		// Other sprite formats leave this at the default line 0.
+		Uint8 palette_line = 0;
 		
 		void RenderToSurface(SDL_Surface* surface) const;
 		void BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;
