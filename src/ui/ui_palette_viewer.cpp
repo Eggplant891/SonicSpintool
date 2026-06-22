@@ -18,6 +18,104 @@ namespace spintool
 		constexpr const char* kColourEditorPopup = "Edit Palette Colour";
 		constexpr int kHueShadeSamples = 29;
 
+		constexpr Uint32 kLevelPaletteOffset = 0x00000DFCU;
+		constexpr Uint32 kLevelPaletteCount = 48U;
+		constexpr Uint32 kSegaLogoPaletteOffset = 0x000993FAU;
+		constexpr Uint32 kSegaLogoPaletteCount = 2U;
+		constexpr Uint32 kIntroPaletteOffset = 0x000A1388U;
+		constexpr Uint32 kIntroPaletteCount = 4U;
+		constexpr Uint32 kTitleScreenPaletteOffset = 0x0009BD3AU;
+		constexpr Uint32 kTitleScreenPaletteCount = 4U;
+
+		enum class PaletteGroup
+		{
+			Level,
+			SegaLogo,
+			Introduction,
+			TitleScreen,
+			Other
+		};
+
+		bool IsPaletteLineInRange(
+			const Uint32 offset,
+			const Uint32 range_start,
+			const Uint32 line_count
+		)
+		{
+			if (offset < range_start)
+			{
+				return false;
+			}
+
+			const Uint32 relative = offset - range_start;
+			return relative < line_count * rom::Palette::s_palette_size_on_rom &&
+				relative % rom::Palette::s_palette_size_on_rom == 0U;
+		}
+
+		PaletteGroup GetPaletteGroup(const Uint32 offset)
+		{
+			if (IsPaletteLineInRange(offset, kLevelPaletteOffset, kLevelPaletteCount))
+			{
+				return PaletteGroup::Level;
+			}
+			if (IsPaletteLineInRange(offset, kSegaLogoPaletteOffset, kSegaLogoPaletteCount))
+			{
+				return PaletteGroup::SegaLogo;
+			}
+			if (IsPaletteLineInRange(offset, kIntroPaletteOffset, kIntroPaletteCount))
+			{
+				return PaletteGroup::Introduction;
+			}
+			if (IsPaletteLineInRange(offset, kTitleScreenPaletteOffset, kTitleScreenPaletteCount))
+			{
+				return PaletteGroup::TitleScreen;
+			}
+			return PaletteGroup::Other;
+		}
+
+		const char* PaletteGroupName(const PaletteGroup group)
+		{
+			switch (group)
+			{
+				case PaletteGroup::Level:
+					return "Level Palettes";
+				case PaletteGroup::SegaLogo:
+					return "SEGA Logo";
+				case PaletteGroup::Introduction:
+					return "Introduction";
+				case PaletteGroup::TitleScreen:
+					return "Title Screen";
+				case PaletteGroup::Other:
+				default:
+					return "Other Palettes";
+			}
+		}
+
+		Uint32 PaletteLineNumber(const rom::Palette& palette, const PaletteGroup group)
+		{
+			Uint32 range_start = palette.offset;
+			switch (group)
+			{
+				case PaletteGroup::Level:
+					range_start = kLevelPaletteOffset;
+					break;
+				case PaletteGroup::SegaLogo:
+					range_start = kSegaLogoPaletteOffset;
+					break;
+				case PaletteGroup::Introduction:
+					range_start = kIntroPaletteOffset;
+					break;
+				case PaletteGroup::TitleScreen:
+					range_start = kTitleScreenPaletteOffset;
+					break;
+				case PaletteGroup::Other:
+				default:
+					return 0U;
+			}
+
+			return (palette.offset - range_start) / rom::Palette::s_palette_size_on_rom;
+		}
+
 		enum class ColourSelectionMode
 		{
 			Hue,
@@ -503,6 +601,45 @@ namespace spintool
 			return true;
 		}
 
+		void UpdateMegaDriveChecksum(rom::SpinballROM& rom)
+		{
+			if (rom.m_buffer.size() < 0x190U)
+			{
+				return;
+			}
+
+			Uint32 checksum = 0U;
+			for (std::size_t offset = 0x200U;
+				offset < rom.m_buffer.size();
+				offset += 2U)
+			{
+				Uint16 word = static_cast<Uint16>(rom.m_buffer[offset]) << 8U;
+				if (offset + 1U < rom.m_buffer.size())
+				{
+					word = static_cast<Uint16>(word | rom.m_buffer[offset + 1U]);
+				}
+				checksum = (checksum + word) & 0xFFFFU;
+			}
+
+			rom.m_buffer[0x18EU] = static_cast<Uint8>((checksum >> 8U) & 0xFFU);
+			rom.m_buffer[0x18FU] = static_cast<Uint8>(checksum & 0xFFU);
+		}
+
+		bool VerifyWorkingROMWrite(
+			const std::filesystem::path& path,
+			const Uint32 colour_offset,
+			const Uint16 expected_colour,
+			const Uint16 expected_checksum
+		)
+		{
+			Uint16 saved_colour = 0U;
+			Uint16 saved_checksum = 0U;
+			return ReadPackedColour(path, colour_offset, saved_colour) &&
+				ReadPackedColour(path, 0x18EU, saved_checksum) &&
+				saved_colour == expected_colour &&
+				saved_checksum == expected_checksum;
+		}
+
 		void OpenColourEditor(
 			const int palette_index,
 			const int swatch_index,
@@ -564,11 +701,25 @@ namespace spintool
 			rom::Palette& palette = *palettes[g_colour_editor.palette_index];
 			rom::Swatch& swatch = palette.palette_swatches[g_colour_editor.swatch_index];
 
-			ImGui::Text(
-				"Palette %02X - Colour %02X",
-				g_colour_editor.palette_index,
-				g_colour_editor.swatch_index
-			);
+			const PaletteGroup palette_group = GetPaletteGroup(palette.offset);
+			if (palette_group == PaletteGroup::Level ||
+				palette_group == PaletteGroup::Other)
+			{
+				ImGui::Text(
+					"Palette %02X - Colour %02X",
+					g_colour_editor.palette_index,
+					g_colour_editor.swatch_index
+				);
+			}
+			else
+			{
+				ImGui::Text(
+					"%s - Line %u - Colour %02X",
+					PaletteGroupName(palette_group),
+					static_cast<unsigned int>(PaletteLineNumber(palette, palette_group)),
+					g_colour_editor.swatch_index
+				);
+			}
 			ImGui::TextDisabled("ROM palette address: 0x%06X", palette.offset);
 			ImGui::Separator();
 
@@ -679,39 +830,61 @@ namespace spintool
 			if (ImGui::Button("Apply", ImVec2{ 110.0f, 0.0f }))
 			{
 				rom::SpinballROM& working_rom = owning_ui.GetROM();
-				if (swatch_rom_offset > working_rom.m_buffer.size() ||
+				const std::filesystem::path working_path = owning_ui.GetWorkingROMPath();
+				if (working_path.empty())
+				{
+					status = "Could not save palette colour: no working ROM path is available.";
+				}
+				else if (swatch_rom_offset > working_rom.m_buffer.size() ||
 					sizeof(Uint16) > working_rom.m_buffer.size() - swatch_rom_offset)
 				{
 					status = "Could not save palette colour: invalid ROM offset.";
 				}
 				else
 				{
-					const Uint16 previous_packed = swatch.packed_value;
+					const Uint16 previous_packed = working_rom.ReadUint16(swatch_rom_offset);
+					const Uint16 previous_checksum = working_rom.ReadUint16(0x18EU);
+
 					working_rom.WriteUint16(
 						swatch_rom_offset,
 						g_colour_editor.pending_packed
 					);
+					UpdateMegaDriveChecksum(working_rom);
+
+					// Save explicitly to the ROM copy managed by EditorUI. This avoids
+					// silently writing to a stale path if the ROM object was reloaded.
+					working_rom.m_filepath = working_path;
 					working_rom.SaveROM();
 
-					Uint16 saved_packed = 0;
-					if (!ReadPackedColour(
-						working_rom.m_filepath,
+					const Uint16 expected_checksum = working_rom.ReadUint16(0x18EU);
+					if (!VerifyWorkingROMWrite(
+						working_path,
 						swatch_rom_offset,
-						saved_packed
-					) || saved_packed != g_colour_editor.pending_packed)
+						g_colour_editor.pending_packed,
+						expected_checksum
+					))
 					{
 						working_rom.WriteUint16(swatch_rom_offset, previous_packed);
+						working_rom.WriteUint16(0x18EU, previous_checksum);
 						working_rom.SaveROM();
-						status = "Could not verify the palette colour in the working ROM.";
+						status = "Could not verify the palette colour in rom_export; the previous value was restored.";
 					}
 					else
 					{
 						swatch.packed_value = g_colour_editor.pending_packed;
+						for (std::shared_ptr<rom::Palette>& loaded_palette : working_rom.m_palettes)
+						{
+							if (loaded_palette && loaded_palette->offset == palette.offset)
+							{
+								loaded_palette->palette_swatches[g_colour_editor.swatch_index].packed_value =
+									g_colour_editor.pending_packed;
+							}
+						}
 						g_colour_editor.current_packed = g_colour_editor.pending_packed;
 						palette_changed = previous_packed != g_colour_editor.pending_packed;
 						status = palette_changed
-							? "Palette colour saved to the working ROM."
-							: "Palette colour is already saved in the working ROM.";
+							? "Palette colour saved and verified in rom_export."
+							: "Palette colour is already present in rom_export.";
 						ImGui::CloseCurrentPopup();
 					}
 				}
@@ -750,7 +923,22 @@ namespace spintool
 
 	void DrawPaletteName(const rom::Palette& palette, int palette_index)
 	{
-		ImGui::Text("Palette %02X (0x%04X)", palette_index, palette.offset);
+		const PaletteGroup group = GetPaletteGroup(palette.offset);
+		if (group == PaletteGroup::Level || group == PaletteGroup::Other)
+		{
+			ImGui::Text(
+				"Palette %02X (ROM 0x%06X)",
+				palette_index,
+				palette.offset
+			);
+			return;
+		}
+
+		ImGui::Text(
+			"Line %u (ROM 0x%06X)",
+			static_cast<unsigned int>(PaletteLineNumber(palette, group)),
+			palette.offset
+		);
 	}
 
 	bool DrawPaletteSwatchEditor(rom::Palette& palette, const int palette_index)
@@ -900,12 +1088,22 @@ namespace spintool
 			))
 			{
 				int palette_index = 0;
+				PaletteGroup previous_group = PaletteGroup::Other;
+				bool has_previous_group = false;
 				for (std::shared_ptr<rom::Palette>& palette : palettes)
 				{
 					if (!palette)
 					{
 						++palette_index;
 						continue;
+					}
+
+					const PaletteGroup current_group = GetPaletteGroup(palette->offset);
+					if (!has_previous_group || current_group != previous_group)
+					{
+						ImGui::SeparatorText(PaletteGroupName(current_group));
+						previous_group = current_group;
+						has_previous_group = true;
 					}
 
 					DrawPaletteName(*palette, palette_index);
