@@ -17,7 +17,6 @@ GUI / CORE :
 - "roms" folder will contain your original game to use it as reference. After you select it, it will see if you have a modified version in "rom_export" :
   - if yes, this file will be loaded immediately
   - if no, a copy of the file will be created and loaded
-- Improved a bit the Color Picker System
 
 TOOLS - SPRITE NAVIGATOR :
 -----
