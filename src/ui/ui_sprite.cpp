@@ -51,6 +51,29 @@ namespace spintool
 		return std::move(new_tex);
 	}
 
+	SDLTextureHandle UISpriteTexture::RenderTextureForPaletteSet(
+		const rom::PaletteSet& palette_set,
+		bool flip_x,
+		bool flip_y
+	) const
+	{
+		std::lock_guard<std::recursive_mutex> lock(Renderer::s_sdl_update_mutex);
+		SDLPaletteHandle combined_palette = Renderer::CreateSDLPaletteForSet(palette_set);
+		if (!combined_palette)
+		{
+			return {};
+		}
+		Renderer::SetPalette(combined_palette);
+		SDLTextureHandle new_texture = Renderer::RenderToTexture(*sprite, flip_x, flip_y);
+
+		// Keep the optional per-piece previews consistent with the complete frame.
+		for (const UISpriteTileTexture& tile_texture : tile_textures)
+		{
+			tile_texture.texture = Renderer::RenderToTexture(*tile_texture.sprite_tile);
+		}
+		return new_texture;
+	}
+
 	UISpriteTileTexture::UISpriteTileTexture(const std::shared_ptr<rom::SpriteTile>& spr)
 		: sprite_tile(spr)
 		, dimensions(static_cast<float>(spr->x_size), static_cast<float>(spr->y_size))
