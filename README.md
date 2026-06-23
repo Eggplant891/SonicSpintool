@@ -21,8 +21,8 @@ GUI / CORE :
 TOOLS - SPRITE NAVIGATOR :
 -----
 - Updated elements / windows gui
-- Bonus Level and Tails Plane Sprites support added : Optimized LZW support added
-- Main Sprites and Bonus Level Sprites can be import and export easily : you have just to choose correctly the palette
+- Bonus Level, Tails Plane and Title Screen Sprites support added : Optimized LZW support added
+- Sprites can be import and export easily : you have just to choose correctly the palette
 - Rules / Check applied when import PNG files ( see Notes - LZW Compression in SpinTool - June 21th, 2026 )
 - After sprites modifications, modifications are saved directly on the file in "rom_export" folder
 
