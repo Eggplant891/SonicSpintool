@@ -1566,6 +1566,11 @@ namespace spintool::rom
 
 	}
 
+	bool TailsPlaneDecodeResult::Succeeded() const
+	{
+		return error.empty() && !frames.empty();
+	}
+
 	const std::vector<TailsPlaneSceneInfo>& TailsPlaneDecoder::GetSceneInfos()
 	{
 		static const std::vector<TailsPlaneSceneInfo> scenes =

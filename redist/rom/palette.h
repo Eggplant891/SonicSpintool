@@ -20,9 +20,9 @@ namespace spintool::rom
 	{
 		Uint16 packed_value;
 
-		Colour GetUnpacked() const;
-		static Uint16 Pack(float r, float g, float b);
-		ImColor AsImColor() const;
+		[[nodiscard]] Colour GetUnpacked() const;
+		[[nodiscard]] static Uint16 Pack(float r, float g, float b);
+		[[nodiscard]] ImColor AsImColor() const;
 	};
 
 	struct Palette
@@ -34,7 +34,7 @@ namespace spintool::rom
 		std::array<Swatch, s_swatches_per_palette> palette_swatches;
 		Uint32 offset;
 
-		static std::shared_ptr<Palette> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
+		[[nodiscard]] static std::shared_ptr<Palette> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
 
 	};
 
@@ -42,7 +42,7 @@ namespace spintool::rom
 	{
 		PaletteSetArray palette_lines;
 
-		static std::shared_ptr<PaletteSet> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
+		[[nodiscard]] static std::shared_ptr<PaletteSet> LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
 
 		bool operator==(const PaletteSet& rhs);
 	};

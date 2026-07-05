@@ -38,8 +38,8 @@ namespace spintool::rom
 		bool flip_x = false;
 		bool flip_y = false;
 
-		bool FlipX() const;
-		bool FlipY() const;
+		[[nodiscard]] bool FlipX() const;
+		[[nodiscard]] bool FlipY() const;
 
 		constexpr static const size_t s_size_on_rom = 0x14;
 

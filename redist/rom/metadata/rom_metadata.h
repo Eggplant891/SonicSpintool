@@ -45,12 +45,7 @@ namespace spintool::rom
     {
         std::vector<ROMMetadata> rom_metadatas;
 
-        Metadata()
-        {
-            rom_metadatas.emplace_back().version_id = "usa";
-            rom_metadatas.emplace_back().version_id = "eur";
-            rom_metadatas.emplace_back().version_id = "jp";
-        }
+        Metadata();
 
         ROMMetadata* GetROMMetadataFor(std::string_view version_id);
     };

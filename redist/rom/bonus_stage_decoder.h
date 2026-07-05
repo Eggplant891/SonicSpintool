@@ -50,15 +50,7 @@ namespace spintool::rom
 		bool flip_vertical = false;
 		std::vector<BonusStageAnimationState> states;
 
-		std::size_t GetFrameCount() const
-		{
-			std::size_t count = 0;
-			for (const BonusStageAnimationState& state : states)
-			{
-				count += state.frames.size();
-			}
-			return count;
-		}
+		[[nodiscard]] std::size_t GetFrameCount() const;
 	};
 
 	struct BonusStageDecodeResult
@@ -68,30 +60,10 @@ namespace spintool::rom
 		std::vector<std::string> warnings;
 		std::string error;
 
-		std::size_t GetFrameCount() const
-		{
-			std::size_t count = 0;
-			for (const BonusStageObjectFrames& object : objects)
-			{
-				count += object.GetFrameCount();
-			}
-			return count;
-		}
+		[[nodiscard]] std::size_t GetFrameCount() const;
+		[[nodiscard]] std::size_t GetStateCount() const;
 
-		std::size_t GetStateCount() const
-		{
-			std::size_t count = 0;
-			for (const BonusStageObjectFrames& object : objects)
-			{
-				count += object.states.size();
-			}
-			return count;
-		}
-
-		bool Succeeded() const
-		{
-			return error.empty() && GetFrameCount() != 0;
-		}
+		[[nodiscard]] bool Succeeded() const;
 	};
 
 	struct BonusStageImportResult
@@ -131,13 +103,10 @@ namespace spintool::rom
 			int image_height
 		);
 
-		static BonusStageDecodeResult Decode(
+		[[nodiscard]] static BonusStageDecodeResult Decode(
 			const SpinballROM& rom,
 			BonusStageId stage,
 			std::size_t maximum_animation_entries = 2048
-		)
-		{
-			return DecodeObjectFrames(rom, stage, maximum_animation_entries);
-		}
+		);
 	};
 }

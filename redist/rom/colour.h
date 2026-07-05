@@ -12,7 +12,7 @@ namespace spintool::rom
 		Uint8 g;
 		Uint8 r;
 
-		Uint32 GetPackedU32() const;
+		[[nodiscard]] Uint32 GetPackedU32() const;
 
 		static std::array<Uint8, 16> levels_lookup;
 	};

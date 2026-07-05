@@ -6,6 +6,10 @@
 
 namespace spintool
 {
+	ImVec2 UIGameObject::GetSpriteDrawPos() const
+	{
+		return ImVec2{ obj_definition.x_pos + sprite_pos_offset.x, obj_definition.y_pos + sprite_pos_offset.y };
+	}
 
 	void GameObject::MoveObjectTo(int x, int y)
 	{

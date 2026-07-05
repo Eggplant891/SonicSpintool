@@ -16,7 +16,7 @@ namespace spintool::rom
 	{
 	public:
 		static SSCDecompressionResult DecompressData(const std::vector<Uint8>& in_data, Uint32 offset, Uint32 working_data_size_hint);
-		static SSCDecompressionResult IsValidSSCCompressedData(const Uint8* in_data, const Uint32 starting_offset);
+		static SSCDecompressionResult IsValidSSCCompressedData(const Uint8* in_data, Uint32 starting_offset);
 	private:
 	};
 }

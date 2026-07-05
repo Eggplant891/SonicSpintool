@@ -15,67 +15,42 @@ namespace spintool
 		void operator*=(const int rhs) { x *= rhs; y *= rhs; }
 		void operator/=(const int rhs) { x /= rhs; y /= rhs; }
 
-		bool operator==(const Point& rhs) const
-		{
-			return x == rhs.x && y == rhs.y;
-		}
-
-		operator ImVec2()
-		{
-			return ImVec2{ static_cast<float>(x), static_cast<float>(y) };
-		}
+		bool operator==(const Point& rhs) const;
+		[[nodiscard]] operator ImVec2();
 	};
 
-	inline Point operator+(const Point& lhs, const Point& rhs) { return Point{ lhs.x + rhs.x, lhs.y + rhs.y }; }
-	inline Point operator-(const Point& lhs, const Point& rhs) { return Point{ lhs.x - rhs.x, lhs.y - rhs.y }; }
-	inline Point operator+(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
-	inline Point operator-(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
-	inline Point operator+(const ImVec2& lhs, const Point& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
-	inline Point operator-(const ImVec2& lhs, const Point& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
-	inline Point operator*(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x * rhs), static_cast<int>(lhs.y * rhs) }; }
-	inline Point operator/(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x / rhs), static_cast<int>(lhs.y / rhs) }; }
+	[[nodiscard]] inline Point operator+(const Point& lhs, const Point& rhs) { return Point{ lhs.x + rhs.x, lhs.y + rhs.y }; }
+	[[nodiscard]] inline Point operator-(const Point& lhs, const Point& rhs) { return Point{ lhs.x - rhs.x, lhs.y - rhs.y }; }
+	[[nodiscard]] inline Point operator+(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
+	[[nodiscard]] inline Point operator-(const Point& lhs, const ImVec2& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
+	[[nodiscard]] inline Point operator+(const ImVec2& lhs, const Point& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.y) + rhs.y) }; }
+	[[nodiscard]] inline Point operator-(const ImVec2& lhs, const Point& rhs) { return Point{ static_cast<int>(static_cast<float>(lhs.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.y) - rhs.y) }; }
+	[[nodiscard]] inline Point operator*(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x * rhs), static_cast<int>(lhs.y * rhs) }; }
+	[[nodiscard]] inline Point operator/(const Point& lhs, const float rhs) { return Point{ static_cast<int>(lhs.x / rhs), static_cast<int>(lhs.y / rhs) }; }
 
 	struct BoundingBox
 	{
 		Point min{ 0,0 };
 		Point max{ 0,0 };
 
-		int Width() const;
-		int Height() const;
+		[[nodiscard]] int Width() const;
+		[[nodiscard]] int Height() const;
 
-		Point MinOrdered() const
-		{
-			return Point{ std::min(min.x, max.x), std::min(min.y, max.y) };
-		}
+		[[nodiscard]] Point MinOrdered() const;
+		[[nodiscard]] Point MaxOrdered() const;
 
-		Point MaxOrdered() const
-		{
-			return Point{ std::max(min.x, max.x), std::max(min.y, max.y) };
-		}
+		operator ImRect();
 
-		operator ImRect()
-		{
-			return ImRect{ static_cast<ImVec2>(min), static_cast<ImVec2>(max) };
-		}
-
-		bool operator==(const BoundingBox& rhs) const
-		{
-			return min == rhs.min && max == rhs.max;
-		}
-
-		void operator *=(const float scalar)
-		{
-			min = min * scalar;
-			max = max * scalar;
-		}
+		bool operator==(const BoundingBox& rhs) const;
+		void operator *=(float scalar);
 	};
 
-	static BoundingBox operator+(const BoundingBox& lhs, const Point& rhs) { return  BoundingBox{ lhs.min.x + rhs.x, lhs.min.y + rhs.y, lhs.max.x + rhs.x, lhs.max.y + rhs.y }; }
-	static BoundingBox operator-(const BoundingBox& lhs, const Point& rhs) { return  BoundingBox{ lhs.min.x - rhs.x, lhs.min.y - rhs.y, lhs.max.x - rhs.x, lhs.max.y - rhs.y }; }
-	static BoundingBox operator+(const BoundingBox& lhs, const ImVec2& rhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) + rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) + rhs.y) }; }
-	static BoundingBox operator-(const BoundingBox& lhs, const ImVec2& rhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) - rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) - rhs.y) }; }
-	static BoundingBox operator+(const ImVec2& rhs, const BoundingBox& lhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) + rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) + rhs.y) }; }
-	static BoundingBox operator-(const ImVec2& rhs, const BoundingBox& lhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) - rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) - rhs.y) }; }
-	static BoundingBox operator*(const BoundingBox& lhs, const float rhs) { return   BoundingBox{ lhs.min * rhs, lhs.max * rhs }; }
-	static BoundingBox operator/(const BoundingBox& lhs, const float rhs) { return   BoundingBox{ lhs.min / rhs, lhs.max / rhs }; }
+	[[nodiscard]] static BoundingBox operator+(const BoundingBox& lhs, const Point& rhs) { return  BoundingBox{ lhs.min.x + rhs.x, lhs.min.y + rhs.y, lhs.max.x + rhs.x, lhs.max.y + rhs.y }; }
+	[[nodiscard]] static BoundingBox operator-(const BoundingBox& lhs, const Point& rhs) { return  BoundingBox{ lhs.min.x - rhs.x, lhs.min.y - rhs.y, lhs.max.x - rhs.x, lhs.max.y - rhs.y }; }
+	[[nodiscard]] static BoundingBox operator+(const BoundingBox& lhs, const ImVec2& rhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) + rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) + rhs.y) }; }
+	[[nodiscard]] static BoundingBox operator-(const BoundingBox& lhs, const ImVec2& rhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) - rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) - rhs.y) }; }
+	[[nodiscard]] static BoundingBox operator+(const ImVec2& rhs, const BoundingBox& lhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) + rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) + rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) + rhs.y) }; }
+	[[nodiscard]] static BoundingBox operator-(const ImVec2& rhs, const BoundingBox& lhs) { return BoundingBox{ static_cast<int>(static_cast<float>(lhs.min.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.min.y) - rhs.y), static_cast<int>(static_cast<float>(lhs.max.x) - rhs.x), static_cast<int>(static_cast<float>(lhs.max.y) - rhs.y) }; }
+	[[nodiscard]] static BoundingBox operator*(const BoundingBox& lhs, const float rhs) { return   BoundingBox{ lhs.min * rhs, lhs.max * rhs }; }
+	[[nodiscard]] static BoundingBox operator/(const BoundingBox& lhs, const float rhs) { return   BoundingBox{ lhs.min / rhs, lhs.max / rhs }; }
 }

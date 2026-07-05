@@ -40,7 +40,7 @@ namespace spintool::rom
 
 		UNKNOWN = -1,
 	};
-	const char* AnimationCommandTypeToString(const AnimationCommandType command_type);
+	const char* AnimationCommandTypeToString(AnimationCommandType command_type);
 
 	struct AnimationCommandCode
 	{

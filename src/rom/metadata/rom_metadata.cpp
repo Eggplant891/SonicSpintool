@@ -103,4 +103,11 @@ namespace spintool::rom
 
         return nullptr;
     }
+
+    Metadata::Metadata()
+    {
+        rom_metadatas.emplace_back().version_id = "usa";
+        rom_metadatas.emplace_back().version_id = "eur";
+        rom_metadatas.emplace_back().version_id = "jp";
+    }
 }

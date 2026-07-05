@@ -15,8 +15,8 @@ namespace spintool::rom
 	class LZSSDecompressor
 	{
 	public:
-		static LZSSDecompressionResult DecompressData(const std::vector<Uint8>& in_data, const Uint32 offset);
-		static LZSSDecompressionResult DecompressDataRefactored(const std::vector<Uint8>& in_data, const Uint32 offset);
+		static LZSSDecompressionResult DecompressData(const std::vector<Uint8>& in_data, Uint32 offset);
+		static LZSSDecompressionResult DecompressDataRefactored(const std::vector<Uint8>& in_data, Uint32 offset);
 	private:
 	};
 }

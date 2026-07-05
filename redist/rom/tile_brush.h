@@ -31,19 +31,19 @@ namespace spintool::rom
 
 		void AssignTiles(const std::vector<TileInstance>& source_tiles);
 
-		Uint32 BrushWidth() const;
-		Uint32 BrushHeight() const;
-		Uint32 TotalTiles() const;
+		[[nodiscard]] Uint32 BrushWidth() const;
+		[[nodiscard]] Uint32 BrushHeight() const;
+		[[nodiscard]] Uint32 TotalTiles() const;
 
-		size_t GridCoordinatesToLinearIndex(Point grid_coord) const;
-		Point LinearIndexToGridCoordinates(size_t linear_index) const;
-		bool IsBrushSymmetrical(const TileSet& tile_set, bool flip_x, bool flip_y) const;
-		bool IsBrushSymmetricallyEqualTo(const rom::TileBrush& brush, const TileSet& tile_set, bool flip_x, bool flip_y) const;
+		[[nodiscard]] size_t GridCoordinatesToLinearIndex(Point grid_coord) const;
+		[[nodiscard]] Point LinearIndexToGridCoordinates(size_t linear_index) const;
+		[[nodiscard]] bool IsBrushSymmetrical(const TileSet& tile_set, bool flip_x, bool flip_y) const;
+		[[nodiscard]] bool IsBrushSymmetricallyEqualTo(const rom::TileBrush& brush, const TileSet& tile_set, bool flip_x, bool flip_y) const;
 		void CacheSymmetryFlags(const TileSet& tile_set);
 
-		TileBrushPreview CreateTileBrushPreview(const TileSet& tileset, const rom::PaletteSet& palette_set, const size_t brush_index, const bool is_chroma_keyed) const;
-		SDLSurfaceHandle RenderToSurface(const TileLayer& tile_layer) const;
-		std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
+		[[nodiscard]] TileBrushPreview CreateTileBrushPreview(const TileSet& tileset, const rom::PaletteSet& palette_set, const size_t brush_index, const bool is_chroma_keyed) const;
+		[[nodiscard]] SDLSurfaceHandle RenderToSurface(const TileLayer& tile_layer) const;
+		[[nodiscard]] std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
 		std::vector<TileInstance> tiles;
 
 		constexpr static const Uint32 s_default_brush_width = 4;

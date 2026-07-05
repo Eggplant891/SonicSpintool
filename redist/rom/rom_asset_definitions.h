@@ -100,7 +100,7 @@ namespace spintool::rom
 	struct LevelDataOffsets
 	{
 		LevelDataOffsets() = default;
-		LevelDataOffsets(const int level_index);
+		LevelDataOffsets(int level_index);
 
 		void Serialise(nlohmann::json& writer);
 		void Deserialise(const nlohmann::json &reader);

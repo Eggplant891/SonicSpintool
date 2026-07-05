@@ -54,10 +54,10 @@ namespace spintool::rom
 
 		Ptr32 SaveToROM_SSCCompression(SpinballROM& src_rom, Uint32 rom_offset) const;
 
-		std::shared_ptr<const Sprite> CreateSpriteFromTile(const Uint32 offset) const;
-		std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const Uint32 tile_index) const;
+		[[nodiscard]] std::shared_ptr<const Sprite> CreateSpriteFromTile(const Uint32 offset) const;
+		[[nodiscard]] std::shared_ptr<SpriteTile> CreateSpriteTileFromTile(const Uint32 tile_index) const;
 
-		SDLSurfaceHandle RenderToSurface(const rom::Palette& palette_line) const;
+		[[nodiscard]] SDLSurfaceHandle RenderToSurface(const rom::Palette& palette_line) const;
 
 		constexpr const static Uint16 s_tile_width = 0x08;
 		constexpr const static Uint16 s_tile_height = 0x08;

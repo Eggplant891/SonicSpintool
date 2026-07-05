@@ -27,7 +27,7 @@ namespace spintool::rom
 		static constexpr int height = 31;
 
 		static constexpr ImVec2 dimensions{ width, height };
-		Point GetDrawPosOffset() const;
+		[[nodiscard]] Point GetDrawPosOffset() const;
 
 		static FlipperInstance LoadFromROM(const rom::SpinballROM& rom, Uint32 offset);
 		Uint32 SaveToROM(rom::SpinballROM& writeable_rom) const;

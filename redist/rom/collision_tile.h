@@ -15,6 +15,6 @@ namespace spintool::rom
 	{
 		ROMData tile_rom_data;
 
-		const Uint8* LoadFromROM(const SpriteTileHeader& header, const size_t rom_data_offset, const SpinballROM& src_rom);
+		const Uint8* LoadFromROM(const SpriteTileHeader& header, size_t rom_data_offset, const SpinballROM& src_rom);
 	};
 }

@@ -418,7 +418,6 @@ namespace spintool::rom
 				static_cast<Uint32>(data[offset + 3U]);
 		}
 
-
 		bool ResolveBonusArtPointers(
 			const SpinballROM& rom,
 			BonusArtPointers& pointers,
@@ -1116,6 +1115,41 @@ namespace spintool::rom
 		}
 	}
 
+	std::size_t BonusStageObjectFrames::GetFrameCount() const
+	{
+		std::size_t count = 0;
+		for (const BonusStageAnimationState& state : states)
+		{
+			count += state.frames.size();
+		}
+		return count;
+	}
+
+	std::size_t BonusStageDecodeResult::GetFrameCount() const
+	{
+		std::size_t count = 0;
+		for (const BonusStageObjectFrames& object : objects)
+		{
+			count += object.GetFrameCount();
+		}
+		return count;
+	}
+
+	std::size_t BonusStageDecodeResult::GetStateCount() const
+	{
+		std::size_t count = 0;
+		for (const BonusStageObjectFrames& object : objects)
+		{
+			count += object.states.size();
+		}
+		return count;
+	}
+
+	bool BonusStageDecodeResult::Succeeded() const
+	{
+		return error.empty() && GetFrameCount() != 0;
+	}
+
 	const char* BonusStageDecoder::GetStageName(BonusStageId stage)
 	{
 		const std::size_t index = static_cast<std::size_t>(stage);
@@ -1621,5 +1655,10 @@ namespace spintool::rom
 			result.message = "No referenced Bonus Stage tile could be modified";
 		}
 		return result;
+	}
+
+	BonusStageDecodeResult BonusStageDecoder::Decode(const SpinballROM &rom, BonusStageId stage, std::size_t maximum_animation_entries)
+	{
+		return DecodeObjectFrames(rom, stage, maximum_animation_entries);
 	}
 }

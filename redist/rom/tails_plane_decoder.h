@@ -43,10 +43,7 @@ namespace spintool::rom
 		std::vector<std::string> warnings;
 		std::string error;
 
-		[[nodiscard]] bool Succeeded() const
-		{
-			return error.empty() && !frames.empty();
-		}
+		[[nodiscard]] bool Succeeded() const;
 	};
 
 	struct TailsPlaneImportResult

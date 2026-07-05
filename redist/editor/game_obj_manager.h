@@ -23,11 +23,9 @@ namespace spintool
 
 	struct UIGameObject
 	{
+		[[nodiscard]] ImVec2 GetSpriteDrawPos() const;
+
 		rom::GameObjectDefinition obj_definition;
-		ImVec2 GetSpriteDrawPos() const
-		{
-			return ImVec2{ obj_definition.x_pos + sprite_pos_offset.x, obj_definition.y_pos + sprite_pos_offset.y };
-		}
 		ImVec2 sprite_pos_offset = { 0,0 };
 		ImVec2 dimensions = { 0,0 };
 
