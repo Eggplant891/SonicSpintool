@@ -14,8 +14,8 @@ namespace spintool
 {
 	struct CustomTileBrush
 	{
-		nlohmann::json SerialiseToJSON() const;
-		static CustomTileBrush DeserialiseFromJSON(const nlohmann::json& brush_context);
+		[[nodiscard]] nlohmann::json SerialiseToJSON() const;
+		[[nodiscard]] static CustomTileBrush DeserialiseFromJSON(const nlohmann::json& brush_context);
 		std::unique_ptr<rom::TileBrush> tile_brush;
 	};
 }

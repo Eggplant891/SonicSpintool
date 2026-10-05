@@ -31,13 +31,13 @@ namespace spintool::rom
 		Uint16 object_type_flags = 0;
 		Uint16 instance_id_binding = 0;
 
-		bool IsRadial() const;
-		bool IsTeleporter() const;
-		bool IsWalkable() const;
-		bool IsSlippery() const;
-		bool IsBumper() const;
-		bool IsRing() const;
-		bool IsUnknown() const;
+		[[nodiscard]] bool IsRadial() const;
+		[[nodiscard]] bool IsTeleporter() const;
+		[[nodiscard]] bool IsWalkable() const;
+		[[nodiscard]] bool IsSlippery() const;
+		[[nodiscard]] bool IsBumper() const;
+		[[nodiscard]] bool IsRing() const;
+		[[nodiscard]] bool IsUnknown() const;
 
 		bool operator==(const CollisionSpline& rhs) const;
 

@@ -41,7 +41,7 @@ namespace spintool::rom
 		[[nodiscard]] bool IsBrushSymmetricallyEqualTo(const rom::TileBrush& brush, const TileSet& tile_set, bool flip_x, bool flip_y) const;
 		void CacheSymmetryFlags(const TileSet& tile_set);
 
-		[[nodiscard]] TileBrushPreview CreateTileBrushPreview(const TileSet& tileset, const rom::PaletteSet& palette_set, const size_t brush_index, const bool is_chroma_keyed) const;
+		[[nodiscard]] TileBrushPreview CreateTileBrushPreview(const TileSet& tileset, const rom::PaletteSet& palette_set, size_t brush_index, bool is_chroma_keyed) const;
 		[[nodiscard]] SDLSurfaceHandle RenderToSurface(const TileLayer& tile_layer) const;
 		[[nodiscard]] std::vector<TileInstance> TilesFlipped(bool flip_x, bool flip_y) const;
 		std::vector<TileInstance> tiles;

@@ -2,9 +2,9 @@
 #include "nlohmann/json.hpp"
 #include "rom/tile_brush.h"
 
-namespace spintool
+namespace
 {
-	nlohmann::json SerialiseTileinstance(rom::TileInstance& tile_instance)
+	nlohmann::json SerialiseTileinstance(spintool::rom::TileInstance& tile_instance)
 	{
 		nlohmann::json tile_instance_json;
 		tile_instance_json["id"] = tile_instance.tile_index;
@@ -16,9 +16,9 @@ namespace spintool
 		return tile_instance_json;
 	}
 
-	rom::TileInstance DeserialiseTileinstance(const nlohmann::json& tile_context)
+	spintool::rom::TileInstance DeserialiseTileinstance(const nlohmann::json& tile_context)
 	{
-		rom::TileInstance tile_instance;
+		spintool::rom::TileInstance tile_instance;
 		tile_instance.tile_index = tile_context["id"];
 		tile_instance.palette_line = tile_context["palette_line"];
 		tile_instance.is_high_priority = tile_context["hi_priority"];
@@ -27,7 +27,10 @@ namespace spintool
 
 		return tile_instance;
 	}
+}
 
+namespace spintool
+{
 	nlohmann::json CustomTileBrush::SerialiseToJSON() const
 	{
 		nlohmann::json tiles = nlohmann::json::array();
@@ -45,16 +48,15 @@ namespace spintool
 
 	CustomTileBrush CustomTileBrush::DeserialiseFromJSON(const nlohmann::json& brush_context)
 	{
-		nlohmann::json tiles = brush_context;
+		const nlohmann::json& tiles = brush_context;
 		CustomTileBrush new_brush;
 		new_brush.tile_brush = std::make_unique<rom::TileBrush>(static_cast<Uint32>(tiles[0].size()), static_cast<Uint32>(tiles.size()));
 
-		for (size_t y = 0; y < tiles.size(); ++y)
+		for (const auto& row : tiles)
 		{
-			nlohmann::json row = tiles[y];
-			for (size_t x = 0; x < row.size(); ++x)
+			for (auto& column : row)
 			{
-				new_brush.tile_brush->tiles.emplace_back(DeserialiseTileinstance(row[x]));
+				new_brush.tile_brush->tiles.emplace_back(DeserialiseTileinstance(column));
 			}
 		}
 

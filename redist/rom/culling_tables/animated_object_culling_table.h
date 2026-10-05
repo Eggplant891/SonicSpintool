@@ -31,6 +31,6 @@ namespace spintool::rom
 
 		static AnimatedObjectCullingTable LoadFromROM(const SpinballROM& rom, Ptr32 offset);
 		Ptr32 SaveToROM(SpinballROM& rom, Ptr32 offset) const;
-		Uint32 CalculateTableSize() const;
+		[[nodiscard]] Uint32 CalculateTableSize() const;
 	};
 }
