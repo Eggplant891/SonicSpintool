@@ -22,6 +22,9 @@ namespace spintool::rom
 		Uint16 num_tiles = 0;
 		Uint16 num_vdp_tiles = 0;
 
+		static constexpr int max_tiles = 0x80;
+		static constexpr int max_vdp_tiles = 0x80;
+
 		std::vector<std::shared_ptr<rom::SpriteTile>> sprite_tiles;
 
 		ROMData rom_data;

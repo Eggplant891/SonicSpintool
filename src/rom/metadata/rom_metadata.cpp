@@ -6,7 +6,7 @@
 
 #include <algorithm>
 
-namespace spintool::rom
+namespace spintool::metadata
 {
     void ROMMetadata::Serialise(nlohmann::json& writer)
     {
@@ -61,26 +61,6 @@ namespace spintool::rom
         }
     }
 
-    void GameObjectMetadata::Serialise(nlohmann::json& writer)
-    {
-        writer;
-    }
-
-    void GameObjectMetadata::Deserialise(const nlohmann::json& reader)
-    {
-        reader;
-    }
-
-    void LevelMetadata::Serialise(nlohmann::json& writer)
-    {
-        level_data_offsets.Serialise(writer);
-    }
-
-    void LevelMetadata::Deserialise(const nlohmann::json& reader)
-    {
-        reader;
-    }
-
     ROMMetadata::ROMMetadata()
     {
         for (size_t i = 0; i < level_data_offsets.size(); ++i)
@@ -91,10 +71,11 @@ namespace spintool::rom
 
     ROMMetadata* Metadata::GetROMMetadataFor(std::string_view version_id)
     {
-        auto result_it = std::find_if(std::begin(rom_metadatas), std::end(rom_metadatas), [&version_id](const ROMMetadata& entry)
-        {
-            return entry.version_id == version_id;
-        });
+        auto result_it = std::find_if(std::begin(rom_metadatas), std::end(rom_metadatas)
+            , [&version_id](const ROMMetadata& entry)
+            {
+                return entry.version_id == version_id;
+            });
 
         if (result_it != std::end(rom_metadatas))
         {

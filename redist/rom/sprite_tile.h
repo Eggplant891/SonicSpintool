@@ -31,7 +31,9 @@ namespace spintool::rom
 
 		ROMData header_rom_data;
 
-		const Uint8* LoadFromROM(const Uint8* rom_data_stary, Uint32 rom_data_offset);
+		static constexpr size_t size_on_rom = 6;
+
+		Uint32 LoadFromROM(const SpinballROM& src_rom, Uint32 offset);
 	};
 
 	struct SpriteTileData
@@ -40,7 +42,7 @@ namespace spintool::rom
 
 		ROMData tile_rom_data;
 
-		const Uint8* LoadFromROM(const SpriteTileHeader& header, Uint32 rom_data_offset, const SpinballROM& src_rom);
+		Uint32 LoadFromROM(const SpriteTileHeader& header, const SpinballROM& src_rom, Uint32 offset);
 	};
 
 	struct SpriteTile
@@ -51,6 +53,8 @@ namespace spintool::rom
 		// Title-screen object mappings may select one of four palette lines.
 		// Other sprite formats leave this at the default line 0.
 		Uint8 palette_line = 0;
+
+		size_t SizeOnROM() const;
 		
 		void RenderToSurface(SDL_Surface* surface) const;
 		void BlitPixelDataToSurface(SDL_Surface* surface, const BoundingBox& bounds, const std::vector<Uint32>& pixels_data) const;

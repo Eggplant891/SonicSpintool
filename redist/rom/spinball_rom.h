@@ -34,9 +34,25 @@ namespace spintool::rom
 		[[nodiscard]] Uint16 ReadUint16(Uint32 offset) const;
 		[[nodiscard]] Uint32 ReadUint32(Uint32 offset) const;
 
+		[[nodiscard]] Sint8 ReadSint8(Uint32 offset) const;
+		[[nodiscard]] Sint16 ReadSint16(Uint32 offset) const;
+		[[nodiscard]] Sint32 ReadSint32(Uint32 offset) const;
+
+		Uint32 ReadUint8(Uint32 offset, Uint8& out_value) const;
+		Uint32 ReadUint16(Uint32 offset, Uint16& out_value) const;
+		Uint32 ReadUint32(Uint32 offset, Uint32& out_value) const;
+
+		Uint32 ReadSint8(Uint32 offset, Sint8& out_value) const;
+		Uint32 ReadSint16(Uint32 offset, Sint16& out_value) const;
+		Uint32 ReadSint32(Uint32 offset, Sint32& out_value) const;
+
 		Uint32 WriteUint8(Uint32 offset, Uint8 value);
 		Uint32 WriteUint16(Uint32 offset, Uint16 value);
 		Uint32 WriteUint32(Uint32 offset, Uint32 value);
+
+		Uint32 WriteSint8(Uint32 offset, Sint8 value);
+		Uint32 WriteSint16(Uint32 offset, Sint16 value);
+		Uint32 WriteSint32(Uint32 offset, Sint32 value);
 
 		std::vector<unsigned char> m_buffer;
 		std::filesystem::path m_filepath;

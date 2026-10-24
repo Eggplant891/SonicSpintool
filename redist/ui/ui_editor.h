@@ -69,8 +69,8 @@ namespace spintool
 	private:
 		rom::SpinballROM m_rom;
 
-		rom::ROMMetadata* m_current_rom_metadata = nullptr;
-		rom::Metadata m_metadata;
+		metadata::ROMMetadata* m_current_rom_metadata = nullptr;
+		metadata::Metadata m_metadata;
 
 		static std::filesystem::path s_rom_load_path;
 		static std::filesystem::path s_rom_export_path;

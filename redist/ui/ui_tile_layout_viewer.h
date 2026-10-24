@@ -286,11 +286,11 @@ namespace spintool
 		void ProcessRenderRequests(RenderRequestType request);
 		void DrawSidebar(bool& has_just_selected_item);
 		void DrawViewport(bool& has_just_selected_item);
-		void DrawLevelInfo();
+		void DrawLevelInfo() const;
 		void DrawObjectTable();
-		void DrawRingsTable();
+		void DrawRingsTable() const;
 		RenderRequestType DrawMenuBar();
-		void DrawFlippersTable();
+		void DrawFlippersTable() const;
 		void PrepareRenderRequest(RenderRequestType render_request);
 
 		[[nodiscard]] bool IsDraggingObject() const;

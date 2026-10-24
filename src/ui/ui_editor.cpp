@@ -87,7 +87,7 @@ namespace spintool
 			Serialiser::OpenFile(s_config_path, "roms.json");
 		nlohmann::json& config_json_writer = serialiser->Writer();
 
-		for (const rom::ROMMetadata& metadata : m_metadata.rom_metadatas)
+		for (const metadata::ROMMetadata& metadata : m_metadata.rom_metadatas)
 		{
 			config_json_writer[metadata.version_id] =
 				metadata.location_on_disk.string();

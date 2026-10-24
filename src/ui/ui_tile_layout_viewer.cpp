@@ -1,14 +1,13 @@
 #include "ui/ui_tile_layout_viewer.h"
-
 #include "ui/ui_editor.h"
+#include "rom/ssc_compressor.h"
+#include "editor/editor_brush.h"
 
 #include "SDL3/SDL_image.h"
+#include "nlohmann/json.hpp"
 
 #include <cassert>
 #include <filesystem>
-#include "rom/ssc_compressor.h"
-#include "editor/editor_brush.h"
-#include "nlohmann/json.hpp"
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -2529,7 +2528,7 @@ namespace spintool
 		ImGui::EndGroup();
 	}
 
-	void EditorTileLayoutViewer::DrawLevelInfo()
+	void EditorTileLayoutViewer::DrawLevelInfo() const
 	{
 		char working_buffer[256];
 
@@ -2654,7 +2653,7 @@ namespace spintool
 		ImGui::EndChild();
 	}
 
-	void EditorTileLayoutViewer::DrawRingsTable()
+	void EditorTileLayoutViewer::DrawRingsTable() const
 	{
 		if (m_level == nullptr)
 		{
@@ -2689,7 +2688,7 @@ namespace spintool
 		ImGui::EndChild();
 	}
 
-	void EditorTileLayoutViewer::DrawFlippersTable()
+	void EditorTileLayoutViewer::DrawFlippersTable() const
 	{
 		if (m_level == nullptr)
 		{

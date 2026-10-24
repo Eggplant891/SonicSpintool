@@ -8,20 +8,15 @@ namespace spintool::rom
 		AnimObjectDefinition new_instance;
 		Uint32 current_offset = offset;
 
-		new_instance.sprite_table = rom.ReadUint32(current_offset);
-		current_offset += 4;
-		new_instance.starting_animation = rom.ReadUint32(current_offset);
-		current_offset += 4;
-		new_instance.palette_index = rom.ReadUint8(current_offset);
-		current_offset += 1;
-		new_instance.frame_time_ticks = rom.ReadUint8(current_offset);
-		current_offset += 1;
-		new_instance.unknown_1 = rom.ReadUint8(current_offset);
-		current_offset += 1;
-		new_instance.unknown_2 = rom.ReadUint8(current_offset);
-		current_offset += 1;
+		current_offset = rom.ReadUint32(current_offset, new_instance.sprite_table );
+		current_offset = rom.ReadUint32(current_offset,new_instance.starting_animation);
+		current_offset = rom.ReadUint8(current_offset, new_instance.palette_index);
+		current_offset = rom.ReadUint8(current_offset,new_instance.frame_time_ticks);
+		current_offset = rom.ReadUint8(current_offset, new_instance.unknown_1);
+		current_offset = rom.ReadUint8(current_offset,new_instance.unknown_2);
 
 		new_instance.rom_data.SetROMData(offset, current_offset);
+
 		return new_instance;
 	}
 }
