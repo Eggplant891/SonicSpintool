@@ -6,50 +6,41 @@
 #include "types/sdl_handle_defs.h"
 
 #include <fstream>
+#include <type_traits>
 #include "SDL3/SDL_stdinc.h"
 #include "SDL3/SDL_surface.h"
 
 namespace
 {
     template<typename T>
-    Uint32 ReadValue(const std::vector<unsigned char> &buffer, Uint32 offset, T &out_value)
+    Uint32 ReadValue(const std::vector<unsigned char> &buffer, Uint32 offset, T& out_value)
     {
         const auto new_offset = offset + sizeof(T);
-        if (new_offset < buffer.size())
+        if (new_offset <= buffer.size())
         {
-            out_value = 0;
-            if constexpr(sizeof(T) > 1)
+            auto unsigned_out_value = static_cast<std::make_unsigned_t<T>>(0);
+            constexpr size_t max_index = sizeof(T) - 1;
+            for (size_t i = 0; i <= max_index; ++i)
             {
-                for (auto i = 1; i < sizeof(T); ++i)
-                {
-                    out_value += static_cast<T>(buffer[offset + (i-1)] << (8*i));
-                }
+                unsigned_out_value += static_cast<std::make_unsigned_t<T>>(buffer[offset + i]) << (8 * (max_index - i));
             }
-            out_value += static_cast<T>(buffer[offset]);
+            out_value = static_cast<T>(unsigned_out_value);
         }
-        return new_offset;
-    }
 
-    template<typename T>
-    [[nodiscard]] T ReadValue(Uint32 offset)
-    {
-        T out_value = 0;
-        ReadValue<T>(offset, out_value);
-        return out_value;
+        return new_offset;
     }
 
     template<typename T>
     Uint32 WriteValue(std::vector<unsigned char>& buffer, Uint32 offset, T in_value)
     {
-        const auto new_offset = offset + 2;
-        if ((new_offset) <= buffer.size())
+        const auto new_offset = offset + sizeof(T);
+        if (new_offset <= buffer.size())
         {
-            if constexpr(sizeof(T) > 1)
+            auto unsigned_in_value = static_cast<std::make_unsigned_t<T>>(in_value);
+            constexpr size_t max_index = sizeof(T) - 1;
+            for (size_t i = 0; i <= max_index; ++i)
             {
-                for (auto i = 0; i < sizeof(T); ++i)
-                {
-                    buffer[offset + i]  = (in_value & (static_cast<T>(0xFF) << (8 * (i - sizeof(T)))));
-                }
+                buffer[offset + i]  = (unsigned_in_value >> (8 * (max_index - i))) & static_cast<std::make_unsigned_t<T>>(0xFF);
             }
         }
 
@@ -274,42 +265,42 @@ namespace spintool
 
     [[nodiscard]] Uint8 rom::SpinballROM::ReadUint8(Uint32 offset) const
     {
-        Uint8 out_value;
+        Uint8 out_value = 0;
         ReadValue<Uint8>(m_buffer, offset, out_value);
         return out_value;
     }
 
     [[nodiscard]] Uint16 rom::SpinballROM::ReadUint16(Uint32 offset) const
     {
-        Uint16 out_value;
+        Uint16 out_value = 0;
         ReadValue<Uint16>(m_buffer, offset, out_value);
         return out_value;
     }
 
     [[nodiscard]] Uint32 rom::SpinballROM::ReadUint32(Uint32 offset) const
     {
-        Uint32 out_value;
+        Uint32 out_value = 0;
         ReadValue<Uint32>(m_buffer, offset, out_value);
         return out_value;
     }
 
     [[nodiscard]] Sint8 rom::SpinballROM::ReadSint8(Uint32 offset) const
     {
-        Sint8 out_value;
+        Sint8 out_value = 0;
         ReadValue<Sint8>(m_buffer, offset, out_value);
         return out_value;
     }
 
     [[nodiscard]] Sint16 rom::SpinballROM::ReadSint16(Uint32 offset) const
     {
-        Sint16 out_value;
+        Sint16 out_value = 0;
         ReadValue<Sint16>(m_buffer, offset, out_value);
         return out_value;
     }
 
     [[nodiscard]] Sint32 rom::SpinballROM::ReadSint32(Uint32 offset) const
     {
-        Sint32 out_value;
+        Sint32 out_value = 0;
         ReadValue<Sint32>(m_buffer, offset, out_value);
         return out_value;
     }
@@ -375,5 +366,4 @@ namespace spintool
     {
         return WriteValue<Sint32>(m_buffer, offset, value);
     }
-}
 }

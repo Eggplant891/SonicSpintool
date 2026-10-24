@@ -6,7 +6,7 @@ namespace spintool::rom
 	{
 		rom_offset = start_offset;
 		real_size = (end_offset - start_offset);
-		rom_offset_end = start_offset + real_size;
+		rom_offset_end = end_offset;
 	}
 
 	bool ROMData::operator==(const ROMData &rhs) const

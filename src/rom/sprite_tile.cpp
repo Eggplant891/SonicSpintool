@@ -106,6 +106,7 @@ namespace spintool::rom
         current_offset = src_rom.ReadSint16(current_offset, y_offset);
         current_offset = src_rom.ReadUint8(current_offset, y_size);
         current_offset = src_rom.ReadUint8(current_offset, x_size);
+        x_size *= 2;
 
         header_rom_data.SetROMData(rom_data_offset, current_offset);
 

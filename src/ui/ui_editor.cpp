@@ -363,7 +363,7 @@ namespace spintool
 		{
 			if (IsROMLoaded())
 			{
-				/*if (ImGui::BeginMenu("File"))
+				if (ImGui::BeginMenu("File"))
 				{
 					if (ImGui::MenuItem("New Project..."))
 					{
@@ -389,7 +389,7 @@ namespace spintool
 						m_current_rom_metadata->Serialise(writer);
 					}
 					ImGui::EndMenu();
-				}*/
+				}
 
 				if (ImGui::BeginMenu("Tools"))
 				{

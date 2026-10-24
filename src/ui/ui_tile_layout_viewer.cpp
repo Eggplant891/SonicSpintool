@@ -533,42 +533,46 @@ namespace spintool
 					}
 
 					const rom::Ptr32 anim_def_offset = m_level->m_game_obj_instances.back().animation_definition;
-					rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
-
-					auto found_sprite = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
-						{
-							return anim_obj.sprite_table == entry.sprite_table && anim_obj.starting_animation == entry.anim_sequence->rom_data.rom_offset;
-						});
-
-					if (found_sprite == std::end(m_anim_sprite_instances))
+					if (anim_def_offset != 0 && anim_def_offset < m_owning_ui.GetROM().m_buffer.size())
 					{
-						AnimSpriteEntry entry;
-						entry.sprite_table = m_owning_ui.GetROM().ReadUint32(anim_obj.sprite_table);
-						entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), anim_obj.starting_animation, entry.sprite_table);
+						rom::AnimObjectDefinition anim_obj = rom::AnimObjectDefinition::LoadFromROM(m_owning_ui.GetROM(), anim_def_offset);
 
-						const auto& command_sequence = entry.anim_sequence->command_sequence;
-						const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+						auto found_sprite = std::find_if(std::begin(m_anim_sprite_instances), std::end(m_anim_sprite_instances), [&anim_obj](const AnimSpriteEntry& entry)
 							{
-								return command.ui_frame_sprite != nullptr;
+								return anim_obj.sprite_table == entry.sprite_table && anim_obj.starting_animation == entry.anim_sequence->rom_data.rom_offset;
 							});
 
-						if (first_frame_with_sprite != std::end(command_sequence))
+						if (found_sprite == std::end(m_anim_sprite_instances))
 						{
-							entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
-							const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
-							auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
-							entry.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get());
-							SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
-							SDL_FillSurfaceRect(new_sprite_surface.get(), nullptr, 0);
-							SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, 0);
-							first_frame_sprite->RenderToSurface(new_sprite_surface.get());
+							AnimSpriteEntry entry;
+							entry.sprite_table = m_owning_ui.GetROM().ReadUint32(anim_obj.sprite_table);
+							entry.anim_sequence = rom::AnimationSequence::LoadFromROM(m_owning_ui.GetROM(), anim_obj.starting_animation, entry.sprite_table);
 
-							entry.sprite_surface = std::move(new_sprite_surface);
+							const auto& command_sequence = entry.anim_sequence->command_sequence;
+							const auto& first_frame_with_sprite = std::find_if(std::begin(command_sequence), std::end(command_sequence), [](const rom::AnimationCommand& command)
+								{
+									return command.ui_frame_sprite != nullptr;
+								});
+
+							if (first_frame_with_sprite != std::end(command_sequence))
+							{
+								entry.anim_command_used_for_surface = std::distance(std::begin(command_sequence), first_frame_with_sprite);
+								const auto& first_frame_sprite = first_frame_with_sprite->ui_frame_sprite->sprite;
+								auto new_sprite_surface = SDLSurfaceHandle{ SDL_CreateSurface(first_frame_sprite->GetBoundingBox().Width(), first_frame_sprite->GetBoundingBox().Height(), SDL_PIXELFORMAT_INDEX8) };
+								entry.palette = Renderer::CreateSDLPalette(*m_working_palette_set.palette_lines.at(anim_obj.palette_index % 4).get());
+								SDL_SetSurfacePalette(new_sprite_surface.get(), entry.palette.get());
+								SDL_FillSurfaceRect(new_sprite_surface.get(), nullptr, 0);
+								SDL_SetSurfaceColorKey(new_sprite_surface.get(), true, 0);
+								first_frame_sprite->RenderToSurface(new_sprite_surface.get());
+
+								entry.sprite_surface = std::move(new_sprite_surface);
+							}
+
+
+							m_anim_sprite_instances.emplace_back(std::move(entry));
 						}
-
-
-						m_anim_sprite_instances.emplace_back(std::move(entry));
 					}
+
 					current_table_offset = m_level->m_game_obj_instances.back().rom_data.rom_offset_end;
 				}
 			}
