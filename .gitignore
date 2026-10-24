@@ -13,3 +13,4 @@ imgui.ini
 /config/*
 /projects/*
 /roms/*
+/rom_export/*
