@@ -3,9 +3,12 @@
 #include "ui/ui_editor.h"
 #include "serialisation/editor_serialiser.h"
 #include "nlohmann/json.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <string_view>
+#include <system_error>
 
 namespace spintool
 {
@@ -19,6 +22,104 @@ namespace spintool
 		std::filesystem::path levels_path = m_project_path_root;
 		levels_path.append("levels");
 		return levels_path;
+	}
+
+	bool Project::IsValidProjectName(const std::string& project_name, std::string& out_error)
+	{
+		if (project_name.empty())
+		{
+			out_error = "Project name cannot be empty.";
+			return false;
+		}
+
+		if (project_name == "." || project_name == "..")
+		{
+			out_error = "Project name cannot be \".\" or \"..\".";
+			return false;
+		}
+
+		if (project_name.front() == ' ' || project_name.back() == ' ' || project_name.back() == '.')
+		{
+			out_error = "Project name cannot start or end with a space, or end with a full stop.";
+			return false;
+		}
+
+		constexpr std::string_view invalid_characters = "<>:\"/\\|?*";
+		const auto invalid_char_it = std::find_if(std::begin(project_name), std::end(project_name), [&invalid_characters](const char c)
+			{
+				return static_cast<unsigned char>(c) < 0x20 || invalid_characters.find(c) != std::string_view::npos;
+			});
+
+		if (invalid_char_it != std::end(project_name))
+		{
+			out_error = "Project name cannot contain any of < > : \" / \\ | ? *";
+			return false;
+		}
+
+		return true;
+	}
+
+	bool Project::Rename(const std::string& new_name, std::string& out_error)
+	{
+		if (IsValidProjectName(new_name, out_error) == false)
+		{
+			return false;
+		}
+
+		if (new_name == m_project_name)
+		{
+			return true;
+		}
+
+		std::filesystem::path new_project_path = m_project_path_root.parent_path();
+		new_project_path.append(new_name);
+
+		std::error_code error_code;
+		if (std::filesystem::exists(new_project_path, error_code))
+		{
+			out_error = "A project named \"" + new_name + "\" already exists.";
+			return false;
+		}
+
+		if (std::filesystem::exists(m_project_path_root, error_code))
+		{
+			std::filesystem::rename(m_project_path_root, new_project_path, error_code);
+			if (error_code)
+			{
+				out_error = "Could not rename project folder: " + error_code.message();
+				return false;
+			}
+		}
+
+		m_project_name = new_name;
+		m_project_path_root = new_project_path;
+		SaveProject();
+
+		return true;
+	}
+
+	bool Project::SaveAs(const std::string& new_name, std::string& out_error)
+	{
+		if (IsValidProjectName(new_name, out_error) == false)
+		{
+			return false;
+		}
+
+		std::filesystem::path new_project_path = m_project_path_root.parent_path();
+		new_project_path.append(new_name);
+
+		std::error_code error_code;
+		if (std::filesystem::exists(new_project_path, error_code))
+		{
+			out_error = "A project named \"" + new_name + "\" already exists.";
+			return false;
+		}
+
+		m_project_name = new_name;
+		m_project_path_root = new_project_path;
+		SaveProject();
+
+		return true;
 	}
 
 	void Project::SaveProject()

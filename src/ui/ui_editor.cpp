@@ -11,6 +11,7 @@
 #include <thread>
 #include <array>
 #include <chrono>
+#include <cstdio>
 #include <optional>
 #include <algorithm>
 #include <numeric>
@@ -358,6 +359,7 @@ namespace spintool
 	{
 		float menu_bar_height = 0;
 		bool open_rom_popup = false;
+		bool open_project_name_popup = false;
 
 		if (ImGui::BeginMainMenuBar())
 		{
@@ -367,8 +369,27 @@ namespace spintool
 				{
 					if (ImGui::MenuItem("New Project..."))
 					{
-						Project::CreateProject("test_project", GetROM());
+						m_current_project = Project::CreateProject("test_project", GetROM());
 					}
+
+					ImGui::BeginDisabled(m_current_project == nullptr);
+					if (ImGui::MenuItem("Save Project"))
+					{
+						m_current_project->SaveProject();
+					}
+
+					if (ImGui::MenuItem("Save Project As..."))
+					{
+						m_project_name_popup_mode = ProjectNamePopupMode::SAVE_AS;
+						open_project_name_popup = true;
+					}
+
+					if (ImGui::MenuItem("Rename Project..."))
+					{
+						m_project_name_popup_mode = ProjectNamePopupMode::RENAME;
+						open_project_name_popup = true;
+					}
+					ImGui::EndDisabled();
 					ImGui::Separator();
 
 					if (ImGui::MenuItem("Export ROM"))
@@ -528,6 +549,8 @@ namespace spintool
 			ImGui::EndMainMenuBar();
 		}
 
+		DrawProjectNamePopup(open_project_name_popup);
+
 		static FileSelectorSettings settings;
 		settings.open_popup = open_rom_popup;
 		settings.object_typename = "ROM";
@@ -642,6 +665,61 @@ namespace spintool
 	std::filesystem::path EditorUI::GetSpriteExportPath()
 	{
 		return s_sprite_export_path;
+	}
+
+	void EditorUI::DrawProjectNamePopup(const bool open_popup)
+	{
+		const bool is_rename = m_project_name_popup_mode == ProjectNamePopupMode::RENAME;
+		const char* popup_id = is_rename ? "Rename Project###project_name_popup" : "Save Project As###project_name_popup";
+
+		if (open_popup && m_current_project)
+		{
+			std::snprintf(m_project_name_buffer, std::size(m_project_name_buffer), "%s", m_current_project->m_project_name.c_str());
+			m_project_name_error.clear();
+			ImGui::OpenPopup(popup_id);
+		}
+
+		if (ImGui::BeginPopupModal(popup_id, nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings))
+		{
+			if (m_current_project == nullptr)
+			{
+				ImGui::CloseCurrentPopup();
+				ImGui::EndPopup();
+				return;
+			}
+
+			if (ImGui::IsWindowAppearing())
+			{
+				ImGui::SetKeyboardFocusHere();
+			}
+			const bool submitted = ImGui::InputText("Project Name", m_project_name_buffer, std::size(m_project_name_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
+
+			if (m_project_name_error.empty() == false)
+			{
+				ImGui::TextColored(ImVec4{ 1.0f, 0.4f, 0.4f, 1.0f }, "%s", m_project_name_error.c_str());
+			}
+
+			if (ImGui::Button(is_rename ? "Rename" : "Save") || submitted)
+			{
+				const std::string new_name{ m_project_name_buffer };
+				const bool succeeded = is_rename
+					? m_current_project->Rename(new_name, m_project_name_error)
+					: m_current_project->SaveAs(new_name, m_project_name_error);
+
+				if (succeeded)
+				{
+					m_project_name_popup_mode = ProjectNamePopupMode::NONE;
+					ImGui::CloseCurrentPopup();
+				}
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Cancel"))
+			{
+				m_project_name_popup_mode = ProjectNamePopupMode::NONE;
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::EndPopup();
+		}
 	}
 
 	std::filesystem::path EditorUI::GetProjectsPath()

@@ -26,6 +26,12 @@ namespace spintool
 
 		[[nodiscard]] std::filesystem::path GetLevelsPath() const;
 
+		// Moves the project folder to sit alongside the current one under new_name, then saves.
+		[[nodiscard]] bool Rename(const std::string& new_name, std::string& out_error);
+		// Saves a copy of the project under new_name and makes it the current project. The original is left on disk.
+		[[nodiscard]] bool SaveAs(const std::string& new_name, std::string& out_error);
+		[[nodiscard]] static bool IsValidProjectName(const std::string& project_name, std::string& out_error);
+
 		std::string m_project_name;
 
 		std::filesystem::path m_rom_location;

@@ -4,6 +4,7 @@
 
 #include "rom/spinball_rom.h"
 #include "rom/metadata/rom_metadata.h"
+#include "editor/editor_project.h"
 
 #include "ui/ui_sprite_viewer.h"
 #include "ui/ui_sprite_navigator.h"
@@ -67,7 +68,21 @@ namespace spintool
 		std::recursive_mutex m_render_to_texture_mutex;
 
 	private:
+		enum class ProjectNamePopupMode
+		{
+			NONE,
+			RENAME,
+			SAVE_AS
+		};
+
+		void DrawProjectNamePopup(bool open_popup);
+
 		rom::SpinballROM m_rom;
+		std::unique_ptr<Project> m_current_project;
+
+		ProjectNamePopupMode m_project_name_popup_mode = ProjectNamePopupMode::NONE;
+		char m_project_name_buffer[128] = {};
+		std::string m_project_name_error;
 
 		metadata::ROMMetadata* m_current_rom_metadata = nullptr;
 		metadata::Metadata m_metadata;
