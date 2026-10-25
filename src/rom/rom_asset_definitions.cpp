@@ -164,11 +164,11 @@ namespace spintool::rom
 		, animations(table_offsets.animations + (sizeof(Ptr32) * level_index))
 		, sprite_table(table_offsets.sprite_table[level_index])
 		, animation_count(table_offsets.animation_count[level_index])
-		, ring_count(table_offsets.ring_count + (sizeof(Ptr32) * level_index))
+		, ring_count(table_offsets.ring_count + (sizeof(Uint8) * level_index))
 		, collision_tile_obj_ids(table_offsets.collision_tile_obj_ids[level_index])
 		, ring_instances(table_offsets.ring_instances[level_index])
 		, object_instances(table_offsets.object_instances[level_index])
-		, rom_level_data_BG_tile_vdp_offset(table_offsets.rom_level_data_BG_tile_vdp_offset + (sizeof(Ptr32) * level_index))
+		, rom_level_data_BG_tile_vdp_offset(table_offsets.rom_level_data_BG_tile_vdp_offset + (sizeof(Uint16) * level_index))
 	{
 
 	}

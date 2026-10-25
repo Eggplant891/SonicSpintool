@@ -20,9 +20,15 @@ add_executable(spintool
         external/imgui/imgui_tables.cpp
         external/imgui/imgui_widgets.cpp
         external/imgui/imgui.cpp
+        src/editor/game_objects/editor_game_object_definition.cpp
+        src/editor/game_objects/editor_game_object_flipper.cpp
+        src/editor/game_objects/editor_game_object_ring.cpp
+        src/editor/editor_animated_object.cpp
+        src/editor/editor_collision_spline.cpp
         src/editor/editor_brush.cpp
         src/editor/editor_level.cpp
         src/editor/editor_project.cpp
+        src/editor/editor_tile_layer.cpp
         src/editor/game_obj_manager.cpp
         src/editor/spline_manager.cpp
         src/editor/tile_brush_manager.cpp

@@ -2540,9 +2540,9 @@ namespace spintool
 		ImGui::InputText("Level Name", working_buffer, std::size(working_buffer), ImGuiInputTextFlags_EnterReturnsTrue);
 		int emerald_count = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.emerald_count);
 		ImGui::InputInt("Emeralds", &emerald_count);
-		int flipper_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.flipper_count));
+		int flipper_count = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.flipper_count);
 		ImGui::InputInt("Flippers", &flipper_count);
-		int ring_count = m_owning_ui.GetROM().ReadUint8(m_owning_ui.GetROM().ReadUint32(m_level->m_data_offsets.ring_count));
+		int ring_count = m_owning_ui.GetROM().ReadUint8(m_level->m_data_offsets.ring_count);
 		ImGui::InputInt("Rings", &ring_count);
 		int music_id = m_owning_ui.GetROM().ReadUint16(m_level->m_data_offsets.music_id);
 		ImGui::InputInt("Music Bank", &music_id, 1, 1, ImGuiInputTextFlags_CharsHexadecimal);
