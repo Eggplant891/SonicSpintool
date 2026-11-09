@@ -1,0 +1,170 @@
+{
+  "levels": [
+    [
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 0,
+        "type_name": "Minecart Flipper",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 2,
+        "type_name": "Ring Portal",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 3,
+        "type_name": "Bumper",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 4,
+        "type_name": "Status Light",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 5,
+        "type_name": "Hit Switch",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 6,
+        "type_name": "Emerald",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 7,
+        "type_name": "Teleporter",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 9,
+        "type_name": "Safety Lid",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 10,
+        "type_name": "InstaWarp",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 11,
+        "type_name": "Scorpious Head",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 12,
+        "type_name": "Barrel Boat Water",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 13,
+        "type_name": "Cluck",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 20,
+        "type_name": "Mud Launcher",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 21,
+        "type_name": "Mine Cart",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 23,
+        "type_name": "Pipe Cap",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 24,
+        "type_name": "Scorpious Tail",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 26,
+        "type_name": "Trash Barrel",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 27,
+        "type_name": "Barrel Boat",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 37,
+        "type_name": "Boss Room Rock",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      },
+      {
+        "flags": [],
+        "notes": "",
+        "type_id": 38,
+        "type_name": "Sewer Lid",
+        "unk_1_name": "",
+        "unk_2_name": ""
+      }
+    ],
+    [],
+    [],
+    []
+  ],
+  "version": "usa"
+}

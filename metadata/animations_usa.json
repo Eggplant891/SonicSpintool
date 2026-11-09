@@ -1,0 +1,2197 @@
+{
+  "animations": [
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233882,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233886,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233890,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233894,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233900,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233924,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233930,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233936,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233948,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233954,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233990,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 233996,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234000,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234006,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234022,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234028,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234034,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234040,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234046,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234052,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234058,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234062,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234068,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234076,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234082,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234090,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234096,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234102,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234108,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234114,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234120,
+      "sprite_table": 76556,
+      "ticks_per_frame": 5
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234126,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234146,
+      "sprite_table": 76556,
+      "ticks_per_frame": 4
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234156,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234166,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234178,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234184,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234198,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234204,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234208,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234212,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234220,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234226,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234232,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234238,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234244,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234298,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234312,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234318,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234322,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234326,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234330,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234336,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234342,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234348,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234354,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234360,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234366,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234372,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234378,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234384,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234390,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234396,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234402,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234408,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234420,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234474,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234482,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234530,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234538,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234546,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234556,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234564,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234590,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234594,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234598,
+      "sprite_table": 76556,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234602,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234622,
+      "sprite_table": 76556,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234634,
+      "sprite_table": 76556,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234642,
+      "sprite_table": 76556,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "toxic_caves",
+      "rom_offset": 234660,
+      "sprite_table": 76556,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "options_screen",
+      "rom_offset": 517610,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "options_screen",
+      "rom_offset": 517614,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "options_screen",
+      "rom_offset": 517618,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "options_screen",
+      "rom_offset": 517622,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517626,
+      "sprite_table": 132710,
+      "ticks_per_frame": 4
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517632,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517646,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 517672,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 517684,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 517696,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "toxic_caves",
+      "rom_offset": 517708,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517720,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517724,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517728,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517732,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517736,
+      "sprite_table": 132710,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517742,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517754,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517808,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517816,
+      "sprite_table": 132710,
+      "ticks_per_frame": 8
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517824,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517832,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517916,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517924,
+      "sprite_table": 132710,
+      "ticks_per_frame": 20
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517928,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517936,
+      "sprite_table": 132710,
+      "ticks_per_frame": 20
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517940,
+      "sprite_table": 132710,
+      "ticks_per_frame": 12
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517952,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 517956,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518036,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518120,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518200,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518232,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518238,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518244,
+      "sprite_table": 132710,
+      "ticks_per_frame": 4
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518250,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518256,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518262,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518266,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518336,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518406,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518432,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518542,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518562,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518586,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518610,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518636,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518638,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518642,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518648,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518654,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518660,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518666,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "global",
+      "rom_offset": 518672,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518694,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518772,
+      "sprite_table": 132710,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518778,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 518790,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519024,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519030,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519036,
+      "sprite_table": 132710,
+      "ticks_per_frame": 16
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519140,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519164,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519208,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519292,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519344,
+      "sprite_table": 132710,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519348,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519364,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519376,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "global",
+      "rom_offset": 519396,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "global",
+      "rom_offset": 519432,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519484,
+      "sprite_table": 132710,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519496,
+      "sprite_table": 132710,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519504,
+      "sprite_table": 132710,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "lava_powerhouse",
+      "rom_offset": 519522,
+      "sprite_table": 132710,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "showdown",
+      "rom_offset": 519756,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519772,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519780,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519784,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519788,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519792,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519796,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519802,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519808,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "showdown",
+      "rom_offset": 519814,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "showdown",
+      "rom_offset": 519882,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519950,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519958,
+      "sprite_table": 202990,
+      "ticks_per_frame": 3
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519964,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519972,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519978,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 519984,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519990,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 519996,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520002,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520008,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520014,
+      "sprite_table": 202990,
+      "ticks_per_frame": 3
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520024,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520070,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520076,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "showdown",
+      "rom_offset": 520082,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "showdown",
+      "rom_offset": 520088,
+      "sprite_table": 202990,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520094,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520098,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520102,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520108,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520114,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520150,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520160,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520200,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520280,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520316,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520326,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520406,
+      "sprite_table": 202990,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520434,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520450,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520456,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520462,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520468,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520474,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520484,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520494,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520566,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520572,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520578,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 1,
+      "palette_set": "showdown",
+      "rom_offset": 520650,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520662,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520668,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520692,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "showdown",
+      "rom_offset": 520716,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "showdown",
+      "rom_offset": 520728,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "showdown",
+      "rom_offset": 520740,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "showdown",
+      "rom_offset": 520752,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520764,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "showdown",
+      "rom_offset": 520770,
+      "sprite_table": 202990,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 2,
+      "palette_set": "showdown",
+      "rom_offset": 520774,
+      "sprite_table": 58490,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520816,
+      "sprite_table": 202990,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520828,
+      "sprite_table": 202990,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520836,
+      "sprite_table": 202990,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "showdown",
+      "rom_offset": 520854,
+      "sprite_table": 202990,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626538,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626542,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626554,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626578,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626584,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626588,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626602,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626608,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "global",
+      "rom_offset": 626612,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626626,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626632,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626636,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626642,
+      "sprite_table": 178084,
+      "ticks_per_frame": 12
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 626654,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626718,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626724,
+      "sprite_table": 178084,
+      "ticks_per_frame": 90
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626860,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 626996,
+      "sprite_table": 178084,
+      "ticks_per_frame": 90
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627004,
+      "sprite_table": 178084,
+      "ticks_per_frame": 90
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627012,
+      "sprite_table": 178084,
+      "ticks_per_frame": 90
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627068,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627124,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627128,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627132,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627136,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627140,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627144,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627148,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627152,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627156,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627162,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627182,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627194,
+      "sprite_table": 178084,
+      "ticks_per_frame": 1
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627212,
+      "sprite_table": 178084,
+      "ticks_per_frame": 5
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627224,
+      "sprite_table": 178084,
+      "ticks_per_frame": 5
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627236,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627242,
+      "sprite_table": 178084,
+      "ticks_per_frame": 6
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627278,
+      "sprite_table": 178084,
+      "ticks_per_frame": 6
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627324,
+      "sprite_table": 178084,
+      "ticks_per_frame": 4
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627330,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627348,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627354,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627374,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627414,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627424,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627440,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627444,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627448,
+      "sprite_table": 178084,
+      "ticks_per_frame": 2
+    },
+    {
+      "name": "",
+      "palette_line": 3,
+      "palette_set": "the_machine",
+      "rom_offset": 627452,
+      "sprite_table": 0,
+      "ticks_per_frame": 0
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627472,
+      "sprite_table": 178084,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627484,
+      "sprite_table": 178084,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627494,
+      "sprite_table": 178084,
+      "ticks_per_frame": 10
+    },
+    {
+      "name": "",
+      "palette_line": 0,
+      "palette_set": "the_machine",
+      "rom_offset": 627512,
+      "sprite_table": 178084,
+      "ticks_per_frame": 10
+    }
+  ],
+  "version": "usa"
+}
