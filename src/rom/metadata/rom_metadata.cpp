@@ -5,9 +5,83 @@
 #include "json.hpp"
 
 #include <algorithm>
+#include <exception>
+#include <iostream>
+#include <string>
+#include <system_error>
 
 namespace spintool::metadata
 {
+    namespace
+    {
+        std::string GameObjectMetadataFilename(const std::string& version_id)
+        {
+            return "game_objects_" + version_id + ".json";
+        }
+    }
+
+    GameObjectMetadata* ROMMetadata::GetGameObjectMetadata(const int level_index, const Uint8 type_id)
+    {
+        if (level_index < 0 || static_cast<size_t>(level_index) >= level_data_offsets.size())
+        {
+            return nullptr;
+        }
+
+        return &level_data_offsets[level_index].game_object_metadata[type_id];
+    }
+
+    void ROMMetadata::SaveGameObjectMetadata(const std::filesystem::path& directory)
+    {
+        // Written to a temporary file first, so a failed save can never damage the existing metadata.
+        const std::string filename = GameObjectMetadataFilename(version_id);
+        const std::string temp_filename = filename + ".tmp";
+        try
+        {
+            std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(directory, temp_filename);
+            nlohmann::json& writer = serialiser->Writer();
+            writer["version"] = version_id;
+            nlohmann::json levels_writer = nlohmann::json::array();
+            for (LevelMetadata& level_metadata : level_data_offsets)
+            {
+                level_metadata.SerialiseGameObjects(levels_writer.emplace_back());
+            }
+            writer["levels"] = levels_writer;
+            serialiser->Finalise();
+            std::filesystem::rename(directory / temp_filename, directory / filename);
+        }
+        catch (const std::exception& error)
+        {
+            std::cerr << "Failed to save game object metadata: " << error.what() << '\n';
+        }
+    }
+
+    void ROMMetadata::LoadGameObjectMetadata(const std::filesystem::path& directory)
+    {
+        const std::string filename = GameObjectMetadataFilename(version_id);
+        try
+        {
+            std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(directory, filename);
+            if (deserialiser == nullptr)
+            {
+                return;
+            }
+
+            const nlohmann::json& levels_reader = deserialiser->Reader().at("levels");
+            for (size_t i = 0; i < level_data_offsets.size() && i < levels_reader.size(); ++i)
+            {
+                level_data_offsets[i].DeserialiseGameObjects(levels_reader[i]);
+            }
+        }
+        catch (const std::exception& error)
+        {
+            // Keep the unreadable file, otherwise the next save would replace it with an empty one.
+            std::error_code error_code;
+            std::filesystem::copy_file(directory / filename, directory / (filename + ".invalid"),
+                std::filesystem::copy_options::overwrite_existing, error_code);
+            std::cerr << "Failed to load game object metadata: " << error.what() << '\n';
+        }
+    }
+
     void ROMMetadata::Serialise(nlohmann::json& writer)
     {
         writer["version"] = version_id;

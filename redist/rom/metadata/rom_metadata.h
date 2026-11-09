@@ -23,6 +23,10 @@ namespace spintool::metadata
 
         void Serialise(nlohmann::json& writer);
         void Deserialise(const nlohmann::json &reader);
+
+        [[nodiscard]] GameObjectMetadata* GetGameObjectMetadata(int level_index, Uint8 type_id);
+        void SaveGameObjectMetadata(const std::filesystem::path& directory);
+        void LoadGameObjectMetadata(const std::filesystem::path& directory);
     };
 
     struct Metadata

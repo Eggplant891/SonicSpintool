@@ -83,7 +83,7 @@ namespace spintool
             return;
         }
 
-        m_out_stream << m_json_writer.dump(indentation);
+        m_out_stream << m_json_writer.dump(indentation, ' ', false, nlohmann::json::error_handler_t::replace);
         m_out_stream.flush();
         m_out_stream.close();
     }

@@ -15,9 +15,9 @@ namespace spintool::rom
 		current_offset += 1;
 		new_instance.instance_id = rom.ReadUint8(current_offset);
 		current_offset += 1;
-		new_instance.unk_1 = rom.ReadUint8(current_offset) > 0;
+		new_instance.unk_1 = rom.ReadUint8(current_offset);
 		current_offset += 1;
-		new_instance.unk_2 = rom.ReadUint8(current_offset) > 0;
+		new_instance.unk_2 = rom.ReadUint8(current_offset);
 		current_offset += 1;
 		new_instance.x_pos = rom.ReadUint16(current_offset);
 		current_offset += 2;

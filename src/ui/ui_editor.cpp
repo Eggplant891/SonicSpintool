@@ -76,6 +76,7 @@ namespace spintool
 		, m_tile_layout_viewer(*this)
 		, m_animation_navigator(*this)
 		, m_palette_viewer(*this)
+		, m_game_object_metadata_window(*this)
 		, m_sprite_importer(*this)
 	{
 		LoadROMConfig();
@@ -347,6 +348,11 @@ namespace spintool
 
 	void EditorUI::Initialise()
 	{
+		for (metadata::ROMMetadata& rom_metadata : m_metadata.rom_metadatas)
+		{
+			rom_metadata.LoadGameObjectMetadata(s_metadata_path);
+		}
+
 		m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
 		if (m_current_rom_metadata &&
 			!m_current_rom_metadata->location_on_disk.empty())
@@ -438,6 +444,11 @@ namespace spintool
 						"Palettes",
 						nullptr,
 						&m_palette_viewer.m_visible
+					);
+					ImGui::MenuItem(
+						"Game Object Metadata",
+						nullptr,
+						&m_game_object_metadata_window.m_visible
 					);
 					/*ImGui::Separator();
 					ImGui::MenuItem(
@@ -610,6 +621,7 @@ namespace spintool
 		m_tile_layout_viewer.Update();
 		m_animation_navigator.Update();
 		m_palette_viewer.Update();
+		m_game_object_metadata_window.Update();
 
 		for (std::unique_ptr<EditorSpriteViewer>& sprite_window :
 			m_sprite_viewer_windows)
@@ -635,6 +647,10 @@ namespace spintool
 	void EditorUI::Shutdown()
 	{
 		m_palette_viewer.Shutdown();
+		m_game_object_metadata_window.Shutdown();
+
+		// Closing a popup mid-edit skips the save that normally follows the edit.
+		SaveGameObjectMetadata();
 		m_animation_navigator.Shutdown();
 		m_tile_layout_viewer.Shutdown();
 		m_tileset_navigator.Shutdown();
@@ -719,6 +735,19 @@ namespace spintool
 				ImGui::CloseCurrentPopup();
 			}
 			ImGui::EndPopup();
+		}
+	}
+
+	metadata::ROMMetadata* EditorUI::GetCurrentROMMetadata()
+	{
+		return m_current_rom_metadata;
+	}
+
+	void EditorUI::SaveGameObjectMetadata()
+	{
+		if (m_current_rom_metadata)
+		{
+			m_current_rom_metadata->SaveGameObjectMetadata(s_metadata_path);
 		}
 	}
 

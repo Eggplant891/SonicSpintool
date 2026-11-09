@@ -31,6 +31,11 @@ namespace spintool
 	struct UISpriteTexture;
 }
 
+namespace spintool::metadata
+{
+	struct GameObjectMetadata;
+}
+
 namespace spintool::rom
 {
 	struct TileLayout;
@@ -295,6 +300,7 @@ namespace spintool
 
 		[[nodiscard]] bool IsDraggingObject() const;
 		[[nodiscard]] static bool IsObjectPopupOpen();
+		[[nodiscard]] metadata::GameObjectMetadata* GetGameObjectMetadata(const rom::GameObjectDefinition& game_obj) const;
 		[[nodiscard]] bool IsEditingSomething() const;
 
 		struct AnimSpriteEntry

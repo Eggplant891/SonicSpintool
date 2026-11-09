@@ -13,6 +13,7 @@
 #include "ui/ui_palette_viewer.h"
 #include "ui/ui_sprite_importer.h"
 #include "ui/ui_animation_navigator.h"
+#include "ui/ui_game_object_metadata.h"
 
 #include <filesystem>
 #include <memory>
@@ -40,6 +41,8 @@ namespace spintool
 		[[nodiscard]] bool IsROMLoaded() const;
 
 		rom::SpinballROM& GetROM();
+		[[nodiscard]] metadata::ROMMetadata* GetCurrentROMMetadata();
+		void SaveGameObjectMetadata();
 
 		static std::filesystem::path GetROMLoadPath();
 		static std::filesystem::path GetROMExportPath();
@@ -105,6 +108,7 @@ namespace spintool
 		EditorTileLayoutViewer m_tile_layout_viewer;
 		EditorAnimationNavigator m_animation_navigator;
 		EditorPaletteViewer m_palette_viewer;
+		EditorGameObjectMetadataWindow m_game_object_metadata_window;
 		EditorImageImporter m_sprite_importer;
 
 		bool m_change_path_popup_open = false;

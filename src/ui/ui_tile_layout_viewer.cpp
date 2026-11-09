@@ -414,6 +414,17 @@ namespace spintool
 		ImGui::End();
 	}
 
+	metadata::GameObjectMetadata* EditorTileLayoutViewer::GetGameObjectMetadata(const rom::GameObjectDefinition& game_obj) const
+	{
+		metadata::ROMMetadata* rom_metadata = m_owning_ui.GetCurrentROMMetadata();
+		if (rom_metadata == nullptr || m_level == nullptr)
+		{
+			return nullptr;
+		}
+
+		return rom_metadata->GetGameObjectMetadata(m_level->m_level_index, static_cast<Uint8>(game_obj.type_id));
+	}
+
 	void EditorTileLayoutViewer::ProcessRenderRequests(RenderRequestType render_request)
 	{
 		bool render_game_objs = false;
@@ -2003,8 +2014,11 @@ namespace spintool
 
 											ImGui::Text("Type ID: 0x%02X", game_obj->obj_definition.type_id);
 											ImGui::Text("Instance ID: 0x%02X", game_obj->obj_definition.instance_id);
-											ImGui::Text("Unk 1: %d", game_obj->obj_definition.unk_1);
-											ImGui::Text("Unk 2: %d", game_obj->obj_definition.unk_2);
+											const metadata::GameObjectMetadata* obj_metadata = GetGameObjectMetadata(game_obj->obj_definition);
+											const bool has_unk_1_name = obj_metadata != nullptr && obj_metadata->unk_1_name.empty() == false;
+											const bool has_unk_2_name = obj_metadata != nullptr && obj_metadata->unk_2_name.empty() == false;
+											ImGui::Text("%s: %d", has_unk_1_name ? obj_metadata->unk_1_name.c_str() : "Unk 1", game_obj->obj_definition.unk_1);
+											ImGui::Text("%s: %d", has_unk_2_name ? obj_metadata->unk_2_name.c_str() : "Unk 2", game_obj->obj_definition.unk_2);
 											ImGui::Text("X: 0x%04X", game_obj->obj_definition.x_pos);
 											ImGui::Text("Y: 0x%04X", game_obj->obj_definition.y_pos);
 											ImGui::Text("Width: 0x%04X", game_obj->obj_definition.collision_width);
@@ -2014,6 +2028,8 @@ namespace spintool
 											ImGui::Text("Flags: 0x%04X", game_obj->obj_definition.flags);
 											ImGui::Text("Flip X: %d", game_obj->obj_definition.FlipX());
 											ImGui::Text("Flip Y: %d", game_obj->obj_definition.FlipY());
+
+											DrawGameObjectMetadataSummary(obj_metadata, game_obj->obj_definition.flags);
 
 											ImGui::EndTooltip();
 										}
@@ -2257,6 +2273,16 @@ namespace spintool
 								spline_vector.min.y = spline_min[1];
 								spline_vector.max.x = spline_max[0];
 								spline_vector.max.y = spline_max[1];
+							}
+
+							// Metadata belongs to the object type, so it saves immediately rather than on Confirm.
+							if (metadata::GameObjectMetadata* obj_metadata = GetGameObjectMetadata(m_working_game_obj->game_obj.obj_definition))
+							{
+								ImGui::SeparatorText("Type Metadata");
+								if (DrawGameObjectMetadataEditor(*obj_metadata))
+								{
+									m_owning_ui.SaveGameObjectMetadata();
+								}
 							}
 						}
 						ImGui::EndPopup();
@@ -2588,13 +2614,11 @@ namespace spintool
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("Instance ID");
 				ImGui::TableNextColumn();
-				ImGui::TableHeader("Type ID");
+				ImGui::TableHeader("Type");
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("X");
 				ImGui::TableNextColumn();
 				ImGui::TableHeader("Y");
-
-				const std::unique_ptr<UIGameObject>* previous_game_object = nullptr;
 
 				m_sidebar_hover = 0;
 
@@ -2604,51 +2628,56 @@ namespace spintool
 					{
 						ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0, 192, 0, 192));
 					}
+
+					ImGui::TableNextRow();
+
 					const bool is_hovered = ImGui::IsWindowHovered() && (ImGui::TableGetHoveredRow() == ImGui::TableGetRowIndex());
-					const bool is_selected = (previous_game_object && m_working_game_obj && m_working_game_obj->destination == previous_game_object->get());
+					const bool is_selected = m_working_game_obj && m_working_game_obj->destination == game_object.get();
 					if (is_hovered || is_selected)
 					{
-						ImGui::PushStyleColor(ImGuiCol_TableRowBg, ImVec4(0.0f, 0.5f, 0.0f, 1.0f));
-						ImGui::PushStyleColor(ImGuiCol_TableRowBgAlt, ImVec4(0.0f, 0.3f, 0.0f, 1.0f));
-
-						if (is_selected)
-						{
-							ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleCenterY);
-						}
+						const ImVec4 row_colour = (ImGui::TableGetRowIndex() % 2) == 0 ? ImVec4(0.0f, 0.5f, 0.0f, 1.0f) : ImVec4(0.0f, 0.3f, 0.0f, 1.0f);
+						ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(row_colour));
 
 						if (is_hovered)
 						{
 							m_sidebar_hover = game_object->obj_definition.instance_id;
-						}
 
-						if (previous_game_object && is_hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
-						{
-							m_request_open_obj_popup = true;
-							m_working_game_obj.emplace();
-							m_working_game_obj->destination = previous_game_object->get();
-							m_working_game_obj->game_obj = **previous_game_object;
+							if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+							{
+								m_request_open_obj_popup = true;
+								m_working_game_obj.emplace();
+								m_working_game_obj->destination = game_object.get();
+								m_working_game_obj->game_obj = *game_object;
+							}
 						}
 					}
 
-					ImGui::TableNextRow();
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%02X", game_object->obj_definition.instance_id);
 					ImGui::TableNextColumn();
-					ImGui::Text("0x%02X", game_object->obj_definition.type_id);
+					const metadata::GameObjectMetadata* obj_metadata = GetGameObjectMetadata(game_object->obj_definition);
+					if (obj_metadata != nullptr && obj_metadata->type_name.empty() == false)
+					{
+						ImGui::TextUnformatted(obj_metadata->type_name.c_str());
+					}
+					else
+					{
+						ImGui::Text("0x%02X", game_object->obj_definition.type_id);
+					}
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%04X", game_object->obj_definition.x_pos);
 					ImGui::TableNextColumn();
 					ImGui::Text("0x%04X", game_object->obj_definition.y_pos);
-					if (is_hovered || is_selected)
+
+					if (is_selected)
 					{
-						ImGui::PopStyleColor(2);
+						ImGui::ScrollToItem(ImGuiScrollFlags_KeepVisibleCenterY);
 					}
+
 					if (game_object->obj_definition.instance_id == 0)
 					{
 						ImGui::PopStyleColor();
 					}
-
-					previous_game_object = &game_object;
 				}
 
 				ImGui::EndTable();
