@@ -351,6 +351,7 @@ namespace spintool
 		for (metadata::ROMMetadata& rom_metadata : m_metadata.rom_metadatas)
 		{
 			rom_metadata.LoadGameObjectMetadata(s_metadata_path);
+			rom_metadata.LoadAnimationMetadata(s_metadata_path);
 		}
 
 		m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
@@ -651,6 +652,7 @@ namespace spintool
 
 		// Closing a popup mid-edit skips the save that normally follows the edit.
 		SaveGameObjectMetadata();
+		SaveAnimationMetadata();
 		m_animation_navigator.Shutdown();
 		m_tile_layout_viewer.Shutdown();
 		m_tileset_navigator.Shutdown();
@@ -748,6 +750,14 @@ namespace spintool
 		if (m_current_rom_metadata)
 		{
 			m_current_rom_metadata->SaveGameObjectMetadata(s_metadata_path);
+		}
+	}
+
+	void EditorUI::SaveAnimationMetadata()
+	{
+		if (m_current_rom_metadata)
+		{
+			m_current_rom_metadata->SaveAnimationMetadata(s_metadata_path);
 		}
 	}
 

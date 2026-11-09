@@ -2,11 +2,13 @@
 
 #include "rom_asset_definitions.h"
 #include "level_metadata.h"
+#include "animation_metadata.h"
 
 #include "json_fwd.hpp"
 
 #include <array>
 #include <filesystem>
+#include <map>
 #include <vector>
 
 
@@ -27,6 +29,13 @@ namespace spintool::metadata
         [[nodiscard]] GameObjectMetadata* GetGameObjectMetadata(int level_index, Uint8 type_id);
         void SaveGameObjectMetadata(const std::filesystem::path& directory);
         void LoadGameObjectMetadata(const std::filesystem::path& directory);
+
+        // Animation metadata, keyed by the animation's ROM offset. Stored in animations_<version>.json.
+        std::map<Uint32, AnimationMetadata> animation_metadata;
+        [[nodiscard]] const AnimationMetadata* GetAnimationMetadata(Uint32 rom_offset) const;
+        [[nodiscard]] AnimationMetadata& GetOrCreateAnimationMetadata(Uint32 rom_offset);
+        void SaveAnimationMetadata(const std::filesystem::path& directory);
+        void LoadAnimationMetadata(const std::filesystem::path& directory);
     };
 
     struct Metadata

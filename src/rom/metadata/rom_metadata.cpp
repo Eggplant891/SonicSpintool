@@ -18,6 +18,11 @@ namespace spintool::metadata
         {
             return "game_objects_" + version_id + ".json";
         }
+
+        std::string AnimationMetadataFilename(const std::string& version_id)
+        {
+            return "animations_" + version_id + ".json";
+        }
     }
 
     GameObjectMetadata* ROMMetadata::GetGameObjectMetadata(const int level_index, const Uint8 type_id)
@@ -79,6 +84,76 @@ namespace spintool::metadata
             std::filesystem::copy_file(directory / filename, directory / (filename + ".invalid"),
                 std::filesystem::copy_options::overwrite_existing, error_code);
             std::cerr << "Failed to load game object metadata: " << error.what() << '\n';
+        }
+    }
+
+    const AnimationMetadata* ROMMetadata::GetAnimationMetadata(const Uint32 rom_offset) const
+    {
+        const auto found = animation_metadata.find(rom_offset);
+        return found != std::end(animation_metadata) ? &found->second : nullptr;
+    }
+
+    AnimationMetadata& ROMMetadata::GetOrCreateAnimationMetadata(const Uint32 rom_offset)
+    {
+        AnimationMetadata& entry = animation_metadata[rom_offset];
+        entry.rom_offset = rom_offset;
+        return entry;
+    }
+
+    void ROMMetadata::SaveAnimationMetadata(const std::filesystem::path& directory)
+    {
+        // Written to a temporary file first, so a failed save can never damage the existing metadata.
+        const std::string filename = AnimationMetadataFilename(version_id);
+        const std::string temp_filename = filename + ".tmp";
+        try
+        {
+            std::unique_ptr<Serialiser> serialiser = Serialiser::OpenFile(directory, temp_filename);
+            nlohmann::json& writer = serialiser->Writer();
+            writer["version"] = version_id;
+            nlohmann::json animations_writer = nlohmann::json::array();
+            for (const auto& [rom_offset, entry] : animation_metadata)
+            {
+                if (entry.IsEmpty() == false)
+                {
+                    entry.Serialise(animations_writer.emplace_back());
+                }
+            }
+            writer["animations"] = animations_writer;
+            serialiser->Finalise();
+            std::filesystem::rename(directory / temp_filename, directory / filename);
+        }
+        catch (const std::exception& error)
+        {
+            std::cerr << "Failed to save animation metadata: " << error.what() << '\n';
+        }
+    }
+
+    void ROMMetadata::LoadAnimationMetadata(const std::filesystem::path& directory)
+    {
+        const std::string filename = AnimationMetadataFilename(version_id);
+        try
+        {
+            std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(directory, filename);
+            if (deserialiser == nullptr)
+            {
+                return;
+            }
+
+            animation_metadata.clear();
+            for (const nlohmann::json& entry_reader : deserialiser->Reader().at("animations"))
+            {
+                AnimationMetadata entry;
+                entry.Deserialise(entry_reader);
+                animation_metadata[entry.rom_offset] = std::move(entry);
+            }
+        }
+        catch (const std::exception& error)
+        {
+            // Keep the unreadable file, otherwise the next save would replace it with an empty one.
+            std::error_code error_code;
+            std::filesystem::copy_file(directory / filename, directory / (filename + ".invalid"),
+                std::filesystem::copy_options::overwrite_existing, error_code);
+            std::cerr << "Failed to load animation metadata: " << error.what() << '\n';
         }
     }
 

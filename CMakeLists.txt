@@ -83,7 +83,9 @@ add_executable(spintool
         src/rom/metadata/rom_metadata.cpp
         src/serialisation/editor_serialiser.cpp
         src/rom/metadata/level_metadata.cpp
-        src/rom/metadata/game_object_metadata.cpp)
+        src/rom/metadata/game_object_metadata.cpp
+        src/rom/metadata/animation_metadata.cpp
+        src/rom/metadata/animation_palette_scraper.cpp)
 
 target_include_directories(spintool PRIVATE
     external

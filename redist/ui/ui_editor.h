@@ -43,6 +43,7 @@ namespace spintool
 		rom::SpinballROM& GetROM();
 		[[nodiscard]] metadata::ROMMetadata* GetCurrentROMMetadata();
 		void SaveGameObjectMetadata();
+		void SaveAnimationMetadata();
 
 		static std::filesystem::path GetROMLoadPath();
 		static std::filesystem::path GetROMExportPath();
