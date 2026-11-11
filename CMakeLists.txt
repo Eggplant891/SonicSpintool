@@ -61,6 +61,7 @@ add_executable(spintool
         src/rom/tile_brush.cpp
         src/rom/tile_layout.cpp
         src/rom/tileset.cpp
+        src/rom/vdp_sprite_export.cpp
         src/types/blit_settings.cpp
         src/types/bounding_box.cpp
         src/ui/ui_animation_navigator.cpp

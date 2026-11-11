@@ -5,6 +5,7 @@
 #include <vector>
 #include <ostream>
 #include <algorithm>
+#include <string>
 
 #define SDL_ENABLE_OLD_NAMES
 #include "SDL3/SDL.h"
@@ -12,6 +13,7 @@
 
 #include "render.h"
 #include "rom/spinball_rom.h"
+#include "rom/vdp_sprite_export.h"
 #include "ui/ui_editor.h"
 
 namespace spintool
@@ -69,5 +71,11 @@ namespace spintool
 
 int main(int argc, char* args[])
 {
+	// Headless commands run before SDL is initialised
+	if (argc >= 2 && std::string(args[1]) == "--export-vdp-sprites")
+	{
+		return spintool::rom::RunVDPSpriteExportCommand(argc, args);
+	}
+
 	return spintool::SSEMain();
 }
