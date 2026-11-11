@@ -58,12 +58,15 @@ namespace spintool::rom
 			return nullptr;
 		}
 
+		// Partial tiles count as whole ones, as in the game: a piece is padded
+		// to whole tiles when it is sent to VRAM, so a piece 3 rows tall still
+		// takes a tile per column.
 		Uint32 calculated_vdp_tiles = 0;
 		for (const auto& sprite_tile : new_sprite->sprite_tiles)
 		{
 			calculated_vdp_tiles +=
-				(static_cast<Uint32>(sprite_tile->x_size) / 8U) *
-				(static_cast<Uint32>(sprite_tile->y_size) / 8U);
+				((static_cast<Uint32>(sprite_tile->x_size) + 7U) / 8U) *
+				((static_cast<Uint32>(sprite_tile->y_size) + 7U) / 8U);
 		}
 
 		if (
