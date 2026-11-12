@@ -222,9 +222,11 @@ namespace spintool::rom
 			}
 		}
 
-		out << "VDPSPRITE_ENTRY_SIZE = 12\n";
-		out << "VDPSprites_Count = " << sprite_export.pieces.size() << "\n";
-		out << "VDPSprites_NumPages = " << num_pages << "         ; pages of 256 bytes of pixel data addresses\n\n";
+		// equ, not =: the game code refers to these before this file is included,
+		// and asm68k warns about forward references to redefinable (=) symbols
+		out << "VDPSPRITE_ENTRY_SIZE    equ 12\n";
+		out << "VDPSprites_Count        equ " << sprite_export.pieces.size() << "\n";
+		out << "VDPSprites_NumPages     equ " << num_pages << "         ; pages of 256 bytes of pixel data addresses\n\n";
 		out << "                even\n";
 		out << "VDPSprites_Lookup:\n";
 		for (const VDPSpritePiece& piece : sprite_export.pieces)
