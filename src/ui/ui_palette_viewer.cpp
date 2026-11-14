@@ -1,4 +1,5 @@
 #include "ui/ui_palette_viewer.h"
+#include "rom/rom_address_map.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include "ui/ui_editor.h"
@@ -20,11 +21,11 @@ namespace spintool
 
 		constexpr Uint32 kLevelPaletteOffset = 0x00000DFCU;
 		constexpr Uint32 kLevelPaletteCount = 48U;
-		constexpr Uint32 kSegaLogoPaletteOffset = 0x000993FAU;
+		const rom::UsaAddress kSegaLogoPaletteOffset{ rom::AddressGroup::Frontend, 0x000993FAU };
 		constexpr Uint32 kSegaLogoPaletteCount = 2U;
-		constexpr Uint32 kIntroPaletteOffset = 0x000A1388U;
+		const rom::UsaAddress kIntroPaletteOffset{ rom::AddressGroup::Frontend, 0x000A1388U };
 		constexpr Uint32 kIntroPaletteCount = 4U;
-		constexpr Uint32 kTitleScreenPaletteOffset = 0x0009BD3AU;
+		const rom::UsaAddress kTitleScreenPaletteOffset{ rom::AddressGroup::Frontend, 0x0009BD3AU };
 		constexpr Uint32 kTitleScreenPaletteCount = 4U;
 
 		enum class PaletteGroup
@@ -58,15 +59,15 @@ namespace spintool
 			{
 				return PaletteGroup::Level;
 			}
-			if (IsPaletteLineInRange(offset, kSegaLogoPaletteOffset, kSegaLogoPaletteCount))
+			if (IsPaletteLineInRange(offset, kSegaLogoPaletteOffset.Get(), kSegaLogoPaletteCount))
 			{
 				return PaletteGroup::SegaLogo;
 			}
-			if (IsPaletteLineInRange(offset, kIntroPaletteOffset, kIntroPaletteCount))
+			if (IsPaletteLineInRange(offset, kIntroPaletteOffset.Get(), kIntroPaletteCount))
 			{
 				return PaletteGroup::Introduction;
 			}
-			if (IsPaletteLineInRange(offset, kTitleScreenPaletteOffset, kTitleScreenPaletteCount))
+			if (IsPaletteLineInRange(offset, kTitleScreenPaletteOffset.Get(), kTitleScreenPaletteCount))
 			{
 				return PaletteGroup::TitleScreen;
 			}
@@ -100,13 +101,13 @@ namespace spintool
 					range_start = kLevelPaletteOffset;
 					break;
 				case PaletteGroup::SegaLogo:
-					range_start = kSegaLogoPaletteOffset;
+					range_start = kSegaLogoPaletteOffset.Get();
 					break;
 				case PaletteGroup::Introduction:
-					range_start = kIntroPaletteOffset;
+					range_start = kIntroPaletteOffset.Get();
 					break;
 				case PaletteGroup::TitleScreen:
-					range_start = kTitleScreenPaletteOffset;
+					range_start = kTitleScreenPaletteOffset.Get();
 					break;
 				case PaletteGroup::Other:
 				default:

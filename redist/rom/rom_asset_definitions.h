@@ -23,6 +23,11 @@ namespace spintool::rom
 		void Serialise(nlohmann::json& writer);
 		void Deserialise(const nlohmann::json &reader);
 
+		// The tables of the loaded ROM's version (from its metadata_<version>.json),
+		// used by LevelDataOffsets(level_index). The defaults below are the USA ROM's.
+		static const LevelDataTableOffsets& Active();
+		static void SetActive(const LevelDataTableOffsets& offsets);
+
 		Ptr32 foreground_tileset = 0x000BFBE0;
 		Ptr32 background_tileset = 0x000BFBF0;
 		Ptr32 foreground_tile_layout = 0x000BFC00;
@@ -150,6 +155,9 @@ namespace spintool::rom
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////
+
+	// Sets the address globals below for the loaded ROM's version (rom_address_map.h).
+	void RelocateGlobalAddresses();
 
 	extern Ptr32 RingAnimationFrameIDs;
 	extern Ptr32 RingAnimationFrameXOffsets;

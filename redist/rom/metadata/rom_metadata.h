@@ -9,6 +9,7 @@
 #include <array>
 #include <filesystem>
 #include <map>
+#include <string>
 #include <vector>
 
 
@@ -25,6 +26,14 @@ namespace spintool::metadata
 
         void Serialise(nlohmann::json& writer);
         void Deserialise(const nlohmann::json &reader);
+
+        // The level data tables of this version, from metadata.json (USA) or
+        // metadata_<version>.json. Returns false (keeping the USA defaults) if the
+        // file is missing or unreadable.
+        [[nodiscard]] static std::string TableMetadataFilename(const std::string& version_id);
+        bool LoadTableMetadata(const std::filesystem::path& directory);
+        // Makes this version's tables the ones LevelDataOffsets(level_index) uses.
+        void ActivateTables();
 
         [[nodiscard]] GameObjectMetadata* GetGameObjectMetadata(int level_index, Uint8 type_id);
         void SaveGameObjectMetadata(const std::filesystem::path& directory);

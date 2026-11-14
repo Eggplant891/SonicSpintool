@@ -1,5 +1,6 @@
 #include "rom/metadata/rom_metadata.h"
 
+#include "rom/rom_address_map.h"
 #include "serialisation/editor_serialiser.h"
 
 #include "json.hpp"
@@ -207,6 +208,69 @@ namespace spintool::metadata
             tables_it != reader.end() && tables_it->is_object())
         {
             level_data_table_offsets.Deserialise(*tables_it);
+        }
+    }
+
+    std::string ROMMetadata::TableMetadataFilename(const std::string& version_id)
+    {
+        return version_id == "usa" ? std::string{"metadata.json"} : "metadata_" + version_id + ".json";
+    }
+
+    bool ROMMetadata::LoadTableMetadata(const std::filesystem::path& directory)
+    {
+        // The address relocations of each group (rom_address_map.h)
+        rom::ClearAddressRelocations();
+        for (const rom::AddressGroup group : { rom::AddressGroup::Common, rom::AddressGroup::BonusStage, rom::AddressGroup::Frontend })
+        {
+            const std::string address_file = rom::AddressFilename(group, version_id);
+            if (!rom::LoadAddressRelocations(group, directory / address_file) && version_id != "usa")
+            {
+                std::cerr << "No ROM addresses for " << version_id << " in " << address_file
+                    << ": its features use the USA ROM's addresses\n";
+            }
+        }
+
+        level_data_table_offsets = rom::LevelDataTableOffsets{};
+        const std::string filename = TableMetadataFilename(version_id);
+        if (!Deserialiser::FileExists(directory / filename))
+        {
+            return false;
+        }
+
+        try
+        {
+            std::unique_ptr<Deserialiser> deserialiser = Deserialiser::OpenFile(directory, filename);
+            if (deserialiser == nullptr)
+            {
+                return false;
+            }
+
+            const nlohmann::json& reader = deserialiser->Reader();
+            const auto tables_it = reader.find("data_tables");
+            if (tables_it == reader.end() || !tables_it->is_object())
+            {
+                std::cerr << filename << " has no data_tables\n";
+                return false;
+            }
+
+            level_data_table_offsets.Deserialise(*tables_it);
+            return true;
+        }
+        catch (const std::exception& error)
+        {
+            std::cerr << "Failed to load " << filename << ": " << error.what() << '\n';
+            level_data_table_offsets = rom::LevelDataTableOffsets{};
+            return false;
+        }
+    }
+
+    void ROMMetadata::ActivateTables()
+    {
+        rom::RelocateGlobalAddresses();
+        rom::LevelDataTableOffsets::SetActive(level_data_table_offsets);
+        for (size_t i = 0; i < level_data_offsets.size(); ++i)
+        {
+            level_data_offsets[i].level_data_offsets = rom::LevelDataOffsets{static_cast<int>(i)};
         }
     }
 

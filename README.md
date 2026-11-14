@@ -6,6 +6,7 @@
   - [Linux](#linux)
 - [Notes](#notes)
   - [Compatibility](#compatibility)
+  - [ROM versions and metadata](#rom-versions-and-metadata)
   - [LZW Compression](#lzw-compression)
 
 ## Introduction
@@ -40,6 +41,22 @@ Suggestions, ideas, bugs reports and fixes are welcome ! Thanks in advance !
 Compatibility
 ---
 This project was tested using the ROM from Steam Version of "SEGA Mega Drive and Genesis Classics"
+
+ROM versions and metadata
+---
+SpinTool identifies the ROM from the region byte of its cartridge header (`$1F0`: `U`, `E` or `J`), which an edited ROM keeps, and confirms an unmodified retail ROM by its SHA-1. The log says which it found.
+
+The ROM addresses SpinTool uses are the USA ROM's. For another version they come from that version's files in `metadata/`, in three sets:
+
+| Files | What |
+|---|---|
+| `metadata.json`, `metadata_<version>.json` | The level data tables (`data_tables`), and the other addresses (`rom_addresses`) |
+| `bonus_stage.json`, `bonus_stage_<version>.json` | Bonus stage art, mappings and animations |
+| `frontend.json`, `frontend_<version>.json` | Cutscenes, the Sega logo, title screen, main and options menus, and the Tails plane |
+
+The USA ROM needs only `metadata.json`. `rom_addresses` maps each USA address to the version's (`"0x0C77B0": "0x0C7088"`). In the code, `RomAddress()`, `BonusAddress()` and `FrontendAddress()` (or a `UsaAddress` in a table) relocate a USA address through its set.
+
+The Europe files (`*_eur.json`) were generated from the USA and Europe ROMs with `tools/rom_compare/spintool_metadata.py` in the Sonic Spinball disassembly, which collects the addresses from this source and checks every mapped address against the Europe ROM. The Japanese ROM has no metadata yet, so it is loaded with the USA addresses, which do not match it.
 
 LZW Compression
 -----

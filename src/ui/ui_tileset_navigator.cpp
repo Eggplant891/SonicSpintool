@@ -3,34 +3,35 @@
 #include "ui/ui_editor.h"
 #include "rom/spinball_rom.h"
 #include "rom/ssc_decompressor.h"
+#include "rom/rom_address_map.h"
 #include <iostream>
 
 namespace spintool
 {
-	Uint32 s_tile_offsets[] =
+	rom::UsaAddress s_tile_offsets[] =
 	{
-		0x0003DBB2, // Toxic Caves
-		0x000394AA,
-		0x00067672, // Lava powerhouse
-		0x00064BB6,
-		0x00081EB6, // The Machine
-		0x0007F29C,
-		0x00053214, // Showdown
-		0x0004FEE4,
-		0x000BDD2E, // Options
+		{ rom::AddressGroup::Common, 0x0003DBB2 }, // Toxic Caves
+		{ rom::AddressGroup::Common, 0x000394AA },
+		{ rom::AddressGroup::Common, 0x00067672 }, // Lava powerhouse
+		{ rom::AddressGroup::Common, 0x00064BB6 },
+		{ rom::AddressGroup::Common, 0x00081EB6 }, // The Machine
+		{ rom::AddressGroup::Common, 0x0007F29C },
+		{ rom::AddressGroup::Common, 0x00053214 }, // Showdown
+		{ rom::AddressGroup::Common, 0x0004FEE4 },
+		{ rom::AddressGroup::Frontend, 0x000BDD2E }, // Options
 	};
 
-	Uint32 s_tile_offsets_non_ssc[] =
+	rom::UsaAddress s_tile_offsets_non_ssc[] =
 	{
-		0x0009D104, // Main Menu BG tiles
-		(0x000A3124 + 2), // Veg-o-fortress BG tiles
-		0x000A220C, // Veg-o-fortress FG tiles
-		0x000C77B0, // Bonus Stage BG tiles
-		0x000C9016, // Bonus stage FG tiles
-		0x000cb14e, // Bonus stage FG tiles
-		0x000d10b0, // Bonus stage FG tiles
-		0x000cc710, // Bonus stage FG tiles
-		0x000cf2de // Bonus stage FG tiles
+		{ rom::AddressGroup::Frontend, 0x0009D104 }, // Main Menu BG tiles
+		{ rom::AddressGroup::Frontend, 0x000A3126 }, // Veg-o-fortress BG tiles
+		{ rom::AddressGroup::Frontend, 0x000A220C }, // Veg-o-fortress FG tiles
+		{ rom::AddressGroup::BonusStage, 0x000C77B0 }, // Bonus Stage BG tiles
+		{ rom::AddressGroup::BonusStage, 0x000C9016 }, // Bonus stage FG tiles
+		{ rom::AddressGroup::BonusStage, 0x000CB14E }, // Bonus stage FG tiles
+		{ rom::AddressGroup::BonusStage, 0x000D10B0 }, // Bonus stage FG tiles
+		{ rom::AddressGroup::BonusStage, 0x000CC710 }, // Bonus stage FG tiles
+		{ rom::AddressGroup::BonusStage, 0x000CF2DE } // Bonus stage FG tiles
 	};
 
 	void EditorTilesetNavigator::Update()
@@ -44,14 +45,14 @@ namespace spintool
 		{
 			if (ImGui::Button("Load all tilesets"))
 			{
-				for (Uint32 offset : s_tile_offsets)
+				for (const rom::UsaAddress& offset : s_tile_offsets)
 				{
-					m_tilesets.emplace_back(rom::TileSet::LoadFromROM_SSCCompression(m_owning_ui.GetROM(), offset));
+					m_tilesets.emplace_back(rom::TileSet::LoadFromROM_SSCCompression(m_owning_ui.GetROM(), offset.Get()));
 				}
 
-				for (Uint32 offset : s_tile_offsets_non_ssc)
+				for (const rom::UsaAddress& offset : s_tile_offsets_non_ssc)
 				{
-					m_tilesets.emplace_back(rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), offset));
+					m_tilesets.emplace_back(rom::TileSet::LoadFromROM_LZSSCompression(m_owning_ui.GetROM(), offset.Get()));
 				}
 			}
 

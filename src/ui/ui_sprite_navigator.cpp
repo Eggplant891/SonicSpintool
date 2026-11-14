@@ -1,4 +1,5 @@
 #include "ui/ui_sprite_navigator.h"
+#include "rom/rom_address_map.h"
 
 #include "rom/spinball_rom.h"
 #include "rom/bonus_stage_decoder.h"
@@ -1654,7 +1655,7 @@ namespace spintool
 
 			if (m_scan_end_offset == 0)
 			{
-				m_scan_end_offset = std::min<Uint32>(0x03909D, maximum_scan_offset);
+				m_scan_end_offset = std::min<Uint32>(rom::RomAddress(0x03909D), maximum_scan_offset);
 			}
 			m_offset = std::min(m_offset, maximum_scan_offset);
 			m_scan_start_offset = std::min(m_scan_start_offset, maximum_scan_offset);

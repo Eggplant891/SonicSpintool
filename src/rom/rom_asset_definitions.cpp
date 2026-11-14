@@ -1,4 +1,9 @@
 #include "rom/rom_asset_definitions.h"
+#include "rom/rom_address_map.h"
+
+#include <iterator>
+#include <string>
+#include <type_traits>
 
 #include "json.hpp"
 
@@ -34,6 +39,48 @@ namespace spintool::rom
 	Ptr32 IntroCutsceneTileLayoutOcean = 0x000A220C;
 	Ptr32 IntroCutsceneTileLayoutSky = 0x000A2510;
 	Ptr32 IntroCutsceneTileLayoutRobotnikShip = 0x000A30BC;
+
+	void RelocateGlobalAddresses()
+	{
+		// The USA ROM's addresses (above), relocated for the loaded version.
+		struct GlobalAddress
+		{
+			Ptr32* target;
+			Ptr32 usa_address;
+			Ptr32 add;
+			AddressGroup group;
+		};
+		static const GlobalAddress globals[] =
+		{
+			{ &RingAnimationFrameIDs, 0x000D3B2A, 0, AddressGroup::Common },
+			{ &RingAnimationFrameXOffsets, 0x000D3B44, 0, AddressGroup::Common },
+			{ &OSDTileset, 0x0007DA22, 0, AddressGroup::Common },
+			{ &BonusLevelBGTileLayout, 0x000C6EF0, 0, AddressGroup::BonusStage },
+			{ &BonusLevelBGTileset, 0x000C77B0, 0, AddressGroup::BonusStage },
+			{ &BonusLevelTilesetTrappedAlive, 0x000CC710, 0, AddressGroup::BonusStage },
+			{ &OptionsMenuPaletteSet, 0x0000115C, 0, AddressGroup::Frontend },
+			{ &OptionsMenuTileset, 0x000BDD2E, 0, AddressGroup::Frontend },
+			{ &OptionsMenuTileBrushes, 0x000BDFBC, 0, AddressGroup::Frontend },
+			{ &OptionsMenuTileLayout, 0x000BE1BC, 0, AddressGroup::Frontend },
+			{ &IntroCutscenesTileset, 0x000A3124, 2, AddressGroup::Frontend },
+			{ &MainMenuTileset, 0x0009D102, 2, AddressGroup::Frontend },
+			{ &SegaLogoPaletteSet, 0x000993FA, 0, AddressGroup::Frontend },
+			{ &SegaLogoTileLayout, 0x000A14F8, 0, AddressGroup::Frontend },
+			{ &MainMenuPaletteSet, 0x0009BD3A, 0, AddressGroup::Frontend },
+			{ &MainMenuTileLayoutGiantBumper, 0x0009C05A, 0, AddressGroup::Frontend },
+			{ &MainMenuTileLayoutBG, 0x0009C82E, 0, AddressGroup::Frontend },
+			{ &IntroCutscenePaletteSet, 0x000A1388, 0, AddressGroup::Frontend },
+			{ &IntroCutsceneTileLayoutVegOFortress, 0x000A1B8C, 0, AddressGroup::Frontend },
+			{ &IntroCutsceneTileLayoutVegOFortressEmptyTopSection, 0x000A2168, 0, AddressGroup::Frontend },
+			{ &IntroCutsceneTileLayoutOcean, 0x000A220C, 0, AddressGroup::Frontend },
+			{ &IntroCutsceneTileLayoutSky, 0x000A2510, 0, AddressGroup::Frontend },
+			{ &IntroCutsceneTileLayoutRobotnikShip, 0x000A30BC, 0, AddressGroup::Frontend },
+		};
+		for (const GlobalAddress& global : globals)
+		{
+			*global.target = Relocate(global.group, global.usa_address) + global.add;
+		}
+	}
 
 	void ArrayOffset::Serialise(nlohmann::json &writer)
 	{
@@ -123,11 +170,104 @@ namespace spintool::rom
 
 	void LevelDataTableOffsets::Deserialise(const nlohmann::json &reader)
 	{
-		reader;
+		// Keys that are missing keep their current (USA default) value.
+		const auto read = [&reader](const char* key, Ptr32& out)
+		{
+			auto it = reader.find(key);
+			if (it == reader.end())
+			{
+				// Older exports wrote a few keys with a trailing space.
+				it = reader.find(std::string{key} + " ");
+			}
+			if (it != reader.end() && it->is_number_integer())
+			{
+				out = it->get<Ptr32>();
+			}
+		};
+		read("foreground_tileset", foreground_tileset);
+		read("background_tileset", background_tileset);
+		read("foreground_tile_layout", foreground_tile_layout);
+		read("background_tile_layout", background_tile_layout);
+		read("foreground_tile_brushes", foreground_tile_brushes);
+		read("background_tile_brushes", background_tile_brushes);
+		read("collision_data_terrain", collision_data_terrain);
+		read("palette_set", palette_set);
+		read("tile_layout_width", tile_layout_width);
+		read("tile_layout_height", tile_layout_height);
+		read("camera_start_position_x", camera_start_position_x);
+		read("camera_start_position_y", camera_start_position_y);
+		read("music_id", music_id);
+		read("game_over_timer", game_over_timer);
+		read("camera_activation_sector_anim_obj_ids", camera_activation_sector_anim_obj_ids);
+		read("switch_hit_msg_id", switch_hit_msg_id);
+		read("bumper_hit_msg_id", bumper_hit_msg_id);
+		read("collision_type0_animation_id", collision_type0_animation_id);
+		read("collision_type1_animation_id", collision_type1_animation_id);
+		read("collision_type2_animation_id", collision_type2_animation_id);
+		read("collision_type3_animation_id", collision_type3_animation_id);
+		read("collision_bumper_animation_id", collision_bumper_animation_id);
+		read("teleporter_animation_id", teleporter_animation_id);
+		read("teleporter_y_offset", teleporter_y_offset);
+		read("player_start_position_x", player_start_position_x);
+		read("player_start_position_y", player_start_position_y);
+		read("emerald_count", emerald_count);
+		read("flipper_data", flipper_data);
+		read("flipper_object_definition", flipper_object_definition);
+		read("flipper_animations", flipper_animations);
+		read("flipper_count", flipper_count);
+		read("flipper_collision_unknown", flipper_collision_unknown);
+		read("level_name", level_name);
+		read("animations", animations);
+		read("ring_count", ring_count);
+		read("rom_level_data_BG_tile_vdp_offset", rom_level_data_BG_tile_vdp_offset);
+
+		const auto read_array = [&reader](const char* key, auto& out)
+		{
+			const auto it = reader.find(key);
+			if (it == reader.end() || !it->is_array())
+			{
+				return;
+			}
+			for (size_t i = 0; i < std::size(out) && i < it->size(); ++i)
+			{
+				const nlohmann::json& entry = (*it)[i];
+				if constexpr (std::is_same_v<std::decay_t<decltype(out[0])>, ArrayOffset>)
+				{
+					if (entry.is_object() && entry.contains("offset") && entry.contains("count"))
+					{
+						out[i].Deserialise(entry);
+					}
+				}
+				else if (entry.is_number_integer())
+				{
+					out[i] = entry.get<std::decay_t<decltype(out[0])>>();
+				}
+			}
+		};
+		read_array("sprite_tables", sprite_table);
+		read_array("animation_count", animation_count);
+		read_array("collision_tile_obj_ids", collision_tile_obj_ids);
+		read_array("ring_instances", ring_instances);
+		read_array("object_instances", object_instances);
+	}
+
+	namespace
+	{
+		LevelDataTableOffsets s_active_table_offsets{};
+	}
+
+	const LevelDataTableOffsets& LevelDataTableOffsets::Active()
+	{
+		return s_active_table_offsets;
+	}
+
+	void LevelDataTableOffsets::SetActive(const LevelDataTableOffsets& offsets)
+	{
+		s_active_table_offsets = offsets;
 	}
 
 	LevelDataOffsets::LevelDataOffsets(const int level_index)
-		: table_offsets(LevelDataTableOffsets{})
+		: table_offsets(LevelDataTableOffsets::Active())
 		, foreground_tileset(table_offsets.foreground_tileset + (sizeof(Ptr32) * level_index))
 		, background_tileset(table_offsets.background_tileset + (sizeof(Ptr32) * level_index))
 		, foreground_tile_layout(table_offsets.foreground_tile_layout + (sizeof(Ptr32) * level_index))

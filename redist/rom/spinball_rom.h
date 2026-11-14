@@ -10,6 +10,7 @@
 #include "SDL3/SDL.h"
 #include "imgui.h"
 
+#include <string>
 #include <vector>
 #include <memory>
 #include <optional>
@@ -21,6 +22,13 @@ namespace spintool::rom
 	{
 	public:
 		bool LoadROMFromPath(const std::filesystem::path& path);
+
+		// The build from the region byte of the cartridge header ($1F0): "usa", "eur"
+		// or "jp", or empty if it is none of those. Edited ROMs keep their header.
+		[[nodiscard]] std::string DetectVersionID() const;
+		// The retail ROM this is an unmodified copy of, by SHA-1 ("usa", "eur" or
+		// "jp"), or empty.
+		[[nodiscard]] std::string MatchRetailSHA1() const;
 		[[nodiscard]] Uint32 GetOffsetForNextSprite(const rom::Sprite& current_sprite) const;
 		[[nodiscard]] std::vector<std::shared_ptr<rom::Palette>> LoadPalettes(Uint32 num_palettes) const;
 

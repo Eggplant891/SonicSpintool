@@ -1,4 +1,5 @@
 #include "ui/ui_tile_layout_viewer.h"
+#include "rom/rom_address_map.h"
 #include "ui/ui_editor.h"
 #include "rom/ssc_compressor.h"
 #include "editor/editor_brush.h"
@@ -457,7 +458,7 @@ namespace spintool
 		{
 			if (m_ring_preview.sprite == nullptr || m_render_from_edit == false)
 			{
-				constexpr static Uint32 ring_sprite_offset = 0x0000F6D8;
+				const Uint32 ring_sprite_offset = rom::RomAddress(0x0000F6D8);
 
 				std::shared_ptr<const rom::Sprite> ring_sprite = rom::Sprite::LoadFromROM(m_owning_ui.GetROM(), ring_sprite_offset);
 				if (!ring_sprite || !m_working_palette_set.palette_lines[3])
@@ -2900,9 +2901,9 @@ namespace spintool
 
 				request.tileset_address = rom::OptionsMenuTileset;
 				request.tile_brushes_address = rom::OptionsMenuTileBrushes;
-				request.tile_brushes_address_end = 0x000BE1BC;
+				request.tile_brushes_address_end = rom::FrontendAddress(0x000BE1BC);
 				request.tile_layout_address = rom::OptionsMenuTileLayout;
-				request.tile_layout_address_end = 0x000BE248;
+				request.tile_layout_address_end = rom::FrontendAddress(0x000BE248);
 
 				request.tile_brush_width = 4;
 				request.tile_brush_height = 4;
@@ -2939,8 +2940,8 @@ namespace spintool
 					}
 					else
 					{
-						request.tileset_address = 0x000A3124 + 2;
-						request.tile_layout_address = 0x000A1B8C;
+						request.tileset_address = rom::FrontendAddress(0x000A3124) + 2;
+						request.tile_layout_address = rom::FrontendAddress(0x000A1B8C);
 						request.palette_line = 1;
 						request.is_chroma_keyed = true;
 						request.layout_layout_name = "fg";
@@ -2984,12 +2985,12 @@ namespace spintool
 
 				RenderTileLayoutRequest request;
 
-				request.tileset_address = 0x000A3124 + 2;
+				request.tileset_address = rom::FrontendAddress(0x000A3124) + 2;
 
 				// Robotnik ship
-				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a30bc);
-				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a30be);
-				request.tile_layout_address = 0x000a30bc;
+				request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::FrontendAddress(0x000a30bc));
+				request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::FrontendAddress(0x000a30be));
+				request.tile_layout_address = rom::FrontendAddress(0x000a30bc);
 				request.palette_line = 1;
 
 				request.tile_brush_width = 1;
@@ -3014,12 +3015,12 @@ namespace spintool
 				{
 					RenderTileLayoutRequest request;
 
-					request.tileset_address = 0x000A3124 + 2;
+					request.tileset_address = rom::FrontendAddress(0x000A3124) + 2;
 
 					// Water
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000a220c);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000a220e);
-					request.tile_layout_address = 0x000a220c;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::FrontendAddress(0x000a220c));
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::FrontendAddress(0x000a220e));
+					request.tile_layout_address = rom::FrontendAddress(0x000a220c);
 					request.palette_line = 0;
 
 					request.tile_brush_width = 1;
@@ -3097,23 +3098,23 @@ namespace spintool
 				auto queue_bonus_layer = [&](bool background)
 				{
 					RenderTileLayoutRequest request;
-					request.tileset_address = 0x000C77B0;
+					request.tileset_address = rom::BonusAddress(0x000C77B0);
 					request.tile_layout_width = 0x14;
 					request.tile_layout_height = 0x1C;
 					request.tile_layout_has_header = false;
 
 					if (background)
 					{
-						request.tile_layout_address = 0x000C7350;
-						request.tile_layout_address_end = 0x000C77B0;
+						request.tile_layout_address = rom::BonusAddress(0x000C7350);
+						request.tile_layout_address_end = rom::BonusAddress(0x000C77B0);
 						request.palette_line = m_preview_bonus_alt_palette ? 1 : 0;
 						request.is_chroma_keyed = false;
 						request.layout_layout_name = "bg";
 					}
 					else
 					{
-						request.tile_layout_address = 0x000C6EEE;
-						request.tile_layout_address_end = 0x000C734E;
+						request.tile_layout_address = rom::BonusAddress(0x000C6EEE);
+						request.tile_layout_address_end = rom::BonusAddress(0x000C734E);
 						request.palette_line = m_preview_bonus_alt_palette ? 0 : 1;
 						request.is_chroma_keyed = true;
 						request.layout_layout_name = "fg";
@@ -3148,10 +3149,10 @@ namespace spintool
 				{
 					RenderTileLayoutRequest request;
 
-					request.tileset_address = 0x000A3124 + 2;
-					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(0x000A14F8);
-					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(0x000A14FA);
-					request.tile_layout_address = 0x000A14F8;
+					request.tileset_address = rom::FrontendAddress(0x000A3124) + 2;
+					request.tile_layout_width = m_owning_ui.GetROM().ReadUint16(rom::FrontendAddress(0x000A14F8));
+					request.tile_layout_height = m_owning_ui.GetROM().ReadUint16(rom::FrontendAddress(0x000A14FA));
+					request.tile_layout_address = rom::FrontendAddress(0x000A14F8);
 
 					request.tile_brush_width = 1;
 					request.tile_brush_height = 1;

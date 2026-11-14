@@ -331,12 +331,42 @@ namespace spintool
 		m_reference_rom_path = reference_path;
 		m_working_rom_path = working_path;
 
-		m_current_rom_metadata = m_metadata.GetROMMetadataFor("usa");
+		// The version comes from the cartridge header's region byte, which an
+		// edited working ROM keeps; the SHA-1 only confirms an unmodified copy.
+		std::string version_id = m_rom.DetectVersionID();
+		if (version_id.empty())
+		{
+			std::cerr << "Unrecognised region in the ROM header: treating it as the USA ROM\n";
+			version_id = "usa";
+		}
+		const std::string retail_version = m_rom.MatchRetailSHA1();
+		if (retail_version.empty())
+		{
+			std::cout << "ROM version: " << version_id << " (from the header; not an unmodified retail ROM)\n";
+		}
+		else if (retail_version != version_id)
+		{
+			std::cerr << "The ROM's SHA-1 is the retail " << retail_version << " ROM's, but its header says "
+				<< version_id << ": using " << retail_version << '\n';
+			version_id = retail_version;
+		}
+		else
+		{
+			std::cout << "ROM version: " << version_id << " (unmodified retail ROM, by SHA-1)\n";
+		}
+
+		m_current_rom_metadata = m_metadata.GetROMMetadataFor(version_id);
 		if (m_current_rom_metadata)
 		{
 			// Keep the immutable file in config. At the next launch,
 			// AttemptLoadROM() reopens the matching rom_export copy.
 			m_current_rom_metadata->location_on_disk = reference_path;
+			if (!m_current_rom_metadata->LoadTableMetadata(s_metadata_path) && version_id != "usa")
+			{
+				std::cerr << "No " << metadata::ROMMetadata::TableMetadataFilename(version_id) << " in "
+					<< s_metadata_path << ": using the USA ROM's level data offsets, which do not match this ROM\n";
+			}
+			m_current_rom_metadata->ActivateTables();
 		}
 
 		m_palettes = m_rom.LoadPalettes(48);
@@ -411,8 +441,8 @@ namespace spintool
 
 					if (ImGui::MenuItem("Export Metadata"))
 					{
-						auto serialiser =
-							Serialiser::OpenFile(s_metadata_path, "metadata.json");
+						auto serialiser = Serialiser::OpenFile(s_metadata_path,
+							metadata::ROMMetadata::TableMetadataFilename(m_current_rom_metadata->version_id));
 						auto& writer = serialiser->Writer();
 						m_current_rom_metadata->Serialise(writer);
 					}

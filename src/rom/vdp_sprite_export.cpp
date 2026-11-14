@@ -1,4 +1,5 @@
 #include "rom/vdp_sprite_export.h"
+#include "rom/rom_address_map.h"
 
 #include "rom/spinball_rom.h"
 #include "rom/sprite.h"
@@ -32,12 +33,12 @@ namespace spintool::rom
 	std::vector<VDPSpriteTable> GetDefaultVDPSpriteTables()
 	{
 		return {
-			{ 0x0013DC, "player" },
-			{ 0x00E47A, "global" },
-			{ 0x012B0C, "toxic_caves" },
-			{ 0x020666, "lava_powerhouse" },
-			{ 0x02B7A4, "the_machine" },
-			{ 0x0318EE, "showdown" },
+			{ RomAddress(0x0013DC), "player" },
+			{ RomAddress(0x00E47A), "global" },
+			{ RomAddress(0x012B0C), "toxic_caves" },
+			{ RomAddress(0x020666), "lava_powerhouse" },
+			{ RomAddress(0x02B7A4), "the_machine" },
+			{ RomAddress(0x0318EE), "showdown" },
 		};
 	}
 

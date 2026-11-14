@@ -51,6 +51,7 @@ add_executable(spintool
         src/rom/title_screen_decoder.cpp
         src/rom/palette.cpp
         src/rom/rom_asset_definitions.cpp
+        src/rom/rom_address_map.cpp
         src/rom/rom_data.cpp
         src/rom/spinball_rom.cpp
         src/rom/sprite.cpp

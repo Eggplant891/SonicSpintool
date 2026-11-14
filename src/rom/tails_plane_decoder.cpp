@@ -1,4 +1,5 @@
 #include "rom/tails_plane_decoder.h"
+#include "rom/rom_address_map.h"
 
 #include "rom/compressed2_optimizer.h"
 
@@ -30,29 +31,29 @@ namespace spintool::rom
 		constexpr Uint16 kVerticalFlip = 0x1000U;
 		constexpr std::size_t kTileBytes = 32U;
 
-		constexpr Uint32 kPlaneArtHeaderOffset = 0x000A3124U;
+		const rom::UsaAddress kPlaneArtHeaderOffset{ rom::AddressGroup::Frontend, 0x000A3124U };
 		// LoadUncOrComp2Tiles consumes FFFF, then gives the decoder A3126.
-		constexpr Uint32 kPlaneCompressedStreamOffset = kPlaneArtHeaderOffset + 2U;
+		const rom::UsaAddress kPlaneCompressedStreamOffset{ rom::AddressGroup::Frontend, 0x000A3126U };
 		constexpr Uint16 kPlaneBaseTile = 0x0000U;
 
-		constexpr Uint32 kBlankDescriptor = 0x00099430U;
+		const rom::UsaAddress kBlankDescriptor{ rom::AddressGroup::Frontend, 0x00099430U };
 
 		// Profile-plane object lists used by the intro and ending scripts.
-		constexpr Uint32 kSideBaseList = 0x0009AECAU;
-		constexpr Uint32 kSidePropellerAList = 0x0009AF14U;
-		constexpr Uint32 kSidePropellerBList = 0x0009AF22U;
-		constexpr Uint32 kSidePilotList = 0x0009AF30U;
-		constexpr Uint32 kSidePilotPartAList = 0x0009AF44U;
-		constexpr Uint32 kSidePilotPartBList = 0x0009AF4CU;
-		constexpr Uint32 kSideDetailList = 0x0009AF54U;
-		constexpr Uint32 kSideTailAList = 0x0009AF62U;
-		constexpr Uint32 kSideTailBList = 0x0009AF6AU;
-		constexpr Uint32 kSideEndingDetailList = 0x0009B386U;
+		const rom::UsaAddress kSideBaseList{ rom::AddressGroup::Frontend, 0x0009AECAU };
+		const rom::UsaAddress kSidePropellerAList{ rom::AddressGroup::Frontend, 0x0009AF14U };
+		const rom::UsaAddress kSidePropellerBList{ rom::AddressGroup::Frontend, 0x0009AF22U };
+		const rom::UsaAddress kSidePilotList{ rom::AddressGroup::Frontend, 0x0009AF30U };
+		const rom::UsaAddress kSidePilotPartAList{ rom::AddressGroup::Frontend, 0x0009AF44U };
+		const rom::UsaAddress kSidePilotPartBList{ rom::AddressGroup::Frontend, 0x0009AF4CU };
+		const rom::UsaAddress kSideDetailList{ rom::AddressGroup::Frontend, 0x0009AF54U };
+		const rom::UsaAddress kSideTailAList{ rom::AddressGroup::Frontend, 0x0009AF62U };
+		const rom::UsaAddress kSideTailBList{ rom::AddressGroup::Frontend, 0x0009AF6AU };
+		const rom::UsaAddress kSideEndingDetailList{ rom::AddressGroup::Frontend, 0x0009B386U };
 
 		// The attract-mode cutscene that runs immediately before an automatic
 		// gameplay demo. It uses the same plane art but a separate scripted set
 		// of mappings, including progressively smaller profile views.
-		constexpr Uint32 kBeforeDemoScript = 0x0009A58AU;
+		const rom::UsaAddress kBeforeDemoScript{ rom::AddressGroup::Frontend, 0x0009A58AU };
 		constexpr std::size_t kBeforeDemoFirstFrameId = 14U;
 		constexpr std::size_t kBeforeDemoHiddenFrameFirstId = 21U;
 		constexpr std::size_t kBeforeDemoHiddenFrameLastId = 23U;
@@ -65,12 +66,12 @@ namespace spintool::rom
 		constexpr unsigned int kMaximumScriptDepth = 32U;
 
 		// Front-plane descriptors used by sub_F2BB2 after pressing Start.
-		constexpr Uint32 kFrontStaticDescriptor0 = 0x000A17CCU;
-		constexpr Uint32 kFrontStaticDescriptor1 = 0x000A17D4U;
-		constexpr Uint32 kFrontStaticDescriptor2 = 0x000A17DCU;
-		constexpr Uint32 kFrontStaticDescriptor3 = 0x000A17E4U;
-		constexpr Uint32 kFrontPropellerDescriptor = 0x000A17ECU;
-		constexpr Uint32 kFrontTailDescriptor = 0x000A181CU;
+		const rom::UsaAddress kFrontStaticDescriptor0{ rom::AddressGroup::Frontend, 0x000A17CCU };
+		const rom::UsaAddress kFrontStaticDescriptor1{ rom::AddressGroup::Frontend, 0x000A17D4U };
+		const rom::UsaAddress kFrontStaticDescriptor2{ rom::AddressGroup::Frontend, 0x000A17DCU };
+		const rom::UsaAddress kFrontStaticDescriptor3{ rom::AddressGroup::Frontend, 0x000A17E4U };
+		const rom::UsaAddress kFrontPropellerDescriptor{ rom::AddressGroup::Frontend, 0x000A17ECU };
+		const rom::UsaAddress kFrontTailDescriptor{ rom::AddressGroup::Frontend, 0x000A181CU };
 		constexpr std::size_t kFrontPropellerFrames = 6U;
 
 		constexpr Uint8 SceneBit(const TailsPlaneScene scene)
@@ -111,7 +112,7 @@ namespace spintool::rom
 			Uint8 scene_mask = 0;
 			std::vector<PieceInstance> pieces;
 			Uint16 base_tile = kPlaneBaseTile;
-			Uint32 art_offset = kPlaneCompressedStreamOffset;
+			Uint32 art_offset = kPlaneCompressedStreamOffset.Get();
 		};
 
 		struct RasterImage
@@ -248,7 +249,7 @@ namespace spintool::rom
 					descriptor.attributes,
 					effective_flags
 				);
-				instance.writable = descriptor_offset != kBlankDescriptor;
+				instance.writable = descriptor_offset != kBlankDescriptor.Get();
 				slots[static_cast<Uint8>(first_slot + index)] = instance;
 			}
 			return true;
@@ -287,7 +288,7 @@ namespace spintool::rom
 
 		bool IsRawBlankDescriptor(const std::vector<Uint8>& rom, const Uint32 offset)
 		{
-			if (offset == 0U || offset == kBlankDescriptor)
+			if (offset == 0U || offset == kBlankDescriptor.Get())
 			{
 				return true;
 			}
@@ -375,7 +376,7 @@ namespace spintool::rom
 			{
 				Uint32 end_offset = 0U;
 				Sint8 return_value = 0;
-				if (!Execute(kBeforeDemoScript, 0U, end_offset, return_value, error))
+				if (!Execute(kBeforeDemoScript.Get(), 0U, end_offset, return_value, error))
 				{
 					return false;
 				}
@@ -812,7 +813,7 @@ namespace spintool::rom
 			for (const auto& [slot, piece] : slots)
 			{
 				(void)slot;
-				if (piece.descriptor.rom_offset != kBlankDescriptor)
+				if (piece.descriptor.rom_offset != kBlankDescriptor.Get())
 				{
 					output.pieces.emplace_back(piece);
 				}
@@ -848,12 +849,12 @@ namespace spintool::rom
 
 			const std::array<Uint32, 6> descriptors =
 			{
-				kFrontStaticDescriptor0,
-				kFrontStaticDescriptor1,
-				kFrontStaticDescriptor2,
-				kFrontStaticDescriptor3,
-				kFrontPropellerDescriptor + static_cast<Uint32>(propeller_frame * 8U),
-				kFrontTailDescriptor,
+				kFrontStaticDescriptor0.Get(),
+				kFrontStaticDescriptor1.Get(),
+				kFrontStaticDescriptor2.Get(),
+				kFrontStaticDescriptor3.Get(),
+				kFrontPropellerDescriptor.Get() + static_cast<Uint32>(propeller_frame * 8U),
+				kFrontTailDescriptor.Get(),
 			};
 
 			for (const Uint32 descriptor_offset : descriptors)
@@ -933,9 +934,9 @@ namespace spintool::rom
 				"Intro and ending",
 				static_cast<Uint8>(intro | ending),
 				{
-					{kSideBaseList, 0x00U}, {kSidePropellerAList, 0x00U},
-					{kSidePilotList, 0x00U}, {kSidePilotPartAList, 0x00U},
-					{kSideDetailList, 0x00U}, {kSideTailAList, 0x00U},
+					{kSideBaseList.Get(), 0x00U}, {kSidePropellerAList.Get(), 0x00U},
+					{kSidePilotList.Get(), 0x00U}, {kSidePilotPartAList.Get(), 0x00U},
+					{kSideDetailList.Get(), 0x00U}, {kSideTailAList.Get(), 0x00U},
 				}
 			);
 			add_side(
@@ -944,9 +945,9 @@ namespace spintool::rom
 				"Intro and ending",
 				static_cast<Uint8>(intro | ending),
 				{
-					{kSideBaseList, 0x00U}, {kSidePropellerBList, 0x00U},
-					{kSidePilotList, 0x00U}, {kSidePilotPartBList, 0x00U},
-					{kSideDetailList, 0x00U}, {kSideTailBList, 0x00U},
+					{kSideBaseList.Get(), 0x00U}, {kSidePropellerBList.Get(), 0x00U},
+					{kSidePilotList.Get(), 0x00U}, {kSidePilotPartBList.Get(), 0x00U},
+					{kSideDetailList.Get(), 0x00U}, {kSideTailBList.Get(), 0x00U},
 				}
 			);
 
@@ -958,9 +959,9 @@ namespace spintool::rom
 				"Intro before title",
 				intro,
 				{
-					{kSideBaseList, 0x88U}, {kSidePropellerAList, 0x88U},
-					{kSidePilotList, 0x88U}, {kSidePilotPartAList, 0x88U},
-					{kSideDetailList, 0x88U}, {kSideTailAList, 0x88U},
+					{kSideBaseList.Get(), 0x88U}, {kSidePropellerAList.Get(), 0x88U},
+					{kSidePilotList.Get(), 0x88U}, {kSidePilotPartAList.Get(), 0x88U},
+					{kSideDetailList.Get(), 0x88U}, {kSideTailAList.Get(), 0x88U},
 				}
 			);
 			add_side(
@@ -969,9 +970,9 @@ namespace spintool::rom
 				"Intro before title",
 				intro,
 				{
-					{kSideBaseList, 0x88U}, {kSidePropellerBList, 0x88U},
-					{kSidePilotList, 0x88U}, {kSidePilotPartBList, 0x88U},
-					{kSideDetailList, 0x88U}, {kSideTailBList, 0x88U},
+					{kSideBaseList.Get(), 0x88U}, {kSidePropellerBList.Get(), 0x88U},
+					{kSidePilotList.Get(), 0x88U}, {kSidePilotPartBList.Get(), 0x88U},
+					{kSideDetailList.Get(), 0x88U}, {kSideTailBList.Get(), 0x88U},
 				}
 			);
 
@@ -983,8 +984,8 @@ namespace spintool::rom
 				"Ending cutscene",
 				ending,
 				{
-					{kSideBaseList, 0x80U}, {kSidePropellerAList, 0x80U},
-					{kSideTailAList, 0x80U},
+					{kSideBaseList.Get(), 0x80U}, {kSidePropellerAList.Get(), 0x80U},
+					{kSideTailAList.Get(), 0x80U},
 				}
 			);
 			add_side(
@@ -993,8 +994,8 @@ namespace spintool::rom
 				"Ending cutscene",
 				ending,
 				{
-					{kSideBaseList, 0x80U}, {kSidePropellerBList, 0x80U},
-					{kSideTailBList, 0x80U},
+					{kSideBaseList.Get(), 0x80U}, {kSidePropellerBList.Get(), 0x80U},
+					{kSideTailBList.Get(), 0x80U},
 				}
 			);
 			add_side(
@@ -1003,9 +1004,9 @@ namespace spintool::rom
 				"Ending cutscene",
 				ending,
 				{
-					{kSideBaseList, 0x80U}, {kSidePropellerAList, 0x80U},
-					{kSidePilotList, 0x80U}, {kSidePilotPartAList, 0x80U},
-					{kSideEndingDetailList, 0x80U}, {kSideTailAList, 0x80U},
+					{kSideBaseList.Get(), 0x80U}, {kSidePropellerAList.Get(), 0x80U},
+					{kSidePilotList.Get(), 0x80U}, {kSidePilotPartAList.Get(), 0x80U},
+					{kSideEndingDetailList.Get(), 0x80U}, {kSideTailAList.Get(), 0x80U},
 				}
 			);
 			add_side(
@@ -1014,9 +1015,9 @@ namespace spintool::rom
 				"Ending cutscene",
 				ending,
 				{
-					{kSideBaseList, 0x80U}, {kSidePropellerBList, 0x80U},
-					{kSidePilotList, 0x80U}, {kSidePilotPartBList, 0x80U},
-					{kSideEndingDetailList, 0x80U}, {kSideTailBList, 0x80U},
+					{kSideBaseList.Get(), 0x80U}, {kSidePropellerBList.Get(), 0x80U},
+					{kSidePilotList.Get(), 0x80U}, {kSidePilotPartBList.Get(), 0x80U},
+					{kSideEndingDetailList.Get(), 0x80U}, {kSideTailBList.Get(), 0x80U},
 				}
 			);
 
@@ -1606,8 +1607,8 @@ namespace spintool::rom
 	TailsPlaneDecodeResult TailsPlaneDecoder::Decode(const SpinballROM& rom)
 	{
 		TailsPlaneDecodeResult result;
-		if (!CanRead(rom.m_buffer, kPlaneArtHeaderOffset, 2U) ||
-			ReadBE16(rom.m_buffer, kPlaneArtHeaderOffset) != 0xFFFFU)
+		if (!CanRead(rom.m_buffer, kPlaneArtHeaderOffset.Get(), 2U) ||
+			ReadBE16(rom.m_buffer, kPlaneArtHeaderOffset.Get()) != 0xFFFFU)
 		{
 			result.error = "Tails plane Compressed2 marker FFFF is missing at 0xA3124";
 			return result;
@@ -1616,7 +1617,7 @@ namespace spintool::rom
 		const LZSSDecompressionResult decompressed =
 			LZSSDecompressor::DecompressDataRefactored(
 				rom.m_buffer,
-				kPlaneCompressedStreamOffset
+				kPlaneCompressedStreamOffset.Get()
 			);
 		if (decompressed.error_msg.has_value())
 		{
@@ -1700,14 +1701,14 @@ namespace spintool::rom
 	)
 	{
 		TailsPlaneImportResult result;
-		if (!CanRead(rom.m_buffer, kPlaneArtHeaderOffset, 2U) ||
-			ReadBE16(rom.m_buffer, kPlaneArtHeaderOffset) != 0xFFFFU)
+		if (!CanRead(rom.m_buffer, kPlaneArtHeaderOffset.Get(), 2U) ||
+			ReadBE16(rom.m_buffer, kPlaneArtHeaderOffset.Get()) != 0xFFFFU)
 		{
 			result.message = "Compressed2 marker FFFF is missing at 0xA3124";
 			return result;
 		}
-		if (!CanRead(reference_rom.m_buffer, kPlaneArtHeaderOffset, 2U) ||
-			ReadBE16(reference_rom.m_buffer, kPlaneArtHeaderOffset) != 0xFFFFU)
+		if (!CanRead(reference_rom.m_buffer, kPlaneArtHeaderOffset.Get(), 2U) ||
+			ReadBE16(reference_rom.m_buffer, kPlaneArtHeaderOffset.Get()) != 0xFFFFU)
 		{
 			result.message = "Reference ROM has no Compressed2 marker at 0xA3124";
 			return result;

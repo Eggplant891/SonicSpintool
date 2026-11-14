@@ -1,0 +1,349 @@
+{
+  "data_tables": {
+    "animation_count": [
+      63,
+      36,
+      40,
+      57
+    ],
+    "animations": 789988,
+    "background_tile_brushes": 783624,
+    "background_tile_layout": 783592,
+    "background_tileset": 783560,
+    "bumper_hit_msg_id ": 786330,
+    "camera_activation_sector_anim_obj_ids": 783852,
+    "camera_start_position_x": 783704,
+    "camera_start_position_y": 783706,
+    "collision_bumper_animation_id": 786354,
+    "collision_data_terrain": 783640,
+    "collision_tile_obj_ids": [
+      {
+        "count": 256,
+        "offset": 797510
+      },
+      {
+        "count": 256,
+        "offset": 790588
+      },
+      {
+        "count": 256,
+        "offset": 808052
+      },
+      {
+        "count": 0,
+        "offset": 0
+      }
+    ],
+    "collision_type0_animation_id": 786342,
+    "collision_type1_animation_id": 786346,
+    "collision_type2_animation_id": 786350,
+    "collision_type3_animation_id": 786338,
+    "emerald_count": 786394,
+    "flipper_animations": 786870,
+    "flipper_collision_unknown": 787310,
+    "flipper_count": 786886,
+    "flipper_data": 786838,
+    "flipper_object_definition": 786854,
+    "foreground_tile_brushes": 783608,
+    "foreground_tile_layout": 783576,
+    "foreground_tileset": 783544,
+    "game_over_timer ": 783728,
+    "level_name": 789972,
+    "music_id": 783720,
+    "object_instances": [
+      {
+        "count": 173,
+        "offset": 799368
+      },
+      {
+        "count": 211,
+        "offset": 792538
+      },
+      {
+        "count": 158,
+        "offset": 809840
+      },
+      {
+        "count": 186,
+        "offset": 803864
+      }
+    ],
+    "palette_set": 783656,
+    "player_start_position_x": 786378,
+    "player_start_position_y": 786380,
+    "ring_count": 790004,
+    "ring_instances": [
+      {
+        "count": 58,
+        "offset": 799020
+      },
+      {
+        "count": 67,
+        "offset": 792136
+      },
+      {
+        "count": 81,
+        "offset": 809354
+      },
+      {
+        "count": 62,
+        "offset": 803492
+      }
+    ],
+    "rom_level_data_BG_tile_vdp_offset": 886274,
+    "sprite_tables": [
+      76556,
+      132710,
+      178084,
+      202990
+    ],
+    "switch_hit_msg_id ": 786322,
+    "teleporter_animation_id": 786358,
+    "teleporter_y_offset": 786374,
+    "tile_layout_height": 783690,
+    "tile_layout_width": 783688
+  },
+  "level_data_offsets": [
+    {
+      "animation_count": 63,
+      "animations": 789988,
+      "background_tile_brushes": 783624,
+      "background_tile_layout": 783592,
+      "background_tileset": 783560,
+      "bumper_hit_msg_id": 786330,
+      "camera_activation_sector_anim_obj_ids": 783852,
+      "camera_start_position_x": 783704,
+      "camera_start_position_y": 783706,
+      "collision_bumper_animation_id": 786354,
+      "collision_data_terrain": 783640,
+      "collision_tile_obj_ids": {
+        "count": 256,
+        "offset": 797510
+      },
+      "collision_type0_animation_id": 786342,
+      "collision_type1_animation_id": 786346,
+      "collision_type2_animation_id": 786350,
+      "collision_type3_animation_id": 786338,
+      "emerald_count": 786394,
+      "flipper_animations": 786870,
+      "flipper_collision_unknown": 787310,
+      "flipper_count": 786886,
+      "flipper_data": 786838,
+      "flipper_object_definition": 786854,
+      "foreground_tile_brushes": 783608,
+      "foreground_tile_layout": 783576,
+      "foreground_tileset": 783544,
+      "game_over_timer": 783728,
+      "level_name": 789972,
+      "music_id": 783720,
+      "object_instances": {
+        "count": 173,
+        "offset": 799368
+      },
+      "palette_set": 783656,
+      "player_start_position_x": 786378,
+      "player_start_position_y": 786380,
+      "ring_count": 790004,
+      "ring_instances": {
+        "count": 58,
+        "offset": 799020
+      },
+      "rom_level_data_BG_tile_vdp_offset": 886274,
+      "sprite_table": 76556,
+      "switch_hit_msg_id": 786322,
+      "teleporter_animation": 786358,
+      "teleporter_y_offset": 786374,
+      "tile_layout_height": 783690,
+      "tile_layout_width": 783688
+    },
+    {
+      "animation_count": 36,
+      "animations": 789992,
+      "background_tile_brushes": 783628,
+      "background_tile_layout": 783596,
+      "background_tileset": 783564,
+      "bumper_hit_msg_id": 786332,
+      "camera_activation_sector_anim_obj_ids": 783856,
+      "camera_start_position_x": 783708,
+      "camera_start_position_y": 783710,
+      "collision_bumper_animation_id": 786355,
+      "collision_data_terrain": 783644,
+      "collision_tile_obj_ids": {
+        "count": 256,
+        "offset": 790588
+      },
+      "collision_type0_animation_id": 786343,
+      "collision_type1_animation_id": 786347,
+      "collision_type2_animation_id": 786351,
+      "collision_type3_animation_id": 786339,
+      "emerald_count": 786395,
+      "flipper_animations": 786874,
+      "flipper_collision_unknown": 787314,
+      "flipper_count": 786888,
+      "flipper_data": 786842,
+      "flipper_object_definition": 786858,
+      "foreground_tile_brushes": 783612,
+      "foreground_tile_layout": 783580,
+      "foreground_tileset": 783548,
+      "game_over_timer": 783730,
+      "level_name": 789976,
+      "music_id": 783722,
+      "object_instances": {
+        "count": 211,
+        "offset": 792538
+      },
+      "palette_set": 783664,
+      "player_start_position_x": 786382,
+      "player_start_position_y": 786384,
+      "ring_count": 790005,
+      "ring_instances": {
+        "count": 67,
+        "offset": 792136
+      },
+      "rom_level_data_BG_tile_vdp_offset": 886276,
+      "sprite_table": 132710,
+      "switch_hit_msg_id": 786324,
+      "teleporter_animation": 786362,
+      "teleporter_y_offset": 786375,
+      "tile_layout_height": 783694,
+      "tile_layout_width": 783692
+    },
+    {
+      "animation_count": 40,
+      "animations": 789996,
+      "background_tile_brushes": 783632,
+      "background_tile_layout": 783600,
+      "background_tileset": 783568,
+      "bumper_hit_msg_id": 786334,
+      "camera_activation_sector_anim_obj_ids": 783860,
+      "camera_start_position_x": 783712,
+      "camera_start_position_y": 783714,
+      "collision_bumper_animation_id": 786356,
+      "collision_data_terrain": 783648,
+      "collision_tile_obj_ids": {
+        "count": 256,
+        "offset": 808052
+      },
+      "collision_type0_animation_id": 786344,
+      "collision_type1_animation_id": 786348,
+      "collision_type2_animation_id": 786352,
+      "collision_type3_animation_id": 786340,
+      "emerald_count": 786396,
+      "flipper_animations": 786878,
+      "flipper_collision_unknown": 787318,
+      "flipper_count": 786890,
+      "flipper_data": 786846,
+      "flipper_object_definition": 786862,
+      "foreground_tile_brushes": 783616,
+      "foreground_tile_layout": 783584,
+      "foreground_tileset": 783552,
+      "game_over_timer": 783732,
+      "level_name": 789980,
+      "music_id": 783724,
+      "object_instances": {
+        "count": 158,
+        "offset": 809840
+      },
+      "palette_set": 783672,
+      "player_start_position_x": 786386,
+      "player_start_position_y": 786388,
+      "ring_count": 790006,
+      "ring_instances": {
+        "count": 81,
+        "offset": 809354
+      },
+      "rom_level_data_BG_tile_vdp_offset": 886278,
+      "sprite_table": 178084,
+      "switch_hit_msg_id": 786326,
+      "teleporter_animation": 786366,
+      "teleporter_y_offset": 786376,
+      "tile_layout_height": 783698,
+      "tile_layout_width": 783696
+    },
+    {
+      "animation_count": 57,
+      "animations": 790000,
+      "background_tile_brushes": 783636,
+      "background_tile_layout": 783604,
+      "background_tileset": 783572,
+      "bumper_hit_msg_id": 786336,
+      "camera_activation_sector_anim_obj_ids": 783864,
+      "camera_start_position_x": 783716,
+      "camera_start_position_y": 783718,
+      "collision_bumper_animation_id": 786357,
+      "collision_data_terrain": 783652,
+      "collision_tile_obj_ids": {
+        "count": 0,
+        "offset": 0
+      },
+      "collision_type0_animation_id": 786345,
+      "collision_type1_animation_id": 786349,
+      "collision_type2_animation_id": 786353,
+      "collision_type3_animation_id": 786341,
+      "emerald_count": 786397,
+      "flipper_animations": 786882,
+      "flipper_collision_unknown": 787322,
+      "flipper_count": 786892,
+      "flipper_data": 786850,
+      "flipper_object_definition": 786866,
+      "foreground_tile_brushes": 783620,
+      "foreground_tile_layout": 783588,
+      "foreground_tileset": 783556,
+      "game_over_timer": 783734,
+      "level_name": 789984,
+      "music_id": 783726,
+      "object_instances": {
+        "count": 186,
+        "offset": 803864
+      },
+      "palette_set": 783680,
+      "player_start_position_x": 786390,
+      "player_start_position_y": 786392,
+      "ring_count": 790007,
+      "ring_instances": {
+        "count": 62,
+        "offset": 803492
+      },
+      "rom_level_data_BG_tile_vdp_offset": 886280,
+      "sprite_table": 202990,
+      "switch_hit_msg_id": 786328,
+      "teleporter_animation": 786370,
+      "teleporter_y_offset": 786377,
+      "tile_layout_height": 783702,
+      "tile_layout_width": 783700
+    }
+  ],
+  "path": "/home/jaso-kashi/Development/sonicspintool/roms/Sonic The Hedgehog Spinball (Europe).md",
+  "rom_addresses": {
+    "0x000DFC": "0x000DFC",
+    "0x0013DC": "0x0013DC",
+    "0x00E47A": "0x00E47A",
+    "0x00F6D8": "0x00F6D8",
+    "0x012B0C": "0x012B0C",
+    "0x020666": "0x020666",
+    "0x02B7A4": "0x02B7A4",
+    "0x0318EE": "0x0318EE",
+    "0x03909D": "0x03909D",
+    "0x0394AA": "0x0394AA",
+    "0x03DBB2": "0x03DBB2",
+    "0x04FEE4": "0x04FF2C",
+    "0x053214": "0x05325C",
+    "0x064BB6": "0x064BFE",
+    "0x067672": "0x0676BA",
+    "0x07DA22": "0x07DA6A",
+    "0x07F29C": "0x07F2E4",
+    "0x081EB6": "0x081EFE",
+    "0x0C0B14": "0x0C03EC",
+    "0x0C13F0": "0x0C0CC8",
+    "0x0D3B2A": "0x0D3402",
+    "0x0D3B44": "0x0D341C",
+    "0x0D617A": "0x0D5A64",
+    "0x0D6194": "0x0D5A7E",
+    "0x0D61AC": "0x0D5A96",
+    "0x0D61B8": "0x0D5AA2",
+    "0x0D61C4": "0x0D5AAE",
+    "0x0D61D2": "0x0D5ABC",
+    "0x0E2F94": "0x0E28D4"
+  },
+  "version": "eur"
+}

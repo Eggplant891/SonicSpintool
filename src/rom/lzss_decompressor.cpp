@@ -1,4 +1,5 @@
 #include "rom/lzss_decompressor.h"
+#include "rom/rom_address_map.h"
 
 #include "SDL3/SDL_stdinc.h"
 #include <array>
@@ -59,7 +60,7 @@ namespace spintool::rom
 
 		Uint32 a0 = 0; // Address to write in VRAM
 		Uint32 a1 = static_cast<Uint32>(offset); // Compressed data
-		Uint32 a2 = 0x9BCD2; // = TokenBitmaskLookup[0]; // set mask to 9 bits. A2
+		Uint32 a2 = rom::FrontendAddress(0x9BCD2); // = TokenBitmaskLookup[0]; // set mask to 9 bits. A2
 		Uint32 a3 = 0;
 		Uint32 a4 = 0;
 		Uint32 a5 = 0x54CC; // A5 points to a table of size $400 bytes(likely)
@@ -113,7 +114,7 @@ namespace spintool::rom
 				d4 = (d4 & 0xFFFF0000) | (0x102 & 0x0000FFFF);
 				d5 = 0x9; // reset token size to 9 bits
 				d6 = (d6 & 0xFFFF0000) | (0x200 & 0x0000FFFF);
-				a2 = 0x9BCD2; // reset mask to 9 bits
+				a2 = rom::FrontendAddress(0x9BCD2); // reset mask to 9 bits
 				a6 = 0x58D4; // reset unknown dictionary
 
 				// Read next token of length 9 bits(see D5, (A2)) from the compressed stream

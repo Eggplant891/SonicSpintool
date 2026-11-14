@@ -1,4 +1,5 @@
 #include "ui/ui_animation_navigator.h"
+#include "rom/rom_address_map.h"
 
 #include "ui/ui_editor.h"
 #include "ui/ui_palette.h"
@@ -17,22 +18,22 @@ namespace spintool
 	namespace
 	{
 		// Animation callbacks that the preview simulates (USA ROM addresses; AnimCallback_* in the disassembly).
-		constexpr Uint32 s_anim_callback_set_flip_x = 0x000D61AC;
-		constexpr Uint32 s_anim_callback_clear_flip_x = 0x000D61B8;
-		constexpr Uint32 s_anim_callback_toggle_flip_x = 0x000D61C4;
-		constexpr Uint32 s_anim_callback_stop_if_count_reached = 0x000D61D2;
+		constexpr Uint32 s_anim_callback_set_flip_x = SPINTOOL_USA_ADDRESS(Common, 0x000D61AC);
+		constexpr Uint32 s_anim_callback_clear_flip_x = SPINTOOL_USA_ADDRESS(Common, 0x000D61B8);
+		constexpr Uint32 s_anim_callback_toggle_flip_x = SPINTOOL_USA_ADDRESS(Common, 0x000D61C4);
+		constexpr Uint32 s_anim_callback_stop_if_count_reached = SPINTOOL_USA_ADDRESS(Common, 0x000D61D2);
 
 		const char* KnownCallbackName(const Uint32 address)
 		{
-			switch (address)
+			switch (rom::UsaAddressOf(rom::AddressGroup::Common, address))
 			{
-			case 0x000D617A: return "AnimCallback_SetBBoxFromParams";
-			case 0x000D6194: return "AnimCallback_ToxicCavesTeleporterTongue";
+			case SPINTOOL_USA_ADDRESS(Common, 0x000D617A): return "AnimCallback_SetBBoxFromParams";
+			case SPINTOOL_USA_ADDRESS(Common, 0x000D6194): return "AnimCallback_ToxicCavesTeleporterTongue";
 			case s_anim_callback_set_flip_x: return "AnimCallback_SetFlipX";
 			case s_anim_callback_clear_flip_x: return "AnimCallback_ClearFlipX";
 			case s_anim_callback_toggle_flip_x: return "AnimCallback_ToggleFlipX";
 			case s_anim_callback_stop_if_count_reached: return "AnimCallback_StopIfCountReached";
-			case 0x000E2F94: return "SetPlayerPositionToGameObjectPtr";
+			case SPINTOOL_USA_ADDRESS(Common, 0x000E2F94): return "SetPlayerPositionToGameObjectPtr";
 			default: return nullptr;
 			}
 		}
@@ -296,7 +297,7 @@ namespace spintool
 			}
 
 			case rom::AnimationCommandType::EXECUTE_AS_FUNCTION_PTR:
-				switch (command.pointer)
+				switch (rom::UsaAddressOf(rom::AddressGroup::Common, command.pointer))
 				{
 				case s_anim_callback_set_flip_x: object_flip_x = true; break;
 				case s_anim_callback_clear_flip_x: object_flip_x = false; break;
@@ -478,22 +479,22 @@ namespace spintool
 
 		{
 			// Sprite tables the object definitions use (USA ROM addresses).
-			struct KnownSpriteTable { const char* name; Uint32 offset; };
-			static constexpr KnownSpriteTable s_sprite_tables[] =
+			struct KnownSpriteTable { const char* name; rom::UsaAddress usa_offset; Uint32 Offset() const { return usa_offset.Get(); } };
+			static const KnownSpriteTable s_sprite_tables[] =
 			{
-				{ "Toxic Caves", 0x00012B0C },
-				{ "Lava Powerhouse", 0x00020666 },
-				{ "The Machine", 0x0002B7A4 },
-				{ "Showdown", 0x000318EE },
-				{ "Shared", 0x0000E47A },
-				{ "Player", 0x000013DC },
+				{ "Toxic Caves", { rom::AddressGroup::Common, 0x00012B0C } },
+				{ "Lava Powerhouse", { rom::AddressGroup::Common, 0x00020666 } },
+				{ "The Machine", { rom::AddressGroup::Common, 0x0002B7A4 } },
+				{ "Showdown", { rom::AddressGroup::Common, 0x000318EE } },
+				{ "Shared", { rom::AddressGroup::Common, 0x0000E47A } },
+				{ "Player", { rom::AddressGroup::Common, 0x000013DC } },
 			};
 			char default_label[48];
 			snprintf(default_label, sizeof(default_label), "Default (0x%05X)", anim.default_sprite_table);
 			const char* preview = default_label;
 			for (const KnownSpriteTable& table : s_sprite_tables)
 			{
-				if (edited.sprite_table == table.offset)
+				if (edited.sprite_table == table.Offset())
 				{
 					preview = table.name;
 				}
@@ -509,10 +510,10 @@ namespace spintool
 				for (const KnownSpriteTable& table : s_sprite_tables)
 				{
 					char label[48];
-					snprintf(label, sizeof(label), "%s (0x%05X)", table.name, table.offset);
-					if (ImGui::Selectable(label, edited.sprite_table == table.offset))
+					snprintf(label, sizeof(label), "%s (0x%05X)", table.name, table.Offset());
+					if (ImGui::Selectable(label, edited.sprite_table == table.Offset()))
 					{
-						edited.sprite_table = table.offset;
+						edited.sprite_table = table.Offset();
 						changed = palette_changed = true;
 					}
 				}
@@ -643,9 +644,9 @@ namespace spintool
 
 	void EditorAnimationNavigator::LoadAnimationsScrapedFromAnimObjects()
 	{
-		static Uint32 anim_objs_start = 0x000C0B14;
-		static Uint32 anim_objs_end = 0x000C13F0;
-		static Uint32 num_anims = (anim_objs_end - anim_objs_start) / rom::AnimObjectDefinition::s_size_on_rom;
+		const Uint32 anim_objs_start = rom::RomAddress(0x000C0B14);
+		const Uint32 anim_objs_end = rom::RomAddress(0x000C13F0);
+		const Uint32 num_anims = (anim_objs_end - anim_objs_start) / rom::AnimObjectDefinition::s_size_on_rom;
 
 		m_animations.reserve(num_anims);
 
@@ -863,7 +864,7 @@ namespace spintool
 								{
 									return (command.IsFrame() && command.flip_x)
 										|| (command.command_type == rom::AnimationCommandType::EXECUTE_AS_FUNCTION_PTR
-											&& (command.pointer == s_anim_callback_set_flip_x || command.pointer == s_anim_callback_toggle_flip_x));
+											&& (rom::UsaAddressOf(rom::AddressGroup::Common, command.pointer) == s_anim_callback_set_flip_x || rom::UsaAddressOf(rom::AddressGroup::Common, command.pointer) == s_anim_callback_toggle_flip_x));
 								});
 							float min_left = std::numeric_limits<float>::max();
 							float max_right = std::numeric_limits<float>::lowest();

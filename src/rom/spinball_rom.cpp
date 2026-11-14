@@ -3,6 +3,7 @@
 
 #include "rom/sprite.h"
 #include "rom/palette.h"
+#include "rom/rom_address_map.h"
 #include "types/sdl_handle_defs.h"
 
 #include <fstream>
@@ -60,6 +61,93 @@ namespace spintool
         return m_buffer.empty() == false;
     }
 
+    std::string rom::SpinballROM::DetectVersionID() const
+    {
+        constexpr size_t region_offset = 0x1F0;
+        if (m_buffer.size() <= region_offset)
+        {
+            return {};
+        }
+
+        switch (m_buffer[region_offset])
+        {
+        case 'U': return "usa";
+        case 'E': return "eur";
+        case 'J': return "jp";
+        default: return {};
+        }
+    }
+
+    namespace
+    {
+        // SHA-1 (FIPS 180-1), only used to recognise the retail ROMs.
+        std::string SHA1Hex(const std::vector<unsigned char>& data)
+        {
+            Uint32 h[5] = { 0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0 };
+            std::vector<unsigned char> message = data;
+            const Uint64 bit_length = static_cast<Uint64>(data.size()) * 8;
+            message.push_back(0x80);
+            while (message.size() % 64 != 56)
+            {
+                message.push_back(0);
+            }
+            for (int i = 7; i >= 0; --i)
+            {
+                message.push_back(static_cast<unsigned char>(bit_length >> (i * 8)));
+            }
+
+            const auto rotl = [](Uint32 v, int n) { return (v << n) | (v >> (32 - n)); };
+            for (size_t chunk = 0; chunk < message.size(); chunk += 64)
+            {
+                Uint32 w[80];
+                for (int i = 0; i < 16; ++i)
+                {
+                    w[i] = (static_cast<Uint32>(message[chunk + i * 4]) << 24)
+                        | (static_cast<Uint32>(message[chunk + i * 4 + 1]) << 16)
+                        | (static_cast<Uint32>(message[chunk + i * 4 + 2]) << 8)
+                        | static_cast<Uint32>(message[chunk + i * 4 + 3]);
+                }
+                for (int i = 16; i < 80; ++i)
+                {
+                    w[i] = rotl(w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16], 1);
+                }
+
+                Uint32 a = h[0], b = h[1], c = h[2], d = h[3], e = h[4];
+                for (int i = 0; i < 80; ++i)
+                {
+                    Uint32 f, k;
+                    if (i < 20) { f = (b & c) | (~b & d); k = 0x5A827999; }
+                    else if (i < 40) { f = b ^ c ^ d; k = 0x6ED9EBA1; }
+                    else if (i < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDC; }
+                    else { f = b ^ c ^ d; k = 0xCA62C1D6; }
+                    const Uint32 temp = rotl(a, 5) + f + e + k + w[i];
+                    e = d; d = c; c = rotl(b, 30); b = a; a = temp;
+                }
+                h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e;
+            }
+
+            static const char digits[] = "0123456789abcdef";
+            std::string hex;
+            for (const Uint32 word : h)
+            {
+                for (int shift = 28; shift >= 0; shift -= 4)
+                {
+                    hex += digits[(word >> shift) & 0xF];
+                }
+            }
+            return hex;
+        }
+    }
+
+    std::string rom::SpinballROM::MatchRetailSHA1() const
+    {
+        const std::string hash = SHA1Hex(m_buffer);
+        if (hash == "24bf6342b98c09775089c9f39cfb2f6fbe7806f7") return "usa";
+        if (hash == "f61a568314133b60de82ac162b5b52473adc9e1c") return "eur";
+        if (hash == "43b2fdac9c747d6f6a629347c589599074408cd9") return "jp";
+        return {};
+    }
+
     void rom::SpinballROM::SaveROM()
     {
         std::ofstream output = std::ofstream{m_filepath, std::ios::binary};
@@ -73,7 +161,7 @@ namespace spintool
 
     std::vector<std::shared_ptr<rom::Palette> > rom::SpinballROM::LoadPalettes(Uint32 num_palettes) const
     {
-        constexpr Uint32 offset = 0xDFC; // Level Palettes
+        const Uint32 offset = rom::RomAddress(0xDFC); // Level Palettes
         //constexpr size_t offset = 0x9BCDA; // Main menu palettes
         //constexpr size_t offset = 0xA1388; // Veg-o-Fortress cutscene palettes
         std::vector<std::shared_ptr<rom::Palette> > results;
@@ -85,12 +173,12 @@ namespace spintool
 
         for (Uint32 p = 0; p < 2; ++p)
         {
-            results.emplace_back(rom::Palette::LoadFromROM(*this, 0x000993FA + (Palette::s_palette_size_on_rom * p)));
+            results.emplace_back(rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000993FA) + (Palette::s_palette_size_on_rom * p)));
         }
 
         for (Uint32 p = 0; p < 4; ++p)
         {
-            results.emplace_back(rom::Palette::LoadFromROM(*this, 0x000A1388 + (Palette::s_palette_size_on_rom * p)));
+            results.emplace_back(rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000A1388) + (Palette::s_palette_size_on_rom * p)));
         }
 
         // The title screen has its own complete four-line palette set. Keep
@@ -102,7 +190,7 @@ namespace spintool
         {
             results.emplace_back(rom::Palette::LoadFromROM(
                 *this,
-                0x0009BD3A + (Palette::s_palette_size_on_rom * p)
+                rom::FrontendAddress(0x0009BD3A) + (Palette::s_palette_size_on_rom * p)
             ));
         }
         return results;
@@ -216,10 +304,10 @@ namespace spintool
         auto palette_set = std::make_shared<rom::PaletteSet>();
         palette_set->palette_lines =
         {
-            rom::Palette::LoadFromROM(*this, 0x115C),
-            rom::Palette::LoadFromROM(*this, 0x117C),
-            rom::Palette::LoadFromROM(*this, 0x119C),
-            rom::Palette::LoadFromROM(*this, 0x11BC)
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x115C)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x117C)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x119C)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x11BC))
         };
         return palette_set;
     }
@@ -229,10 +317,10 @@ namespace spintool
         auto palette_set = std::make_shared<rom::PaletteSet>();
         palette_set->palette_lines =
         {
-            rom::Palette::LoadFromROM(*this, 0x000A1388),
-            rom::Palette::LoadFromROM(*this, 0x000A13A8),
-            rom::Palette::LoadFromROM(*this, 0x000A13C8),
-            rom::Palette::LoadFromROM(*this, 0x000A13E8)
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000A1388)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000A13A8)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000A13C8)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000A13E8))
         };
         return palette_set;
     }
@@ -242,10 +330,10 @@ namespace spintool
         auto palette_set = std::make_shared<rom::PaletteSet>();
         palette_set->palette_lines =
         {
-            rom::Palette::LoadFromROM(*this, 0x0009BD3A),
-            rom::Palette::LoadFromROM(*this, 0x0009BD5A),
-            rom::Palette::LoadFromROM(*this, 0x0009BD7A),
-            rom::Palette::LoadFromROM(*this, 0x0009BD9A)
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009BD3A)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009BD5A)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009BD7A)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009BD9A))
         };
         return palette_set;
     }
@@ -255,10 +343,10 @@ namespace spintool
         auto palette_set = std::make_shared<rom::PaletteSet>();
         palette_set->palette_lines =
         {
-            rom::Palette::LoadFromROM(*this, 0x000993FA),
-            rom::Palette::LoadFromROM(*this, 0x0009941A),
-            rom::Palette::LoadFromROM(*this, 0x0009943A),
-            rom::Palette::LoadFromROM(*this, 0x0009945A)
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x000993FA)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009941A)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009943A)),
+            rom::Palette::LoadFromROM(*this, rom::FrontendAddress(0x0009945A))
         };
         return palette_set;
     }

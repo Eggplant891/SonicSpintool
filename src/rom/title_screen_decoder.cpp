@@ -1,4 +1,5 @@
 #include "rom/title_screen_decoder.h"
+#include "rom/rom_address_map.h"
 
 #include "rom/compressed2_optimizer.h"
 
@@ -29,32 +30,32 @@ namespace spintool::rom
 		constexpr Uint16 kVerticalFlip = 0x1000U;
 		constexpr std::size_t kTileBytes = 32U;
 
-		constexpr Uint32 kTitleArtHeaderOffset = 0x0009D102U;
-		constexpr Uint32 kTitleCompressedStreamOffset = kTitleArtHeaderOffset + 2U;
+		const rom::UsaAddress kTitleArtHeaderOffset{ rom::AddressGroup::Frontend, 0x0009D102U };
+		const rom::UsaAddress kTitleCompressedStreamOffset{ rom::AddressGroup::Frontend, 0x0009D104U };
 		constexpr Uint16 kTitleBaseTile = 0x0000U;
-		constexpr std::array<Uint32, 7> kTitleSonicObjectTables
-		{
-			0x00099440U,
-			0x000994BAU,
-			0x00099534U,
-			0x000995AEU,
-			0x00099628U,
-			0x000996A2U,
-			0x0009971CU,
-		};
+		const std::array<rom::UsaAddress, 7> kTitleSonicObjectTables
+		{{
+			{ rom::AddressGroup::Frontend, 0x00099440U },
+			{ rom::AddressGroup::Frontend, 0x000994BAU },
+			{ rom::AddressGroup::Frontend, 0x00099534U },
+			{ rom::AddressGroup::Frontend, 0x000995AEU },
+			{ rom::AddressGroup::Frontend, 0x00099628U },
+			{ rom::AddressGroup::Frontend, 0x000996A2U },
+			{ rom::AddressGroup::Frontend, 0x0009971CU },
+		}};
 		// The title screen stores each major visual element in its own object table.
 		// Their order in ROM does not match their visual/name order on screen.
-		constexpr Uint32 kTitleLogoSonicObjectTable = 0x00099796U;
-		constexpr Uint32 kTitleLogoTheHedgehogObjectTable = 0x00099816U;
-		constexpr Uint32 kTitleLogoSpinballObjectTable = 0x00099848U;
+		const rom::UsaAddress kTitleLogoSonicObjectTable{ rom::AddressGroup::Frontend, 0x00099796U };
+		const rom::UsaAddress kTitleLogoTheHedgehogObjectTable{ rom::AddressGroup::Frontend, 0x00099816U };
+		const rom::UsaAddress kTitleLogoSpinballObjectTable{ rom::AddressGroup::Frontend, 0x00099848U };
 		// This object table is another Sonic animation composition, not the
 		// large pinball support visible underneath him.
-		constexpr Uint32 kTitleAdditionalSonicObjectTable = 0x000998A4U;
+		const rom::UsaAddress kTitleAdditionalSonicObjectTable{ rom::AddressGroup::Frontend, 0x000998A4U };
 		// The support/bumper itself is stored as the title-screen foreground
 		// tile layout and uses the same shared title-screen graphics block.
-		constexpr Uint32 kTitleBumperRingTileLayout = 0x0009C05AU;
-		constexpr Uint32 kTitlePaletteDataOffset = 0x0009BD3AU;
-		constexpr Uint32 kBlankDescriptor = 0x00099430U;
+		const rom::UsaAddress kTitleBumperRingTileLayout{ rom::AddressGroup::Frontend, 0x0009C05AU };
+		const rom::UsaAddress kTitlePaletteDataOffset{ rom::AddressGroup::Frontend, 0x0009BD3AU };
+		const rom::UsaAddress kBlankDescriptor{ rom::AddressGroup::Frontend, 0x00099430U };
 		constexpr int kMaximumFrameDimension = 2048;
 
 		struct PieceDescriptor
@@ -84,7 +85,7 @@ namespace spintool::rom
 			std::size_t frame_id = 0;
 			std::vector<PieceInstance> pieces;
 			Uint16 base_tile = kTitleBaseTile;
-			Uint32 art_offset = kTitleCompressedStreamOffset;
+			Uint32 art_offset = kTitleCompressedStreamOffset.Get();
 		};
 
 
@@ -195,7 +196,7 @@ namespace spintool::rom
 
 		bool IsRawBlankDescriptor(const std::vector<Uint8>& rom, const Uint32 offset)
 		{
-			if (offset == 0U || offset == kBlankDescriptor)
+			if (offset == 0U || offset == kBlankDescriptor.Get())
 			{
 				return true;
 			}
@@ -400,7 +401,7 @@ namespace spintool::rom
 			{
 				if (!AppendObjectTableFrame(
 					rom,
-					kTitleSonicObjectTables[index],
+					kTitleSonicObjectTables[index].Get(),
 					TitleScreenCategory::SONIC,
 					"Sonic - frame " + std::to_string(index + 1U),
 					"Sonic title-screen animation",
@@ -414,7 +415,7 @@ namespace spintool::rom
 			}
 			if (!AppendObjectTableFrame(
 				rom,
-				kTitleAdditionalSonicObjectTable,
+				kTitleAdditionalSonicObjectTable.Get(),
 				TitleScreenCategory::SONIC,
 				"Sonic - frame 8",
 				"Additional Sonic title-screen animation composition",
@@ -427,7 +428,7 @@ namespace spintool::rom
 			}
 			if (!AppendTileLayoutFrame(
 				rom,
-				kTitleBumperRingTileLayout,
+				kTitleBumperRingTileLayout.Get(),
 				TitleScreenCategory::BUMPER_RING,
 				"Bumper / Ring",
 				"Pinball support on which Sonic bounces",
@@ -440,7 +441,7 @@ namespace spintool::rom
 			}
 			if (!AppendObjectTableFrame(
 				rom,
-				kTitleLogoSonicObjectTable,
+				kTitleLogoSonicObjectTable.Get(),
 				TitleScreenCategory::LOGO_SONIC,
 				"Logo Sonic",
 				"SONIC title logo",
@@ -453,7 +454,7 @@ namespace spintool::rom
 			}
 			if (!AppendObjectTableFrame(
 				rom,
-				kTitleLogoTheHedgehogObjectTable,
+				kTitleLogoTheHedgehogObjectTable.Get(),
 				TitleScreenCategory::LOGO_THE_HEDGEHOG,
 				"Logo The Hedgehog",
 				"THE HEDGEHOG title logo",
@@ -466,7 +467,7 @@ namespace spintool::rom
 			}
 			if (!AppendObjectTableFrame(
 				rom,
-				kTitleLogoSpinballObjectTable,
+				kTitleLogoSpinballObjectTable.Get(),
 				TitleScreenCategory::LOGO_SPINBALL,
 				"Logo Spinball",
 				"SPINBALL title logo",
@@ -974,8 +975,8 @@ namespace spintool::rom
 	TitleScreenDecodeResult TitleScreenDecoder::Decode(const SpinballROM& rom)
 	{
 		TitleScreenDecodeResult result;
-		if (!CanRead(rom.m_buffer, kTitleArtHeaderOffset, 2U) ||
-			ReadBE16(rom.m_buffer, kTitleArtHeaderOffset) != 0xFFFFU)
+		if (!CanRead(rom.m_buffer, kTitleArtHeaderOffset.Get(), 2U) ||
+			ReadBE16(rom.m_buffer, kTitleArtHeaderOffset.Get()) != 0xFFFFU)
 		{
 			result.error = "Title-screen Compressed2 marker FFFF is missing at 0x9D102";
 			return result;
@@ -985,7 +986,7 @@ namespace spintool::rom
 		std::string error;
 		if (!Compressed2Optimizer::Decode(
 			rom.m_buffer,
-			kTitleCompressedStreamOffset,
+			kTitleCompressedStreamOffset.Get(),
 			art,
 			error,
 			nullptr,
@@ -1006,7 +1007,7 @@ namespace spintool::rom
 		{
 			palette_set->palette_lines[line] = Palette::LoadFromROM(
 				rom,
-				kTitlePaletteDataOffset + static_cast<Uint32>(line * Palette::s_palette_size_on_rom)
+				kTitlePaletteDataOffset.Get() + static_cast<Uint32>(line * Palette::s_palette_size_on_rom)
 			);
 			if (!palette_set->palette_lines[line])
 			{
@@ -1084,14 +1085,14 @@ namespace spintool::rom
 	)
 	{
 		TitleScreenImportResult result;
-		if (!CanRead(rom.m_buffer, kTitleArtHeaderOffset, 2U) ||
-			ReadBE16(rom.m_buffer, kTitleArtHeaderOffset) != 0xFFFFU)
+		if (!CanRead(rom.m_buffer, kTitleArtHeaderOffset.Get(), 2U) ||
+			ReadBE16(rom.m_buffer, kTitleArtHeaderOffset.Get()) != 0xFFFFU)
 		{
 			result.message = "Compressed2 marker FFFF is missing at 0x9D102";
 			return result;
 		}
-		if (!CanRead(reference_rom.m_buffer, kTitleArtHeaderOffset, 2U) ||
-			ReadBE16(reference_rom.m_buffer, kTitleArtHeaderOffset) != 0xFFFFU)
+		if (!CanRead(reference_rom.m_buffer, kTitleArtHeaderOffset.Get(), 2U) ||
+			ReadBE16(reference_rom.m_buffer, kTitleArtHeaderOffset.Get()) != 0xFFFFU)
 		{
 			result.message = "Reference ROM has no Compressed2 marker at 0x9D102";
 			return result;
@@ -1102,7 +1103,7 @@ namespace spintool::rom
 		std::string error;
 		if (!Compressed2Optimizer::Decode(
 			rom.m_buffer,
-			kTitleCompressedStreamOffset,
+			kTitleCompressedStreamOffset.Get(),
 			tile_art,
 			error,
 			&current_stream_size,
@@ -1148,7 +1149,7 @@ namespace spintool::rom
 		std::size_t capacity = 0U;
 		if (!Compressed2Optimizer::Decode(
 			reference_rom.m_buffer,
-			kTitleCompressedStreamOffset,
+			kTitleCompressedStreamOffset.Get(),
 			reference_tile_art,
 			error,
 			&capacity,
@@ -1158,21 +1159,21 @@ namespace spintool::rom
 			result.message = "Could not determine exact reference capacity: " + error;
 			return result;
 		}
-		if (kTitleCompressedStreamOffset > reference_rom.m_buffer.size() ||
-			capacity > reference_rom.m_buffer.size() - kTitleCompressedStreamOffset)
+		if (kTitleCompressedStreamOffset.Get() > reference_rom.m_buffer.size() ||
+			capacity > reference_rom.m_buffer.size() - kTitleCompressedStreamOffset.Get())
 		{
 			result.message = "Reference title-art block extends outside the ROM";
 			return result;
 		}
-		if (kTitleCompressedStreamOffset > rom.m_buffer.size() ||
-			current_stream_size > rom.m_buffer.size() - kTitleCompressedStreamOffset)
+		if (kTitleCompressedStreamOffset.Get() > rom.m_buffer.size() ||
+			current_stream_size > rom.m_buffer.size() - kTitleCompressedStreamOffset.Get())
 		{
 			result.message = "Working title-art block extends outside the ROM";
 			return result;
 		}
 		const std::vector<Uint8> original_stream(
-			rom.m_buffer.begin() + kTitleCompressedStreamOffset,
-			rom.m_buffer.begin() + kTitleCompressedStreamOffset + current_stream_size
+			rom.m_buffer.begin() + kTitleCompressedStreamOffset.Get(),
+			rom.m_buffer.begin() + kTitleCompressedStreamOffset.Get() + current_stream_size
 		);
 
 		std::size_t changed_pixel_count = 0U;
@@ -1231,7 +1232,7 @@ namespace spintool::rom
 			result.message = message.str();
 			return result;
 		}
-		if (capacity > rom.m_buffer.size() - kTitleCompressedStreamOffset)
+		if (capacity > rom.m_buffer.size() - kTitleCompressedStreamOffset.Get())
 		{
 			result.message = "Compressed title-art block extends outside the working ROM";
 			return result;
@@ -1239,11 +1240,11 @@ namespace spintool::rom
 
 		std::copy(
 			compression.data.begin(), compression.data.end(),
-			rom.m_buffer.begin() + kTitleCompressedStreamOffset
+			rom.m_buffer.begin() + kTitleCompressedStreamOffset.Get()
 		);
 		std::fill(
-			rom.m_buffer.begin() + kTitleCompressedStreamOffset + compression.data.size(),
-			rom.m_buffer.begin() + kTitleCompressedStreamOffset + capacity,
+			rom.m_buffer.begin() + kTitleCompressedStreamOffset.Get() + compression.data.size(),
+			rom.m_buffer.begin() + kTitleCompressedStreamOffset.Get() + capacity,
 			0U
 		);
 		UpdateMegaDriveChecksum(rom);

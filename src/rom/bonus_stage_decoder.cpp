@@ -1,6 +1,7 @@
 #include "rom/bonus_stage_decoder.h"
 
 #include "rom/compressed2_optimizer.h"
+#include "rom/rom_address_map.h"
 
 #include "rom/tile.h"
 #include "rom/spinball_rom.h"
@@ -428,8 +429,8 @@ namespace spintool::rom
 			// this range: two common art pointers followed by the four stage art
 			// pointers. Discovering the operands keeps subsequent imports working
 			// after a previous import has relocated one of the streams.
-			constexpr Uint32 scan_begin = 0x000FA740;
-			constexpr Uint32 scan_end = 0x000FA830;
+			const Uint32 scan_begin = BonusAddress(0x000FA740);
+			const Uint32 scan_end = BonusAddress(0x000FA830);
 			std::vector<Uint32> operands;
 			if (rom.m_buffer.size() <= scan_begin)
 			{
@@ -985,11 +986,11 @@ namespace spintool::rom
 		{
 			BonusStageAnimationState state;
 			state.name = state_definition.name;
-			state.animation_root = state_definition.animation_root;
+			state.animation_root = BonusAddress(state_definition.animation_root);
 			state.is_static_mapping = false;
 
 			std::unordered_set<Uint32> visited_entries;
-			Uint32 current = state_definition.animation_root;
+			Uint32 current = state.animation_root;
 			for (std::size_t index = 0; index < maximum_entries; ++index)
 			{
 				if (!visited_entries.insert(current).second)
@@ -1064,7 +1065,7 @@ namespace spintool::rom
 		{
 			object.name = definition.name;
 			object.object_ram_address = definition.object_ram_address;
-			object.initial_mapping_offset = definition.initial_mapping;
+			object.initial_mapping_offset = BonusAddress(definition.initial_mapping);
 			object.base_tile_attributes = definition.base_tile_attributes;
 			object.is_common_object = definition.is_common_object;
 			object.palette_line = static_cast<Uint8>(
@@ -1088,7 +1089,7 @@ namespace spintool::rom
 				vram,
 				definition,
 				0,
-				definition.initial_mapping,
+				object.initial_mapping_offset,
 				0,
 				0,
 				initial_state,
@@ -1158,7 +1159,7 @@ namespace spintool::rom
 
 	bool BonusStageDecoder::IsBonusStageMappingOffset(Uint32 rom_offset)
 	{
-		if (rom_offset >= 0x000C8D8A && rom_offset < kCommonForegroundArt)
+		if (rom_offset >= BonusAddress(0x000C8D8A) && rom_offset < BonusAddress(kCommonForegroundArt))
 		{
 			return true;
 		}
@@ -1167,8 +1168,8 @@ namespace spintool::rom
 			std::end(kStages),
 			[rom_offset](const StageDefinition& definition)
 			{
-				return rom_offset >= definition.mapping_region_start &&
-					rom_offset < definition.mapping_region_end;
+				return rom_offset >= BonusAddress(definition.mapping_region_start) &&
+					rom_offset < BonusAddress(definition.mapping_region_end);
 			}
 		);
 	}
