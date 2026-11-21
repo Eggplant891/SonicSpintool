@@ -56,7 +56,7 @@ The ROM addresses SpinTool uses are the USA ROM's. For another version they come
 
 The USA ROM needs only `metadata.json`. `rom_addresses` maps each USA address to the version's (`"0x0C77B0": "0x0C7088"`). In the code, `RomAddress()`, `BonusAddress()` and `FrontendAddress()` (or a `UsaAddress` in a table) relocate a USA address through its set.
 
-The Europe files (`*_eur.json`) were generated from the USA and Europe ROMs with `tools/rom_compare/spintool_metadata.py` in the Sonic Spinball disassembly, which collects the addresses from this source and checks every mapped address against the Europe ROM. The Japanese ROM has no metadata yet, so it is loaded with the USA addresses, which do not match it.
+The Europe files (`*_eur.json`) were made from the USA and Europe ROMs. They contain each address that this source uses, and each mapped address was checked against the Europe ROM. The Japanese ROM has no metadata yet, so it is loaded with the USA addresses, which do not match it.
 
 LZW Compression
 -----
